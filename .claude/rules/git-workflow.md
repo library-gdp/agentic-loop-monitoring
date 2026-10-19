@@ -1,0 +1,14 @@
+# Git 워크플로우
+
+커밋 가능한 변경사항이 생길 때마다 다음을 순서대로 수행한다.
+
+1. **커밋**: 논리적 단위로 변경사항을 커밋한다. 커밋 메시지는 Conventional Commits 형식(`feat:`, `fix:`, `docs:`, `chore:` 등)을 따른다.
+2. **푸시**: 원격 저장소(`origin`)에 브랜치를 push한다.
+3. **PR 생성**: `gh pr create`로 `main` 대상 Pull Request를 연다.
+   - 해당 브랜치에 이미 열린 PR이 있으면 새로 만들지 않고 push만 한다.
+
+## 브랜치
+
+- `main`에 직접 커밋하지 않는다. 작업 브랜치를 최신 `origin/main`에서 생성한다.
+- 브랜치 이름은 `<type>/<짧은-설명>` 형식을 따른다. (예: `feat/add-loop-monitor`, `docs/update-readme`)
+- 이미 병합된 브랜치에 이어서 커밋하지 않는다. 새 브랜치를 만든다.
