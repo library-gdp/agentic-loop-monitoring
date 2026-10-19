@@ -55,7 +55,8 @@ ReadResult
 Hook payload 원문을 해석해 Session Log File을 알아냅니다.
 
 - Hook payload에 Session Log File의 경로가 있으면 그 값을 씁니다. 없으면 session id 같은 값으로 에이전트의 규칙에 따라 경로를 찾습니다.
-- 경로는 절대 경로로 돌려줍니다. Daemon은 이 경로를 Offset Store의 키로 씁니다.
+- session id는 반드시 돌려줍니다. Daemon은 에이전트 id와 session id로 Offset을 저장합니다.
+- 경로는 절대 경로로 돌려줍니다.
 - Hook payload를 해석할 수 없거나 Session Log File을 찾을 수 없으면 오류를 돌려줍니다. Daemon은 로그를 남기고 Signal을 버립니다.
 - Session Log File을 읽지 않습니다. `resolve`는 Signal을 받을 때마다 불리므로 빨리 끝나야 합니다.
 

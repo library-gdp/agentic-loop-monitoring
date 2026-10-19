@@ -53,8 +53,8 @@ Session
 | Hook Client | Stop Hook이 실행하는 짧은 프로세스입니다. Client Adapter Daemon에 Signal을 보낸 뒤 처리 결과를 기다리지 않고 바로 종료합니다. |
 | Signal | Hook Client가 Client Adapter Daemon에 보내는 메시지입니다. 어느 에이전트의 Hook인지와 Hook payload 원문을 담습니다. Session Log File을 읽으라는 신호로만 쓰이며, Signal 자체는 Main Server로 전달되지 않습니다. |
 | Session Log File | 에이전트가 세션의 대화 내용과 LLM 호출 정보를 기록하는 파일입니다. 에이전트마다 위치와 형식이 다릅니다. |
-| Offset | Session Log File에서 Main Server의 성공 Ack까지 받은 지점의 위치입니다. 파일 처음부터 센 바이트 수로 나타냅니다. Daemon은 다음 Signal을 받으면 이 위치부터 읽습니다. |
-| Offset Store | Client Adapter Daemon이 Session Log File별 Offset을 기록하는 파일입니다. |
+| Offset | Session의 Session Log File에서 Main Server의 성공 Ack까지 받은 지점의 위치입니다. 파일 처음부터 센 바이트 수로 나타냅니다. Session별로 저장하며, Daemon은 그 Session의 다음 Signal을 받으면 이 위치부터 읽습니다. |
+| Offset Store | Client Adapter Daemon이 Session별 Offset을 기록하는 곳입니다. Session마다 파일 하나를 둡니다. |
 | Plugin State | Plugin이 다음 읽기에 필요한 문맥(예: 앞쪽 레코드에만 기록된 모델 이름)을 담아 돌려주는 값입니다. Daemon은 해석하지 않고 Offset과 함께 Offset Store에 저장합니다. |
 
 ## 전송

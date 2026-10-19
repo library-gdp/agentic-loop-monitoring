@@ -10,7 +10,7 @@
 | Signal Queue | 처리를 기다리는 Signal의 큐입니다. |
 | Worker | Signal Queue에서 Signal을 하나씩 꺼내 Session Log File을 읽고 Main Server로 보냅니다. |
 | Plugin | 에이전트별로 Session Log File을 찾고, 읽고, Wire Event로 변환합니다. [Plugin Specification](PLUGIN_SPEC.md)을 따릅니다. |
-| Offset Store | Session Log File별 Offset을 기록하는 파일입니다. |
+| Offset Store | Session별 Offset을 기록하는 곳입니다. Session마다 Offset 레코드 파일 하나를 둡니다. |
 | Transport Client | 설정된 Transport로 Main Server에 Batch를 보내고 Ack를 받습니다. [Wire Protocol](WIRE_PROTOCOL.md)을 따릅니다. |
 
 ## 실행
@@ -18,7 +18,7 @@
 Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다.
 
 - Daemon은 시작할 때 Signal Socket을 만듭니다. 이미 다른 Daemon이 그 Signal Socket에서 Signal을 받고 있으면 시작하지 않고 종료합니다.
-- Daemon은 시작할 때 Offset Store를 읽습니다. Session Log File이 더 이상 없는 레코드는 이때 지웁니다.
+- Daemon은 시작할 때 Offset Store를 훑어, Session Log File이 더 이상 없는 Session의 Offset 레코드 파일을 지웁니다.
 - Daemon은 시작할 때 Session Log File을 미리 훑지 않습니다. 읽기는 항상 Signal을 받았을 때만 시작합니다.
 - Daemon이 Batch를 보내는 중에 종료되면 그 Batch의 Offset은 갱신되지 않습니다. 다음에 같은 구간을 다시 보내며, 중복은 Main Server가 걸러냅니다.
 
@@ -75,7 +75,7 @@ Signal Receiver는 Signal을 받으면 다음을 수행합니다.
 
 1. `agent`에 맞는 Plugin을 찾습니다. 없으면 로그를 남기고 Signal을 버립니다.
 2. Plugin의 `resolve`로 Hook payload에서 Session Log File을 알아냅니다. 실패하면 로그를 남기고 Signal을 버립니다.
-3. 같은 Session Log File을 가리키는 Signal이 이미 Signal Queue에서 기다리고 있으면 새 Signal은 버립니다. Worker는 어차피 파일 끝까지 읽기 때문입니다.
+3. 같은 Session(에이전트 id와 session id가 같음)의 Signal이 이미 Signal Queue에서 기다리고 있으면 새 Signal은 버립니다. Worker는 어차피 파일 끝까지 읽기 때문입니다.
 4. 그렇지 않으면 Signal Queue 끝에 넣습니다.
 
 ### 처리 순서
@@ -84,7 +84,7 @@ Worker는 하나이며, Signal을 받은 순서대로 하나씩 처리합니다.
 
 Signal 하나는 다음 순서로 처리합니다.
 
-1. Offset Store에서 Session Log File의 레코드를 꺼내 [검증](#offset-검증)합니다. 이 결과로 읽기 시작할 Offset과 Plugin State가 정해집니다.
+1. Offset Store에서 Session의 Offset 레코드를 꺼내 [검증](#offset-검증)합니다. 이 결과로 읽기 시작할 Offset과 Plugin State가 정해집니다.
 2. Plugin의 `read`로 Offset부터 읽어 Wire Event와 다음 Offset, 다음 Plugin State를 받습니다. 한 번에 읽는 양은 Batch 크기 한도를 넘지 않습니다.
 3. 다음 Offset이 지금 Offset과 같으면 더 읽을 것이 없으므로 처리를 끝냅니다.
 4. Wire Event가 없으면(건너뛴 레코드만 있었던 경우) Main Server에 보내지 않고 5번의 Offset 갱신만 합니다.
@@ -109,55 +109,65 @@ Offset은 Session Log File의 처음부터 센 바이트 수입니다. 0이면 �
 
 ### Offset Store
 
-Offset Store는 Daemon의 상태 디렉터리 아래 `offsets.json` 파일 하나입니다. Session Log File의 절대 경로를 키로 하는 레코드를 담습니다.
+Offset은 Session별로 저장합니다. Offset Store는 Daemon의 상태 디렉터리 아래 `offsets/` 디렉터리이며, Session마다 Offset 레코드 파일 하나를 둡니다.
+
+```
+<상태 디렉터리>/offsets/<agent>/<session_id>.json
+```
+
+`<agent>`는 에이전트 id이고 `<session_id>`는 Plugin의 `resolve`가 알려준 session id입니다. 서로 다른 에이전트의 session id가 겹쳐도 디렉터리가 나뉘므로 충돌하지 않습니다. session id에 파일 이름으로 쓸 수 없는 문자(`/`, NUL)나 `%`가 있으면 그 바이트를 퍼센트 인코딩(예: `/` → `%2F`)해서 파일 이름을 만듭니다.
+
+Offset 레코드 파일의 내용은 다음과 같습니다.
 
 ```json
 {
-  "store_version": 1,
-  "files": {
-    "/home/user/.claude/projects/my-project/9b2e....jsonl": {
-      "agent": "claude-code",
-      "session_id": "9b2e...",
-      "file_id": { "dev": 64769, "ino": 1835012 },
-      "offset": 48213,
-      "plugin_state": null,
-      "updated_at": "2026-10-19T14:22:35.402Z"
-    }
-  }
+  "record_version": 1,
+  "agent": "claude-code",
+  "session_id": "9b2e...",
+  "path": "/home/user/.claude/projects/my-project/9b2e....jsonl",
+  "file_id": { "dev": 64769, "ino": 1835012 },
+  "offset": 48213,
+  "plugin_state": null,
+  "updated_at": "2026-10-19T14:22:35.402Z"
 }
 ```
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `store_version` | integer | Offset Store 형식의 버전입니다. 지금은 `1`입니다. |
-| `agent` | string | Session Log File을 쓴 에이전트의 id입니다. |
-| `session_id` | string | Plugin의 `resolve`가 알려준 session id입니다. |
-| `file_id` | object | 파일의 device 번호(`dev`)와 inode 번호(`ino`)입니다. 같은 경로의 파일이 다른 파일로 바뀌었는지 판단하는 데 씁니다. |
+| `record_version` | integer | Offset 레코드 형식의 버전입니다. 지금은 `1`입니다. |
+| `agent` | string | Session의 에이전트 id입니다. |
+| `session_id` | string | 에이전트가 부여한 session id입니다. 인코딩하지 않은 원래 값입니다. |
+| `path` | string | Offset을 기록할 때 읽은 Session Log File의 절대 경로입니다. |
+| `file_id` | object | 그 파일의 device 번호(`dev`)와 inode 번호(`ino`)입니다. 같은 경로의 파일이 다른 파일로 바뀌었는지 판단하는 데 씁니다. |
 | `offset` | integer | Offset입니다. |
 | `plugin_state` | any | Plugin이 다음 `read`에 넘겨달라고 돌려준 값입니다. Daemon은 내용을 해석하지 않고 그대로 저장합니다. |
 | `updated_at` | string | 레코드를 마지막으로 갱신한 시각입니다. RFC 3339 형식입니다. |
 
+Daemon은 Session 하나가 Session Log File 하나에 기록된다고 봅니다. 같은 Session의 Session Log File 경로가 바뀌면 새 파일을 처음부터 읽습니다([Offset 검증](#offset-검증) 참고).
+
 ### 갱신
 
 - Offset과 Plugin State는 함께 갱신합니다. 둘 중 하나만 갱신된 상태가 남으면 안 됩니다.
-- 갱신은 원자적으로 합니다. 같은 디렉터리의 임시 파일에 전체 내용을 쓰고 `fsync`한 뒤 `offsets.json`으로 rename합니다.
+- 갱신은 원자적으로 합니다. 같은 디렉터리의 임시 파일에 레코드 전체를 쓰고 `fsync`한 뒤 Offset 레코드 파일 이름으로 rename합니다.
+- 갱신할 때는 그 Session의 Offset 레코드 파일만 다시 씁니다. 다른 Session의 레코드는 건드리지 않습니다.
 - Offset Store를 쓰는 것은 Worker 하나뿐이므로 파일 잠금은 두지 않습니다.
 
 ### Offset 검증
 
-Worker는 Session Log File을 읽기 전에 레코드와 실제 파일을 비교해 읽기 시작할 위치를 정합니다.
+Worker는 Session Log File을 읽기 전에 Session의 Offset 레코드와 실제 파일을 비교해 읽기 시작할 위치를 정합니다.
 
 | 상황 | 판단 기준 | 처리 |
 |---|---|---|
-| 처음 보는 파일 | 레코드가 없음 | Offset 0, Plugin State 없음으로 시작합니다. |
+| 처음 보는 Session | Offset 레코드 파일이 없음 | Offset 0, Plugin State 없음으로 시작합니다. |
+| 파일 경로가 바뀜 | `resolve`가 알려준 경로가 레코드의 `path`와 다름 | 새 경로의 파일을 Offset 0, Plugin State 없음으로 시작합니다. |
 | 파일이 교체됨 | `file_id`가 다름 | Offset 0, Plugin State 없음으로 다시 시작합니다. |
 | 파일이 잘림 | 파일 크기가 Offset보다 작음 | Offset 0, Plugin State 없음으로 다시 시작합니다. |
-| 파일이 없음 | 경로에 파일이 없음 | 로그를 남기고 Signal을 버립니다. 레코드는 지웁니다. |
+| 파일이 없음 | 경로에 파일이 없음 | 로그를 남기고 Signal을 버립니다. Offset 레코드 파일은 지웁니다. |
 | 그 외 | | 레코드의 Offset과 Plugin State로 이어서 읽습니다. |
 
 처음부터 다시 읽으면 이미 보낸 Wire Event가 다시 갈 수 있습니다. 파일 내용이 같다면 event id도 같으므로 Main Server가 걸러냅니다.
 
-Offset Store 파일을 해석할 수 없으면 로그를 남기고 손상된 파일을 다른 이름으로 옮긴 뒤 빈 Offset Store로 시작합니다. 이후 모든 파일을 처음부터 다시 읽게 되며, 중복은 Main Server가 걸러냅니다.
+Offset 레코드 파일을 해석할 수 없으면 로그를 남기고 그 파일을 다른 이름으로 옮긴 뒤, 그 Session만 Offset 0, Plugin State 없음으로 시작합니다. 다른 Session의 Offset에는 영향이 없으며, 중복은 Main Server가 걸러냅니다.
 
 ## 설정
 
@@ -178,7 +188,7 @@ Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무�
 - Plugin이 레코드를 해석하지 못하고 건너뛴 경우
 - 재시도 가능한 실패와 재시도를 모두 실패한 경우
 - 재시도할 수 없는 거절로 Batch를 버린 경우
-- Offset Store를 처음부터 다시 시작한 경우
+- Offset 레코드 파일을 해석하지 못해 Session을 처음부터 다시 읽은 경우
 
 ## 결정되지 않은 사항
 
