@@ -8,7 +8,7 @@ Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event
 
 | 메시지 | 방향 | 설명 |
 |---|---|---|
-| Batch | Daemon → Main Server | 한 Session Log File의 연속된 구간에서 나온 Wire Event 묶음입니다. |
+| Batch | Daemon → Main Server | 한 Session Log File의 연속된 구간에서 나온 Wire Event 묶음입니다. 끝난 Turn 하나 이상을 담습니다. |
 | Ack | Main Server → Daemon | Batch를 처리한 결과입니다. |
 
 모든 메시지는 UTF-8 JSON 객체입니다. Daemon은 Batch 하나를 보내면 그 Ack를 받기 전에 다음 Batch를 보내지 않습니다.
@@ -41,7 +41,7 @@ Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event
 | `source.host` | string | | Daemon이 실행 중인 머신의 이름입니다. |
 | `session.id` | string | O | 에이전트가 부여한 session id입니다. |
 | `session.cwd` | string | | 에이전트의 작업 디렉터리입니다. |
-| `events` | array | O | Wire Event 목록입니다. Session Log File에 기록된 순서를 따릅니다. |
+| `events` | array | O | Wire Event 목록입니다. Session Log File에 기록된 순서를 따르며, 항상 `user_message`로 시작합니다. |
 
 ## Wire Event
 
@@ -57,13 +57,15 @@ Wire Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같�
 
 ### Turn의 경계
 
-Batch의 경계는 Turn의 경계와 맞지 않습니다. Daemon은 Signal 처리를 시작할 때의 파일 끝까지 읽으므로, 한 Turn이 여러 Batch에 나뉘어 들어오거나 다음 Turn의 앞부분이 이전 Turn과 같은 Batch에 들어올 수 있습니다. 전송 실패로 남은 구간이 다음 Stop Hook으로 미뤄질 때도 마찬가지입니다.
+Batch는 끝난 Turn만 담으며, Turn 하나가 여러 Batch에 나뉘지 않습니다. 사용자가 중단한 Turn은 Daemon이 걸러내므로 보내지 않습니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고).
 
-그래서 Core는 Batch가 아니라 Wire Event로 Turn의 시작과 끝을 판단합니다.
+그래서 Core는 Batch 안에서 Turn을 나눕니다.
 
-- `user_message`가 오면 Turn을 엽니다.
-- `tool_use` 블록이 없는 `assistant_message`(최종 응답)가 오면 Turn을 닫습니다.
-- 닫히지 않은 Turn은 진행 중으로 둡니다. 뒤따르는 Wire Event가 다음 Batch로 들어오면 같은 Turn에 이어 붙입니다.
+- `user_message`가 Turn을 시작합니다.
+- Turn은 다음 `user_message` 바로 앞이나 Batch의 끝에서 끝납니다.
+- Turn의 마지막 Wire Event가 `tool_use` 블록이 없는 `assistant_message`(최종 응답)이면 정상적으로 끝난 Turn입니다. 그렇지 않으면 오류나 충돌로 끝난 Turn입니다.
+
+Core는 진행 중인 Turn을 두지 않습니다.
 
 ### `user_message`
 

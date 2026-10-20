@@ -88,13 +88,13 @@ Signal 하나는 다음 순서로 처리합니다.
 2. 이때의 Session Log File 크기를 끝 위치로 기록합니다. 이 Signal의 처리는 끝 위치까지만 읽습니다.
 3. Plugin의 `read`로 Offset부터 읽어 Wire Event와 다음 Offset, 다음 Plugin State를 받습니다. 한 번에 읽는 양은 Batch 크기 한도를 넘지 않으며, 끝 위치를 `limit.end_offset`으로 넘깁니다.
 4. 다음 Offset이 지금 Offset과 같으면 끝 위치까지 더 읽을 것이 없으므로 처리를 끝냅니다.
-5. Wire Event가 없으면(건너뛴 레코드만 있었던 경우) Main Server에 보내지 않고 6번의 Offset 갱신만 합니다.
+5. Wire Event가 없으면(사용자가 중단한 Turn이나 건너뛴 레코드만 있었던 경우) Main Server에 보내지 않고 6번의 Offset 갱신만 합니다.
 6. Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다. 결과에 따라 [Ack 처리](#ack-처리)를 따릅니다.
 7. 처리를 끝내지 않았다면 3번으로 돌아갑니다.
 
 끝 위치를 두는 이유는 에이전트가 파일에 계속 쓰는 동안 Worker가 파일 끝을 따라가며 처리를 끝내지 못하는 일을 막기 위해서입니다. Worker는 하나이므로 그동안 다른 Session의 Signal이 모두 기다리게 됩니다. 끝 위치 뒤에 쓰인 내용은 같은 Session의 다음 Stop Hook 때 읽습니다.
 
-끝 위치는 Turn의 경계와 일치하지 않을 수 있습니다. Hook Client가 비동기로 실행되고 Signal이 큐에서 기다리기도 하므로, Signal 처리를 시작할 때 다음 Turn의 앞부분이 이미 기록되어 있을 수 있습니다. 이 부분도 함께 보내며, Main Server는 Turn이 여러 Batch에 나뉘어 들어오는 것을 처리합니다([Wire Protocol](WIRE_PROTOCOL.md#turn의-경계) 참고).
+끝 위치는 Turn의 경계와 일치하지 않을 수 있습니다. Hook Client가 비동기로 실행되고 Signal이 큐에서 기다리기도 하므로, Signal 처리를 시작할 때 다음 Turn의 앞부분이 이미 기록되어 있을 수 있습니다. Plugin은 끝난 Turn까지만 소비하므로 이 부분은 보내지 않고, 그 Turn이 끝난 뒤의 Stop Hook 때 처음부터 읽어 보냅니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고).
 
 ### Ack 처리
 
@@ -110,7 +110,7 @@ Signal 하나는 다음 순서로 처리합니다.
 
 ### Offset
 
-Offset은 Session Log File의 처음부터 센 바이트 수입니다. 0이면 파일 처음부터 읽습니다. 다음 Offset은 Plugin이 정하며, 항상 Plugin이 끝까지 소비한 레코드의 바로 다음 위치입니다. 에이전트가 아직 쓰고 있는 마지막 레코드처럼 완결되지 않은 부분은 소비하지 않으므로 다음 읽기에서 다시 읽습니다. 자세한 규칙은 [Plugin Specification](PLUGIN_SPEC.md#read)을 참고하세요.
+Offset은 Session Log File의 처음부터 센 바이트 수입니다. 0이면 파일 처음부터 읽습니다. 다음 Offset은 Plugin이 정하며, 항상 Plugin이 소비한 마지막 Turn의 바로 다음 위치입니다. 아직 끝나지 않은 Turn은 소비하지 않으므로 다음 읽기에서 그 Turn의 처음부터 다시 읽습니다. 자세한 규칙은 [Plugin Specification](PLUGIN_SPEC.md#read)을 참고하세요.
 
 ### Offset Store
 
@@ -182,7 +182,7 @@ Offset 레코드 파일을 해석할 수 없으면 로그를 남기고 그 파�
 | Transport | 사용할 Transport의 종류와 주소입니다. 표준입출력이면 실행할 Main Server 명령입니다. |
 | Ack 타임아웃 | Batch를 보낸 뒤 Ack를 기다리는 최대 시간입니다. |
 | 재시도 횟수와 간격 | 재시도 가능한 실패에서 같은 Batch를 다시 보내는 횟수와 간격입니다. |
-| Batch 크기 한도 | Batch 하나에 담는 Wire Event 수와 바이트 수의 최댓값입니다. |
+| Batch 크기 한도 | Batch 하나에 담는 Wire Event 수와 바이트 수의 최댓값입니다. Turn 하나가 한도보다 크면 그 Turn만 담아 보냅니다. |
 | 사용할 Plugin | 활성화할 에이전트 id 목록입니다. |
 
 ## 로그
@@ -191,6 +191,7 @@ Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무�
 
 - Signal을 버린 경우와 그 이유
 - Plugin이 레코드를 해석하지 못하고 건너뛴 경우
+- 사용자가 중단한 Turn을 버린 경우
 - 재시도 가능한 실패와 재시도를 모두 실패한 경우
 - 재시도할 수 없는 거절로 Batch를 버린 경우
 - Offset 레코드 파일을 해석하지 못해 Session을 처음부터 다시 읽은 경우
