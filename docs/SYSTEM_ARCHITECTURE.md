@@ -62,10 +62,10 @@ Hook Client와 Daemon은 항상 같은 머신에서 실행되므로, Signal은 T
 1. 에이전트가 Turn을 마치면 Stop Hook으로 Hook Client를 실행합니다.
 2. Hook Client는 Hook payload 원문을 담은 Signal을 Daemon에 보내고, 처리 결과를 기다리지 않고 종료합니다.
 3. Daemon은 Signal에 적힌 에이전트의 Plugin을 고르고, Plugin은 Hook payload에서 Session Log File의 위치를 알아냅니다.
-4. Daemon은 Offset Store에서 그 Session의 Offset을 꺼냅니다. Plugin은 Offset부터 파일을 읽어 Wire Event로 변환합니다.
+4. Daemon은 Offset Store에서 그 Session의 Offset을 꺼내고, 이때의 파일 크기를 끝 위치로 기록합니다. Plugin은 Offset부터 끝 위치까지 파일을 읽어 Wire Event로 변환합니다.
 5. Daemon은 Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다.
 6. Main Server의 Input Adapter는 Batch의 Wire Event를 Canonical Event로 바꿔 Core의 Ingest API로 넘깁니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
-7. Daemon은 성공 Ack를 받은 뒤에 Offset을 Batch의 끝으로 갱신합니다. 파일 끝에 닿을 때까지 4~7을 반복합니다.
+7. Daemon은 성공 Ack를 받은 뒤에 Offset을 Batch의 끝으로 갱신합니다. 끝 위치에 닿을 때까지 4~7을 반복합니다. 끝 위치 뒤에 쓰인 내용은 다음 Stop Hook 때 읽습니다.
 
 Hook Client는 비동기로 동작하지만 Daemon은 그럴 필요가 없습니다. Daemon은 Signal을 하나씩 순서대로 처리하고, Ack를 받기 전에는 다음 Batch를 보내지 않습니다.
 

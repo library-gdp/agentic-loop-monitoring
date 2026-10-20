@@ -55,6 +55,16 @@ Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event
 
 Wire Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같은 Session의 Wire Event 순서와 연결 관계로 Turn, Loop, LLM Call, Tool Call을 구성합니다. LLM Call의 input도 따로 보내지 않으며, Core가 그 LLM Call 앞의 Wire Event로 구성합니다.
 
+### Turn의 경계
+
+Batch의 경계는 Turn의 경계와 맞지 않습니다. Daemon은 Signal 처리를 시작할 때의 파일 끝까지 읽으므로, 한 Turn이 여러 Batch에 나뉘어 들어오거나 다음 Turn의 앞부분이 이전 Turn과 같은 Batch에 들어올 수 있습니다. 전송 실패로 남은 구간이 다음 Stop Hook으로 미뤄질 때도 마찬가지입니다.
+
+그래서 Core는 Batch가 아니라 Wire Event로 Turn의 시작과 끝을 판단합니다.
+
+- `user_message`가 오면 Turn을 엽니다.
+- `tool_use` 블록이 없는 `assistant_message`(최종 응답)가 오면 Turn을 닫습니다.
+- 닫히지 않은 Turn은 진행 중으로 둡니다. 뒤따르는 Wire Event가 다음 Batch로 들어오면 같은 Turn에 이어 붙입니다.
+
 ### `user_message`
 
 사용자가 입력한 프롬프트입니다. Turn은 `user_message`에서 시작합니다.

@@ -75,7 +75,7 @@ Signal Receiver는 Signal을 받으면 다음을 수행합니다.
 
 1. `agent`에 맞는 Plugin을 찾습니다. 없으면 로그를 남기고 Signal을 버립니다.
 2. Plugin의 `resolve`로 Hook payload에서 Session Log File을 알아냅니다. 실패하면 로그를 남기고 Signal을 버립니다.
-3. 같은 Session(에이전트 id와 session id가 같음)의 Signal이 이미 Signal Queue에서 기다리고 있으면 새 Signal은 버립니다. Worker는 어차피 파일 끝까지 읽기 때문입니다.
+3. 같은 Session(에이전트 id와 session id가 같음)의 Signal이 이미 Signal Queue에서 기다리고 있으면 새 Signal은 버립니다. 기다리던 Signal을 처리할 때 그 시점의 파일 끝까지 읽기 때문입니다.
 4. 그렇지 않으면 Signal Queue 끝에 넣습니다.
 
 ### 처리 순서
@@ -85,19 +85,24 @@ Worker는 하나이며, Signal을 받은 순서대로 하나씩 처리합니다.
 Signal 하나는 다음 순서로 처리합니다.
 
 1. Offset Store에서 Session의 Offset 레코드를 꺼내 [검증](#offset-검증)합니다. 이 결과로 읽기 시작할 Offset과 Plugin State가 정해집니다.
-2. Plugin의 `read`로 Offset부터 읽어 Wire Event와 다음 Offset, 다음 Plugin State를 받습니다. 한 번에 읽는 양은 Batch 크기 한도를 넘지 않습니다.
-3. 다음 Offset이 지금 Offset과 같으면 더 읽을 것이 없으므로 처리를 끝냅니다.
-4. Wire Event가 없으면(건너뛴 레코드만 있었던 경우) Main Server에 보내지 않고 5번의 Offset 갱신만 합니다.
-5. Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다. 결과에 따라 [Ack 처리](#ack-처리)를 따릅니다.
-6. 처리를 끝내지 않았다면 2번으로 돌아갑니다.
+2. 이때의 Session Log File 크기를 끝 위치로 기록합니다. 이 Signal의 처리는 끝 위치까지만 읽습니다.
+3. Plugin의 `read`로 Offset부터 읽어 Wire Event와 다음 Offset, 다음 Plugin State를 받습니다. 한 번에 읽는 양은 Batch 크기 한도를 넘지 않으며, 끝 위치를 `limit.end_offset`으로 넘깁니다.
+4. 다음 Offset이 지금 Offset과 같으면 끝 위치까지 더 읽을 것이 없으므로 처리를 끝냅니다.
+5. Wire Event가 없으면(건너뛴 레코드만 있었던 경우) Main Server에 보내지 않고 6번의 Offset 갱신만 합니다.
+6. Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다. 결과에 따라 [Ack 처리](#ack-처리)를 따릅니다.
+7. 처리를 끝내지 않았다면 3번으로 돌아갑니다.
+
+끝 위치를 두는 이유는 에이전트가 파일에 계속 쓰는 동안 Worker가 파일 끝을 따라가며 처리를 끝내지 못하는 일을 막기 위해서입니다. Worker는 하나이므로 그동안 다른 Session의 Signal이 모두 기다리게 됩니다. 끝 위치 뒤에 쓰인 내용은 같은 Session의 다음 Stop Hook 때 읽습니다.
+
+끝 위치는 Turn의 경계와 일치하지 않을 수 있습니다. Hook Client가 비동기로 실행되고 Signal이 큐에서 기다리기도 하므로, Signal 처리를 시작할 때 다음 Turn의 앞부분이 이미 기록되어 있을 수 있습니다. 이 부분도 함께 보내며, Main Server는 Turn이 여러 Batch에 나뉘어 들어오는 것을 처리합니다([Wire Protocol](WIRE_PROTOCOL.md#turn의-경계) 참고).
 
 ### Ack 처리
 
 | 결과 | Offset | 다음 동작 |
 |---|---|---|
-| 성공 Ack | Batch 끝으로 갱신 | 2번으로 돌아가 다음 구간을 읽습니다. |
+| 성공 Ack | Batch 끝으로 갱신 | 3번으로 돌아가 다음 구간을 읽습니다. |
 | 재시도 가능한 실패: 연결 실패, 전송 실패, Ack 타임아웃, `retryable`이 `true`인 거절 Ack | 갱신하지 않음 | 정해진 횟수만큼 간격을 늘려가며 같은 Batch를 다시 보냅니다. 모두 실패하면 로그를 남기고 이 Signal의 처리를 끝냅니다. 남은 구간은 같은 Session의 다음 Stop Hook 때 보냅니다. |
-| 재시도할 수 없는 실패: `retryable`이 `false`인 거절 Ack | Batch 끝으로 갱신 | 로그를 남기고 Batch를 버립니다. 2번으로 돌아가 다음 구간을 읽습니다. |
+| 재시도할 수 없는 실패: `retryable`이 `false`인 거절 Ack | Batch 끝으로 갱신 | 로그를 남기고 Batch를 버립니다. 3번으로 돌아가 다음 구간을 읽습니다. |
 
 재시도할 수 없는 실패에서도 Offset을 갱신하는 이유는, 같은 Batch를 다시 보내도 또 거절되어 그 뒤의 구간까지 영영 보내지 못하게 되기 때문입니다.
 
