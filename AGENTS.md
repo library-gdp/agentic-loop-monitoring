@@ -9,6 +9,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | 문서 | 내용 | 이럴 때 읽기 |
 |---|---|---|
 | [Application Architecture](docs/APPLICATION_ARCHITECTURE.md) | 모듈 구성(Core, Input Adapter, Persistence, Visualization)과 원칙(Observe-only, Fail-open, Masking) | 모듈을 추가하거나 바꿀 때, 모듈 간 의존 관계를 확인할 때 |
+| [Glossary](docs/GLOSSARY.md) | 도메인 용어(Session, Turn, Loop, LLM Call, Tool Call 등)와 수집 관련 용어의 정의 | 도메인 모델이나 Canonical Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Canonical Event 모델, Wire Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
