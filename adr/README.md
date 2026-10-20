@@ -20,3 +20,5 @@ An Architecture Decision Record (ADR) captures an important architecture decisio
 ## ADRs
 
 - [Adopt architecture decision records](2026-10-19-adopt-architecture-decision-records.md) (accepted, 2026-10-19)
+- [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md) (accepted, 2026-10-19)
+- [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md) (accepted, 2026-10-19)
