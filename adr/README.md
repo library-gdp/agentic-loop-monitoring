@@ -23,3 +23,4 @@ An Architecture Decision Record (ADR) captures an important architecture decisio
 - [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md) (accepted, 2026-10-19)
 - [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md) (accepted, 2026-10-19)
 - [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md) (accepted, 2026-10-22)
+- [Implement the Client Adapter Daemon and Plugins in TypeScript](2026-10-22-implement-daemon-and-plugins-in-typescript.md) (accepted, 2026-10-22)

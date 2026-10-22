@@ -15,7 +15,7 @@
 
 ## 실행
 
-Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다.
+Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다. Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
 
 - Daemon은 시작할 때 Signal Socket을 만듭니다. 이미 다른 Daemon이 그 Signal Socket에서 Signal을 받고 있으면 시작하지 않고 종료합니다.
 - Daemon은 시작할 때 Offset Store를 훑어, Session Log File이 더 이상 없는 Session의 Offset 레코드 파일을 지웁니다.
@@ -198,6 +198,8 @@ Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무�
 
 ## 결정되지 않은 사항
 
+- TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법
+- Hook Client의 구현 언어
 - Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)
 - 각 에이전트에 Hook Client를 등록하고 해제하는 설치 방식
 - 상태 디렉터리의 기본 위치

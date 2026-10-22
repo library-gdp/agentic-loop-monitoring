@@ -28,7 +28,7 @@ Plugin은 자신이 맡는 에이전트의 id를 하나 가집니다. 에이전�
 
 ## 인터페이스
 
-구현 언어가 정해지지 않았으므로 인터페이스는 언어와 무관한 형태로 적습니다.
+Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)). 아래 인터페이스는 언어와 무관한 표기로 적었으며, 구현할 때 TypeScript 타입으로 옮깁니다.
 
 ```
 Plugin
