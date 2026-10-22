@@ -18,7 +18,6 @@
 Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다. Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
 
 - Daemon은 시작할 때 Signal Socket을 만듭니다. 이미 다른 Daemon이 그 Signal Socket에서 Signal을 받고 있으면 시작하지 않고 종료합니다.
-- Daemon은 시작할 때 Offset Store를 훑어, Session Log File이 더 이상 없는 Session의 Offset 레코드 파일을 지웁니다.
 - Daemon은 시작할 때 Session Log File을 미리 훑지 않습니다. 읽기는 항상 Signal을 받았을 때만 시작합니다.
 - Daemon이 Batch를 보내는 중에 종료되면 그 Batch의 Offset은 갱신되지 않습니다. 다음에 같은 구간을 다시 보내며, 중복은 Main Server가 걸러냅니다.
 
@@ -129,8 +128,6 @@ Offset 레코드 파일의 내용은 다음과 같습니다.
   "record_version": 1,
   "agent": "claude-code",
   "session_id": "9b2e...",
-  "path": "/home/user/.claude/projects/my-project/9b2e....jsonl",
-  "file_id": { "dev": 64769, "ino": 1835012 },
   "offset": 48213,
   "plugin_state": null,
   "updated_at": "2026-10-19T14:22:35.402Z"
@@ -142,13 +139,11 @@ Offset 레코드 파일의 내용은 다음과 같습니다.
 | `record_version` | integer | Offset 레코드 형식의 버전입니다. 지금은 `1`입니다. |
 | `agent` | string | Session의 에이전트 id입니다. |
 | `session_id` | string | 에이전트가 부여한 session id입니다. 인코딩하지 않은 원래 값입니다. |
-| `path` | string | Offset을 기록할 때 읽은 Session Log File의 절대 경로입니다. |
-| `file_id` | object | 그 파일의 device 번호(`dev`)와 inode 번호(`ino`)입니다. 같은 경로의 파일이 다른 파일로 바뀌었는지 판단하는 데 씁니다. |
 | `offset` | integer | Offset입니다. |
 | `plugin_state` | any | Plugin이 다음 `read`에 넘겨달라고 돌려준 값입니다. Daemon은 내용을 해석하지 않고 그대로 저장합니다. |
 | `updated_at` | string | 레코드를 마지막으로 갱신한 시각입니다. RFC 3339 형식입니다. |
 
-Daemon은 Session 하나가 Session Log File 하나에 기록된다고 봅니다. 같은 Session의 Session Log File 경로가 바뀌면 새 파일을 처음부터 읽습니다([Offset 검증](#offset-검증) 참고).
+Daemon은 Session Log File의 경로나 파일 정보를 기록하지 않습니다. Session의 기록이 어느 파일에 어떻게 나뉘는지, 파일이 바뀌었는지는 에이전트마다 다르므로 Plugin이 판단합니다([Plugin Specification](PLUGIN_SPEC.md#plugin-state) 참고).
 
 ### 갱신
 
@@ -159,18 +154,14 @@ Daemon은 Session 하나가 Session Log File 하나에 기록된다고 봅니다
 
 ### Offset 검증
 
-Worker는 Session Log File을 읽기 전에 Session의 Offset 레코드와 실제 파일을 비교해 읽기 시작할 위치를 정합니다.
+Worker는 Session Log File을 읽기 전에 Session의 Offset 레코드를 꺼내 읽기 시작할 위치를 정합니다.
 
 | 상황 | 판단 기준 | 처리 |
 |---|---|---|
 | 처음 보는 Session | Offset 레코드 파일이 없음 | Offset 0, Plugin State 없음으로 시작합니다. |
-| 파일 경로가 바뀜 | `resolve`가 알려준 경로가 레코드의 `path`와 다름 | 새 경로의 파일을 Offset 0, Plugin State 없음으로 시작합니다. |
-| 파일이 교체됨 | `file_id`가 다름 | Offset 0, Plugin State 없음으로 다시 시작합니다. |
-| 파일이 잘림 | 파일 크기가 Offset보다 작음 | Offset 0, Plugin State 없음으로 다시 시작합니다. |
-| 파일이 없음 | 경로에 파일이 없음 | 로그를 남기고 Signal을 버립니다. Offset 레코드 파일은 지웁니다. |
 | 그 외 | | 레코드의 Offset과 Plugin State로 이어서 읽습니다. |
 
-처음부터 다시 읽으면 이미 보낸 Wire Event가 다시 갈 수 있습니다. 파일 내용이 같다면 event id도 같으므로 Main Server가 걸러냅니다.
+Session Log File이 바뀌었거나 없어진 경우의 처리는 Plugin의 `read`가 맡습니다. 처음부터 다시 읽으면 이미 보낸 Wire Event가 다시 갈 수 있습니다. 파일 내용이 같다면 event id도 같으므로 Main Server가 걸러냅니다.
 
 Offset 레코드 파일을 해석할 수 없으면 로그를 남기고 그 파일을 다른 이름으로 옮긴 뒤, 그 Session만 Offset 0, Plugin State 없음으로 시작합니다. 다른 Session의 Offset에는 영향이 없으며, 중복은 Main Server가 걸러냅니다.
 
@@ -203,4 +194,5 @@ Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무�
 - Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)
 - 각 에이전트에 Hook Client를 등록하고 해제하는 설치 방식
 - 상태 디렉터리의 기본 위치
+- 더 이상 쓰지 않는 Session의 Offset 레코드 파일을 지우는 방법
 - Hook Client의 타임아웃, Ack 타임아웃, 재시도 횟수, Batch 크기 한도의 기본값

@@ -101,6 +101,7 @@ Wire Event를 만드는 데 앞쪽 레코드의 정보가 필요할 수 있습�
 
 - Daemon은 `next.state`를 해석하지 않고 Offset과 함께 Offset Store에 저장했다가, 다음 `read`의 `cursor.state`로 넘깁니다.
 - JSON으로 직렬화할 수 있어야 하며, 작게 유지합니다. 읽은 레코드를 쌓아 두는 용도로 쓰지 않습니다.
+- Session Log File이 바뀌었는지(경로 변경, 다른 파일로 교체, 잘림 등) 판단하는 데 필요한 정보도 Plugin State에 담습니다. Daemon은 파일 정보를 기록하지 않으므로, 어떤 정보를 담고 어떻게 판단할지는 Plugin이 정합니다. 바뀌었다고 판단하면 `cursor`를 무시하고 파일 처음부터 읽습니다.
 - `cursor.state`가 비어 있고 `cursor.offset`이 0보다 크면, Plugin은 필요한 정보를 얻기 위해 파일 앞부분을 다시 읽을 수 있습니다. 이렇게 읽은 레코드로는 Wire Event를 만들지 않습니다.
 
 ## event id

@@ -27,7 +27,7 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 - **중복 처리**: 성공 Ack 전에 실패한 구간은 다시 보내므로, 같은 Wire Event가 여러 번 도착할 수 있습니다. Plugin은 다시 읽어도 바뀌지 않는 event id를 붙입니다. Main Server는 `(agent, session id, event id)`가 이미 저장되어 있으면 무시하고 `accepted`로 응답합니다.
 - **경계 상황**:
   - Plugin은 완결된 레코드까지만 읽습니다. 끝나지 않은 Turn은 다음 읽기에서 그 Turn의 처음부터 다시 읽습니다.
-  - 파일의 경로나 inode가 바뀌었거나 크기가 Offset보다 작으면 처음부터 다시 읽습니다.
+  - Session Log File이 바뀌었는지와 그때 처음부터 다시 읽을지는 Plugin이 판단합니다. Daemon은 파일의 경로나 inode를 기록하지 않습니다.
   - Offset 레코드 파일은 임시 파일에 쓰고 `fsync`한 뒤 rename해서 원자적으로 갱신합니다.
 
 세부 규칙은 [Client Adapter Daemon](../docs/CLIENT_ADAPTER_DAEMON.md)과 [Plugin Specification](../docs/PLUGIN_SPEC.md)에 있습니다.
@@ -80,7 +80,6 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 - [ ] 끝 위치까지 다음 Turn의 앞부분만 기록되어 있으면 그 부분은 보내지 않고, Offset은 그 Turn의 시작에 머무릅니다.
 - [ ] 모든 Batch는 `user_message`로 시작하고 끝난 Turn만 담습니다.
 - [ ] 사용자가 중단한 Turn은 Main Server에 보내지 않으며, Offset은 그 Turn 뒤로 넘어갑니다.
-- [ ] Session Log File을 같은 경로의 다른 파일로 바꾸거나 Offset보다 짧게 자르면 처음부터 다시 읽습니다.
 - [ ] Offset 레코드 파일 하나를 손상시키면 그 Session만 처음부터 다시 읽고, 다른 Session의 Offset은 그대로입니다.
 - [ ] Offset을 갱신하는 도중 Daemon을 강제로 종료해도 Offset 레코드 파일은 이전 값이나 새 값 중 하나로 남습니다.
 
