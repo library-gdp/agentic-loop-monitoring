@@ -12,6 +12,10 @@ Plugin은 다음 세 가지를 맡습니다.
 
 Plugin은 Offset을 저장하거나, Main Server와 통신하거나, 재시도를 판단하지 않습니다. 이 일은 Daemon이 맡습니다.
 
+## Daemon에 넣는 방식
+
+Plugin 코드는 Daemon 실행 파일에 함께 빌드합니다. Daemon은 실행 중에 Plugin을 불러오지 않으며, Daemon 설정에서는 실행 파일에 들어 있는 Plugin 가운데 활성화할 것을 고릅니다. 새 에이전트를 지원하거나 Plugin을 고치면 Daemon을 다시 빌드하고 배포합니다. 결정 배경은 [Bundle Plugins into the Client Adapter Daemon executable](../adr/2026-10-22-bundle-plugins-into-daemon-executable.md)을 참고하세요.
+
 ## 에이전트 id
 
 Plugin은 자신이 맡는 에이전트의 id를 하나 가집니다. 에이전트 id는 소문자와 하이픈으로 이루어지며, Hook Client의 인자, Signal, Offset Store, Wire Event의 Batch에서 같은 값을 씁니다.
@@ -114,6 +118,5 @@ Plugin은 Wire Event마다 event id를 붙입니다. Main Server는 이 값으�
 
 ## 결정되지 않은 사항
 
-- Plugin을 Daemon에 넣는 방식(빌드할 때 포함 또는 실행 중 로딩). 구현 언어를 정할 때 함께 정합니다.
 - Session Log File이 한 파일에 덧붙여 쓰는 형식이 아닌 에이전트를 어떻게 다룰지. 바이트 Offset은 덧붙여 쓰는 파일을 전제로 합니다.
 - Subagent가 별도의 Session Log File을 쓰는 경우, 부모 Session과 어떻게 연결할지
