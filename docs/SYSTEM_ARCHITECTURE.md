@@ -28,7 +28,7 @@
 
 | 구성 요소 | 실행 위치 | 역할 |
 |---|---|---|
-| Client Adapter Daemon | 에이전트 머신 | 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Plugin이 Session Log File을 읽어 만든 Wire Event를 Batch로 묶어 Main Server에 보내고, 전송 결과를 Plugin에 알립니다. |
+| Client Adapter Daemon | 에이전트 머신 | 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Plugin이 Session Log File을 읽어 만든 Wire Event를 Batch로 묶어 Main Server에 보냅니다. |
 | Main Server | 정하지 않음 | Batch를 받아 Canonical Event로 바꾸고 저장, 조회, 시각화합니다. |
 
 에이전트별 차이는 Client Adapter Daemon의 Plugin이 모두 흡수합니다. Session Log File을 언제 읽을지(Trigger)와 어떻게 읽을지도 Plugin마다 정의합니다. Main Server는 Wire Event만 받으므로 에이전트 종류를 알 필요가 없습니다.
@@ -60,19 +60,15 @@ Main Server가 어디서 실행되는지는 정하지 않습니다. Client Adapt
 3. Plugin은 Wire Event를 Daemon에 넘깁니다.
 4. Daemon은 Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다.
 5. Main Server의 Input Adapter는 Batch의 Wire Event를 Canonical Event로 바꿔 Core의 Ingest API로 넘깁니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
-6. Daemon은 전송 결과를 Plugin에 알립니다. Plugin은 성공한 Turn까지를 읽은 것으로 확정합니다.
 
 Daemon은 Batch를 하나씩 보내며, Ack를 받기 전에는 다음 Batch를 보내지 않습니다.
 
 ## 전달 보장
 
-Plugin은 전송에 성공한 Turn만 읽은 것으로 확정합니다. 전송에 실패한 Turn은 Plugin이 정한 방식으로 다음에 다시 넘깁니다.
-
-그래서 같은 Wire Event가 두 번 이상 도착할 수 있습니다. 예를 들어 Main Server는 저장했지만 Ack가 Daemon에 닿지 못하면 같은 Turn을 다시 보냅니다. Wire Event마다 다시 읽어도 바뀌지 않는 event id를 붙이고, Main Server는 이미 받은 event id를 무시합니다.
+같은 Wire Event가 두 번 이상 도착할 수 있습니다. 예를 들어 Main Server는 저장했지만 Ack가 Daemon에 닿지 못하면 Daemon이 같은 Batch를 다시 보냅니다. Wire Event마다 다시 읽어도 바뀌지 않는 event id를 붙이고, Main Server는 이미 받은 event id를 무시합니다.
 
 다음 경우에는 이벤트가 유실됩니다. 이 애플리케이션은 이를 허용합니다.
 
-- 전송에 실패한 뒤 Plugin이 그 Turn을 다시 넘기지 못하는 경우. 언제 그런 일이 생기는지는 Plugin의 Trigger에 따라 다르며 에이전트별 문서에 적습니다.
 - Main Server가 재시도할 수 없다고 거절한 Batch
 - Plugin이 해석하지 못하고 건너뛴 Session Log File의 레코드
 - Session의 마지막 Turn이 끝나지 않은 채로 Session이 끝난 경우. 예를 들어 에이전트가 충돌로 종료되면 그 Turn은 끝난 것으로 판단할 수 없어 보내지 않습니다.
@@ -99,6 +95,7 @@ Plugin은 전송에 성공한 Turn만 읽은 것으로 확정합니다. 전송�
 
 ## 결정되지 않은 사항
 
+- 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
 - 원격 Transport의 인증과 암호화 방식
 - Main Server의 구현 언어. Client Adapter Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
 - 사용 범위를 팀이나 오픈소스로 넓힐 때도 Observe-only, Fail-open, Masking 원칙을 그대로 유지할지

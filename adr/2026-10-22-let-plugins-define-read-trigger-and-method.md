@@ -18,13 +18,14 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 
 - **Trigger**: Plugin마다 언제 읽기를 시작할지 정합니다. Daemon은 Hook Client와 Signal을 두지 않습니다.
 - **읽는 방식**: Plugin마다 Session Log File을 찾고, 어디까지 읽었는지 기록하고, 이어 읽는 방법을 정합니다. Daemon은 Offset과 Offset Store를 두지 않습니다.
-- **Daemon의 역할**: Plugin이 끝난 Turn 단위로 넘긴 Wire Event를 Batch로 묶어 Main Server에 보내고, 전송 결과(성공, 실패, 거절)를 Plugin에 알립니다.
-- **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 끝난 Turn만 넘기며, 전송에 성공한 Turn만 읽은 것으로 확정합니다.
+- **Daemon의 역할**: Plugin이 끝난 Turn 단위로 넘긴 Wire Event를 Batch로 묶어 Main Server에 보냅니다.
+- **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 끝난 Turn만 넘깁니다.
 
 **범위 밖**
 
 - Plugin과 Daemon 사이의 TypeScript 인터페이스
 - Plugin이 자신의 상태를 저장하는 위치
+- 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
 - 각 에이전트의 구체적인 Trigger와 읽는 방식. 에이전트별 문서에서 정합니다.
 
 ## Consequences
@@ -38,13 +39,12 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
   - [`docs/PLUGIN_SPEC.md`](../docs/PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 읽는 방식, 지켜야 하는 규칙
-  - [`docs/CLIENT_ADAPTER_DAEMON.md`](../docs/CLIENT_ADAPTER_DAEMON.md): Batch 전송과 전송 결과 알리기
+  - [`docs/CLIENT_ADAPTER_DAEMON.md`](../docs/CLIENT_ADAPTER_DAEMON.md): Batch 전송
   - [`docs/SYSTEM_ARCHITECTURE.md`](../docs/SYSTEM_ARCHITECTURE.md): 구성, 데이터 흐름, 전달 보장
   - [`docs/GLOSSARY.md`](../docs/GLOSSARY.md): Hook, Signal, Offset 관련 용어 삭제와 Trigger 추가
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - Trigger와 읽는 방식에 관한 코드는 그 Plugin 모듈 안에만 둡니다.
-  - Plugin은 Daemon이 알려 준 전송 결과로만 읽은 위치를 확정합니다.
 - **Patterns to avoid**:
   - Daemon 코드에서 Session Log File을 직접 읽거나 Plugin의 읽은 위치를 저장하지 않습니다.
   - 특정 에이전트의 Trigger를 Daemon 공통 기능으로 만들지 않습니다.
@@ -53,7 +53,6 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 
 - [ ] Daemon 소스에 Hook Client, Signal, Offset Store가 없습니다.
 - [ ] 각 Plugin의 에이전트별 문서에 Trigger와 읽는 방식이 적혀 있습니다.
-- [ ] Main Server를 멈춘 상태에서 Turn이 끝나면, Main Server를 다시 띄운 뒤 그 Turn이 Plugin이 정한 방식으로 다시 전송됩니다.
 
 ## Alternatives Considered
 

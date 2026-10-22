@@ -60,17 +60,9 @@ Plugin은 다음을 정의합니다.
 
 1. **읽기만 합니다.** Session Log File을 수정하거나, 잠그거나, 옮기지 않습니다. 네트워크를 쓰지 않습니다. 읽은 위치처럼 Plugin 자신의 상태는 저장할 수 있습니다.
 2. **끝난 Turn만 넘깁니다.** 아직 끝나지 않은 Turn은 Daemon에 넘기지 않고, 그 Turn이 끝난 뒤에 처음부터 다시 읽습니다. Turn이 언제 끝나는지는 [Turn 단위](#turn-단위)를 참고하세요. 레코드도 완결된 것만 읽습니다. 레코드가 아직 다 기록되지 않았으면(예: 줄 단위 형식에서 마지막 줄이 줄바꿈으로 끝나지 않음) 그 레코드가 속한 Turn은 끝나지 않은 것으로 봅니다.
-3. **전송 결과에 따라 읽은 위치를 확정합니다.** Daemon이 알려 준 결과에 따라 다음과 같이 합니다. 결과를 받지 못한 Turn은 성공으로 보지 않습니다.
-
-   | 결과 | Plugin의 처리 |
-   |---|---|
-   | 성공 | 그 Turn까지 읽은 것으로 확정합니다. |
-   | 실패 | 확정하지 않습니다. 다음에 그 Turn부터 다시 넘길 수 있어야 합니다. |
-   | 거절 | 그 Turn을 버리고 읽은 것으로 확정합니다. 다시 보내도 거절되어 뒤의 Turn까지 보내지 못하게 되기 때문입니다. |
-
-4. **모르는 것은 건너뜁니다.** 모르는 종류의 레코드나 모르는 필드는 무시합니다. 완결되었지만 해석할 수 없는 레코드는 로그를 남기고 건너뜁니다.
-5. **결정적입니다.** 같은 내용을 다시 읽으면 항상 같은 Wire Event와 같은 event id를 만듭니다. event id를 만들 때 현재 시각이나 난수를 쓰지 않습니다.
-6. **없는 값을 만들지 않습니다.** 에이전트가 기록하지 않은 값은 Wire Event에서 비워 둡니다. 예를 들어 에이전트가 Cache Write Token을 기록하지 않으면 `0`이 아니라 필드를 빼야 합니다.
+3. **모르는 것은 건너뜁니다.** 모르는 종류의 레코드나 모르는 필드는 무시합니다. 완결되었지만 해석할 수 없는 레코드는 로그를 남기고 건너뜁니다.
+4. **결정적입니다.** 같은 내용을 다시 읽으면 항상 같은 Wire Event와 같은 event id를 만듭니다. event id를 만들 때 현재 시각이나 난수를 쓰지 않습니다.
+5. **없는 값을 만들지 않습니다.** 에이전트가 기록하지 않은 값은 Wire Event에서 비워 둡니다. 예를 들어 에이전트가 Cache Write Token을 기록하지 않으면 `0`이 아니라 필드를 빼야 합니다.
 
 읽은 위치를 잃거나 확신할 수 없으면 처음부터 다시 읽어도 됩니다. 이미 보낸 Wire Event가 다시 가더라도 event id가 같으므로 Main Server가 걸러냅니다.
 
@@ -93,7 +85,7 @@ Turn은 사용자 프롬프트 레코드에서 시작하며, 다음 중 가장 �
 ## Daemon과의 관계
 
 - Plugin은 한 Session의 끝난 Turn 단위로 Wire Event를 Daemon에 넘깁니다. 이때 에이전트가 부여한 session id와, 알 수 있으면 에이전트의 작업 디렉터리를 함께 넘깁니다.
-- Daemon은 Wire Event를 Batch로 묶어 Main Server에 보내고, 전송 결과(성공, 실패, 거절)를 Plugin에 알립니다. Batch 크기 한도와 재시도는 Daemon이 맡습니다([Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
+- Daemon은 Wire Event를 Batch로 묶어 Main Server에 보냅니다. Batch 크기 한도와 재시도는 Daemon이 맡습니다([Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
 - Plugin은 다른 Plugin이나 Daemon 내부를 직접 부르지 않습니다.
 
 ## event id
@@ -114,10 +106,10 @@ Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 
 - **Session Log File**: 위치와 형식
 - **변환**: 레코드를 Wire Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 세 기준을 알아보는 방법
 - **input 기록 범위**: LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log File에 기록하는 것과 기록하지 않는 것. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
-- **Plugin별 설정**: Daemon 설정에 추가로 필요한 항목
 
 ## 결정되지 않은 사항
 
-- Plugin이 Wire Event를 Daemon에 넘기고 전송 결과를 받는 TypeScript 인터페이스
+- Plugin이 Wire Event를 Daemon에 넘기는 TypeScript 인터페이스
+- 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
 - Plugin이 읽은 위치 같은 자신의 상태를 저장하는 위치
 - Subagent가 별도의 Session Log File을 쓰는 경우, 부모 Session과 어떻게 연결할지
