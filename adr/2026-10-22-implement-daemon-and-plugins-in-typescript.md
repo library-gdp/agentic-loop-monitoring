@@ -14,7 +14,7 @@ decision-makers: pgd
 
 Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
-- [Plugin Specification](../docs/PLUGIN_SPEC.md)의 인터페이스(`Plugin`, `SessionLogRef`, `Cursor`, `ReadLimit`, `ReadResult`)를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
+- [Plugin Specification](../docs/PLUGIN_SPEC.md)의 인터페이스(`Plugin`, `SessionLogRef`, `Cursor`, `EndMark`, `ReadLimit`, `ReadResult`)를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
 - Plugin은 에이전트마다 별도의 모듈로 두고, Daemon은 이 모듈들을 정적 `import`로 모은 등록 목록 하나에서 에이전트 id로 Plugin을 찾습니다.
 
 **범위 밖**
@@ -39,7 +39,7 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 - **Dependencies**: TypeScript 컴파일러. 런타임은 후속 결정으로 정합니다.
 - **Patterns to follow**:
   - Plugin 인터페이스 타입은 한 곳에 두고, Daemon과 모든 Plugin이 그 타입만 참조합니다.
-  - Plugin State처럼 Daemon이 해석하지 않는 값은 `unknown`으로 다룹니다.
+  - Plugin State와 `EndMark`처럼 Daemon이 해석하지 않는 값은 `unknown`으로 다룹니다.
 - **Patterns to avoid**:
   - 동적 `import()`나 경로를 문자열로 조립한 `require`로 Plugin을 불러오지 않습니다.
   - Plugin 인터페이스 타입에 `any`를 쓰지 않습니다.

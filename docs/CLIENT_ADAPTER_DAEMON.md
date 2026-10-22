@@ -74,7 +74,7 @@ Signal Receiver는 Signal을 받으면 다음을 수행합니다.
 
 1. `agent`에 맞는 Plugin을 찾습니다. 없으면 로그를 남기고 Signal을 버립니다.
 2. Plugin의 `resolve`로 Hook payload에서 Session Log File을 알아냅니다. 실패하면 로그를 남기고 Signal을 버립니다.
-3. 같은 Session(에이전트 id와 session id가 같음)의 Signal이 이미 Signal Queue에서 기다리고 있으면 새 Signal은 버립니다. 기다리던 Signal을 처리할 때 그 시점의 파일 끝까지 읽기 때문입니다.
+3. 같은 Session(에이전트 id와 session id가 같음)의 Signal이 이미 Signal Queue에서 기다리고 있으면 새 Signal은 버립니다. 기다리던 Signal을 처리할 때 그 시점의 끝 위치까지 읽기 때문입니다.
 4. 그렇지 않으면 Signal Queue 끝에 넣습니다.
 
 ### 처리 순서
@@ -84,8 +84,8 @@ Worker는 하나이며, Signal을 받은 순서대로 하나씩 처리합니다.
 Signal 하나는 다음 순서로 처리합니다.
 
 1. Offset Store에서 Session의 Offset 레코드를 꺼내 [검증](#offset-검증)합니다. 이 결과로 읽기 시작할 Offset과 Plugin State가 정해집니다.
-2. 이때의 Session Log File 크기를 끝 위치로 기록합니다. 이 Signal의 처리는 끝 위치까지만 읽습니다.
-3. Plugin의 `read`로 Offset부터 읽어 Wire Event와 다음 Offset, 다음 Plugin State를 받습니다. 한 번에 읽는 양은 Batch 크기 한도를 넘지 않으며, 끝 위치를 `limit.end_offset`으로 넘깁니다.
+2. Plugin의 `mark_end`로 끝 위치를 받습니다. 이 Signal의 처리는 끝 위치까지만 읽습니다. 끝 위치를 어떻게 정하는지는 Plugin이 맡습니다([Plugin Specification](PLUGIN_SPEC.md#mark_end) 참고).
+3. Plugin의 `read`로 Offset부터 읽어 Wire Event와 다음 Offset, 다음 Plugin State를 받습니다. 한 번에 읽는 양은 Batch 크기 한도를 넘지 않으며, 2번에서 받은 끝 위치를 `end`로 넘깁니다.
 4. 다음 Offset이 지금 Offset과 같으면 끝 위치까지 더 읽을 것이 없으므로 처리를 끝냅니다.
 5. Wire Event가 없으면(사용자가 중단한 Turn이나 건너뛴 레코드만 있었던 경우) Main Server에 보내지 않고 6번의 Offset 갱신만 합니다.
 6. Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다. 결과에 따라 [Ack 처리](#ack-처리)를 따릅니다.

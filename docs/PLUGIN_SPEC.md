@@ -34,7 +34,8 @@ Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and
 Plugin
   agent: string
   resolve(hook_payload: string) -> SessionLogRef
-  read(ref: SessionLogRef, cursor: Cursor, limit: ReadLimit) -> ReadResult
+  mark_end(ref: SessionLogRef) -> EndMark
+  read(ref: SessionLogRef, cursor: Cursor, end: EndMark, limit: ReadLimit) -> ReadResult
 
 SessionLogRef
   session_id: string        # 에이전트가 부여한 session id
@@ -45,10 +46,11 @@ Cursor
   offset: integer           # 읽기 시작할 바이트 위치
   state: any?               # 직전 read가 돌려준 Plugin State. 처음이면 비움
 
+EndMark: any               # 이번 Signal 처리에서 읽을 끝 위치. Plugin이 정하며 Daemon은 해석하지 않음
+
 ReadLimit
   max_events: integer       # 돌려줄 Wire Event 수의 최댓값
   max_bytes: integer        # 소비할 바이트 수의 최댓값
-  end_offset: integer       # 이 바이트 위치를 넘어 소비하지 않음
 
 ReadResult
   events: WireEvent[]       # 변환한 Wire Event. 순서는 Session Log File의 순서를 따름
@@ -65,13 +67,22 @@ Hook payload 원문을 해석해 Session Log File을 알아냅니다.
 - Hook payload를 해석할 수 없거나 Session Log File을 찾을 수 없으면 오류를 돌려줍니다. Daemon은 로그를 남기고 Signal을 버립니다.
 - Session Log File을 읽지 않습니다. `resolve`는 Signal을 받을 때마다 불리므로 빨리 끝나야 합니다.
 
+### mark_end
+
+이번 Signal 처리에서 읽을 끝 위치를 정합니다. Daemon은 Signal 처리를 시작할 때 한 번 부르고, 돌려받은 값을 그 Signal의 모든 `read`에 `end`로 넘깁니다.
+
+- 끝 위치를 어떻게 나타낼지는 Plugin이 정합니다. 예를 들어 덧붙여 쓰는 파일 하나에 기록하는 에이전트라면 그 시점의 파일 크기를 돌려줄 수 있습니다.
+- Daemon은 `EndMark`를 해석하지도, 저장하지도 않습니다. 그 Signal의 처리가 끝나면 버립니다.
+- 레코드를 해석하지 않습니다. 파일 크기를 확인하는 것처럼 빨리 끝나는 일만 합니다.
+- Session Log File을 찾을 수 없으면 오류를 돌려줍니다. Daemon은 로그를 남기고 Signal을 버립니다.
+
 ### read
 
 `cursor.offset`부터 Session Log File을 읽어 Wire Event로 변환합니다.
 
 1. **읽기만 합니다.** Session Log File을 수정하거나, 잠그거나, 옮기지 않습니다. 네트워크를 쓰지 않고, Session Log File 말고 다른 파일에 쓰지 않습니다.
 2. **끝난 Turn까지만 소비합니다.** `next.offset`은 항상 Turn의 경계입니다. 아직 끝나지 않은 Turn은 소비하지 않고 그 Turn의 시작에서 멈추며, 다음 `read`에서 처음부터 다시 읽습니다. Turn이 언제 끝나는지는 [Turn 단위](#turn-단위)를 참고하세요. 레코드도 완결된 것만 읽습니다. 파일 끝에서 레코드가 완결되지 않았으면(예: 줄 단위 형식에서 마지막 줄이 줄바꿈으로 끝나지 않음) 그 레코드가 속한 Turn은 끝나지 않은 것으로 봅니다.
-3. **끝 위치를 넘지 않습니다.** `limit.end_offset`을 파일 끝으로 봅니다. 파일이 그 뒤로 더 길어졌어도 읽지 않으며, `end_offset`에 걸쳐 있는 레코드는 완결되지 않은 것으로 봅니다.
+3. **끝 위치를 넘지 않습니다.** `end`가 가리키는 위치를 파일 끝으로 봅니다. 파일이 그 뒤로 더 길어졌어도 읽지 않으며, 끝 위치에 걸쳐 있는 레코드는 완결되지 않은 것으로 봅니다.
 4. **한도를 지킵니다.** `limit.max_events`와 `limit.max_bytes`를 넘기 전에 멈춥니다. 다만 Turn 하나가 한도보다 크면 그 Turn 하나만 소비하고 멈춥니다. Turn을 나누지 않으며, 같은 위치에서 영원히 멈춰 있지도 않기 위해서입니다.
 5. **모르는 것은 건너뜁니다.** 모르는 종류의 레코드나 모르는 필드는 무시하고 소비합니다. 완결되었지만 해석할 수 없는 레코드는 로그를 남기고 건너뛰며, 역시 소비한 것으로 칩니다.
 6. **결정적입니다.** 같은 파일 내용과 같은 `cursor`가 주어지면 항상 같은 `events`와 `next`를 돌려줍니다. event id를 만들 때 현재 시각이나 난수를 쓰지 않습니다.
