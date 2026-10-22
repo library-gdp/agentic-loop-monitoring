@@ -46,7 +46,7 @@ Input Adapter는 두 가지 관심사로 나뉩니다.
 - **Transport**: Batch를 받고 Ack를 돌려주는 방식을 다룹니다. 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket 등을 지원합니다. Transport별 전송 방식은 [Wire Protocol](WIRE_PROTOCOL.md)에서 정의합니다.
 - **Decoder**: Wire Event를 deserialization하고 Canonical Event로 변환합니다. Wire Protocol의 버전마다 하나의 Decoder를 둡니다.
 
-Input Adapter는 Batch의 Canonical Event가 모두 Ingest API로 처리된 뒤에 성공 Ack를 돌려줍니다. Client Adapter Daemon은 이 Ack를 받아야 Offset을 갱신하므로, 저장이 끝나기 전에 성공 Ack를 보내서는 안 됩니다. Ack 규칙은 [Wire Protocol](WIRE_PROTOCOL.md)을 참고하세요.
+Input Adapter는 Batch의 Canonical Event가 모두 Ingest API로 처리된 뒤에 성공 Ack를 돌려줍니다. Client Adapter Daemon의 Plugin은 이 Ack를 받아야 그 Turn까지 읽은 것으로 확정하므로, 저장이 끝나기 전에 성공 Ack를 보내서는 안 됩니다. Ack 규칙은 [Wire Protocol](WIRE_PROTOCOL.md)을 참고하세요.
 
 ### Persistence
 

@@ -14,19 +14,19 @@ decision-makers: pgd
 
 Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
-- [Plugin Specification](../docs/PLUGIN_SPEC.md)의 인터페이스(`Plugin`, `SessionLogRef`, `Cursor`, `EndMark`, `ReadLimit`, `ReadResult`)를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
+- [Plugin Specification](../docs/PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
 - Plugin은 에이전트마다 별도의 모듈로 두고, Daemon은 이 모듈들을 정적 `import`로 모은 등록 목록 하나에서 에이전트 id로 Plugin을 찾습니다.
 
 **범위 밖**
 
-- Hook Client와 Main Server의 구현 언어
+- Main Server의 구현 언어
 - TypeScript를 실행할 런타임, 그리고 Daemon을 실행 파일 하나로 빌드하는 방법
 - 코드 디렉터리 구성
 
 ## Consequences
 
 - Good, because Plugin 인터페이스와 Wire Event를 타입으로 정의하므로, Plugin이 인터페이스를 어기거나 Wire Event 필드를 잘못 채우면 빌드할 때 드러납니다.
-- Good, because Session Log File과 Hook payload가 대부분 JSON이므로 별도 라이브러리 없이 다루기 쉽습니다.
+- Good, because Session Log File이 대부분 JSON이므로 별도 라이브러리 없이 다루기 쉽습니다.
 - Good, because 정적 `import`만으로 Plugin을 Daemon에 함께 빌드할 수 있어 [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md)을 그대로 따를 수 있습니다.
 - Bad, because TypeScript는 런타임이 있어야 실행됩니다. 배포물을 실행 파일 하나로 유지하려면 런타임을 함께 묶는 빌드 방법을 따로 정해야 합니다.
 - Bad, because 컴파일 언어로 만든 실행 파일보다 메모리 사용량과 시작 시간이 큽니다. Daemon은 상주 프로세스이므로 시작 시간은 문제가 되지 않지만, 에이전트 머신에 늘 떠 있는 메모리는 늘어납니다.
@@ -39,7 +39,6 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 - **Dependencies**: TypeScript 컴파일러. 런타임은 후속 결정으로 정합니다.
 - **Patterns to follow**:
   - Plugin 인터페이스 타입은 한 곳에 두고, Daemon과 모든 Plugin이 그 타입만 참조합니다.
-  - Plugin State와 `EndMark`처럼 Daemon이 해석하지 않는 값은 `unknown`으로 다룹니다.
 - **Patterns to avoid**:
   - 동적 `import()`나 경로를 문자열로 조립한 `require`로 Plugin을 불러오지 않습니다.
   - Plugin 인터페이스 타입에 `any`를 쓰지 않습니다.

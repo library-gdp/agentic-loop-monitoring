@@ -8,7 +8,7 @@ Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event
 
 | 메시지 | 방향 | 설명 |
 |---|---|---|
-| Batch | Daemon → Main Server | 한 Session Log File의 연속된 구간에서 나온 Wire Event 묶음입니다. 끝난 Turn 하나 이상을 담습니다. |
+| Batch | Daemon → Main Server | 한 Session의 끝난 Turn 하나 이상에서 나온 Wire Event 묶음입니다. |
 | Ack | Main Server → Daemon | Batch를 처리한 결과입니다. |
 
 모든 메시지는 UTF-8 JSON 객체입니다. Daemon은 Batch 하나를 보내면 그 Ack를 받기 전에 다음 Batch를 보내지 않습니다.
@@ -59,7 +59,7 @@ Wire Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같�
 
 ### Turn의 경계
 
-Batch는 끝난 Turn만 담으며, Turn 하나가 여러 Batch에 나뉘지 않습니다. 사용자가 중단한 Turn은 Daemon이 걸러내므로 보내지 않습니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고).
+Batch는 끝난 Turn만 담으며, Turn 하나가 여러 Batch에 나뉘지 않습니다. 사용자가 중단한 Turn은 Plugin이 걸러내므로 보내지 않습니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고).
 
 그래서 Core는 Batch 안에서 Turn을 나눕니다.
 

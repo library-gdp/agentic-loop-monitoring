@@ -76,6 +76,7 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
 
 ## More Information
 
-- 관련 ADR: [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md)
+- 관련 ADR: [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md) (superseded)
+- Daemon이 Stop Hook과 Signal로 읽기를 시작한다는 부분은 [Let each Plugin define its read trigger and reading method](2026-10-22-let-plugins-define-read-trigger-and-method.md)로 대체되었습니다. Session Log File을 언제, 어떻게 읽을지는 Plugin마다 정의합니다.
 - 용어: [Glossary](../docs/GLOSSARY.md)
 - 다시 검토할 조건: 에이전트가 Session Log File 없이 원격 API로만 기록을 제공하게 되는 경우

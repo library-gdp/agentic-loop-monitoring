@@ -1,10 +1,12 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-19
 decision-makers: pgd
 ---
 
 # Read Session Log Files incrementally from an Ack-confirmed offset
+
+> Superseded by [Let each Plugin define its read trigger and reading method](2026-10-22-let-plugins-define-read-trigger-and-method.md). 이 ADR의 Hook Client, Signal, Offset, Offset Store는 더 이상 쓰지 않습니다.
 
 ## Context and Problem Statement
 

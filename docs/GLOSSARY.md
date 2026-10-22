@@ -40,22 +40,16 @@ Session
 
 | 용어 | 정의 |
 |---|---|
-| Client Adapter Daemon | 에이전트가 실행되는 머신에서 상주하는 프로세스입니다. Signal을 받으면 Plugin으로 Session Log File을 읽어 Wire Event로 변환하고 Main Server로 보냅니다. 줄여서 Daemon이라고 부릅니다. |
+| Client Adapter Daemon | 에이전트가 실행되는 머신에서 상주하는 프로세스입니다. Plugin이 Session Log File을 읽어 만든 Wire Event를 Main Server로 보내고, 전송 결과를 Plugin에 알립니다. 줄여서 Daemon이라고 부릅니다. |
 | Main Server | Client Adapter Daemon이 보낸 Wire Event를 Canonical Event로 바꾸고 저장, 조회, 시각화하는 서버입니다. Input Adapter, Core, Persistence, Visualization 모듈로 이루어집니다. 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. |
-| Plugin | Client Adapter Daemon 안에 에이전트마다 하나씩 두는 구성 요소입니다. 해당 에이전트의 Session Log File을 찾아 읽고 Wire Event로 변환합니다. |
+| Plugin | Client Adapter Daemon 안에 에이전트마다 하나씩 두는 구성 요소입니다. 해당 에이전트의 Session Log File을 언제(Trigger), 어떻게 읽을지 정의하고, 읽은 레코드를 Wire Event로 변환합니다. |
 
 ## 수집
 
 | 용어 | 정의 |
 |---|---|
-| Hook | 에이전트가 특정 시점(도구 실행 전후, Stop 등)에 외부 명령을 실행하도록 제공하는 확장 지점입니다. |
-| Stop Hook | 에이전트가 Turn을 마칠 때 호출하는 Hook입니다. 이 애플리케이션은 Stop Hook만 사용합니다. |
-| Hook Client | Stop Hook이 실행하는 짧은 프로세스입니다. Client Adapter Daemon에 Signal을 보낸 뒤 처리 결과를 기다리지 않고 바로 종료합니다. |
-| Signal | Hook Client가 Client Adapter Daemon에 보내는 메시지입니다. 어느 에이전트의 Hook인지와 Hook payload 원문을 담습니다. Session Log File을 읽으라는 신호로만 쓰이며, Signal 자체는 Main Server로 전달되지 않습니다. |
-| Session Log File | 에이전트가 세션의 대화 내용과 LLM 호출 정보를 기록하는 파일입니다. 에이전트마다 위치와 형식이 다릅니다. |
-| Offset | Session의 Session Log File에서 Main Server의 성공 Ack까지 받은 지점의 위치입니다. 파일 처음부터 센 바이트 수로 나타냅니다. Session별로 저장하며, Daemon은 그 Session의 다음 Signal을 받으면 이 위치부터 읽습니다. |
-| Offset Store | Client Adapter Daemon이 Session별 Offset을 기록하는 곳입니다. Session마다 파일 하나를 둡니다. |
-| Plugin State | Plugin이 다음 읽기에 필요한 문맥(예: 앞쪽 레코드에만 기록된 모델 이름)을 담아 돌려주는 값입니다. Daemon은 해석하지 않고 Offset과 함께 Offset Store에 저장합니다. |
+| Session Log File | 에이전트가 세션의 대화 내용과 LLM 호출 정보를 기록하는 파일입니다. 에이전트마다 위치와 형식, 파일 구성이 다릅니다. |
+| Trigger | Plugin이 Session Log File 읽기를 시작하는 조건입니다. 에이전트마다 다르며 Plugin이 정의합니다. |
 
 ## 전송
 
@@ -63,8 +57,8 @@ Session
 |---|---|
 | Wire Protocol | Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식입니다. |
 | Wire Event | Wire Protocol이 정의하는, 에이전트 종류와 무관한 공통 포맷의 이벤트입니다. Plugin이 만들고 Main Server의 Input Adapter가 Canonical Event로 바꿉니다. |
-| Batch | Wire Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Wire Event는 모두 한 Session Log File의 연속된 구간에서 나옵니다. |
-| Ack | Main Server가 Batch를 처리한 결과로 돌려주는 응답입니다. Daemon은 성공 Ack를 받은 뒤에만 Offset을 갱신합니다. |
+| Batch | Wire Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Wire Event는 모두 한 Session의 끝난 Turn에서 나옵니다. |
+| Ack | Main Server가 Batch를 처리한 결과로 돌려주는 응답입니다. Daemon은 그 결과를 Wire Event를 넘긴 Plugin에 알립니다. |
 | Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket이 있습니다. |
 | Decoder | Main Server의 Input Adapter에서 Wire Event를 deserialization하고 Canonical Event로 변환하는 부분입니다. |
 | Canonical Event | 에이전트 종류와 무관하게 Core가 정의하는 공통 이벤트 모델입니다. Main Server 내부의 객체이며, 전송 형식인 Wire Event와 구분합니다. |
