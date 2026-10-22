@@ -106,3 +106,4 @@ Offset은 성공 Ack를 받은 뒤에만 갱신합니다. 보내다 실패한 �
 ## 결정되지 않은 사항
 
 - 원격 Transport의 인증과 암호화 방식
+- 사용 범위를 팀이나 오픈소스로 넓힐 때도 Observe-only, Fail-open, Masking 원칙을 그대로 유지할지

@@ -55,6 +55,8 @@ Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event
 
 Wire Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같은 Session의 Wire Event 순서와 연결 관계로 Turn, Loop, LLM Call, Tool Call을 구성합니다. LLM Call의 input도 따로 보내지 않으며, Core가 그 LLM Call 앞의 Wire Event로 구성합니다.
 
+버전 `1`로 구성할 수 있는 LLM Call의 input은 [Glossary](GLOSSARY.md)가 정의하는 **모든 것**입니다. 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과가 모두 포함됩니다. 이 문서는 아직 이 가운데 사용자 메시지, 모델 응답, 도구 결과의 Wire Event만 정의합니다. 나머지도 버전 `1` 안에서 Wire Event 종류나 선택 필드로 추가합니다([버전](#버전) 참고). 에이전트가 기록하지 않아 Plugin이 얻을 수 없는 input은 보내지 않습니다.
+
 ### Turn의 경계
 
 Batch는 끝난 Turn만 담으며, Turn 하나가 여러 Batch에 나뉘지 않습니다. 사용자가 중단한 Turn은 Daemon이 걸러내므로 보내지 않습니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고).
@@ -236,3 +238,4 @@ Daemon이 Ack를 받았을 때 하는 일은 [Client Adapter Daemon](CLIENT_ADAP
 - Main Server가 받아들이는 Batch 크기의 상한과, 상한을 넘었을 때의 응답
 - 에이전트의 원본 레코드를 Wire Event에 함께 실을지 여부
 - Subagent를 부모 Tool Call과 잇는 필드
+- 버전 `1`에서 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트를 나타내는 Wire Event의 형식

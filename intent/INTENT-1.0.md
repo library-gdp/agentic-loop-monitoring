@@ -81,7 +81,7 @@ AI 코딩 에이전트에게 작업을 맡기고 그 결과를 검증하는 개�
 
 1. **확장 단계의 원칙**: 팀과 오픈소스 단계에서도 Observe-only, Fail-open, 마스킹 없음을 유지할지 정하지 않았습니다. 특히 팀 서버로 프롬프트, 코드, 도구 결과의 원문을 보낼 때 무엇을 보호해야 하는지가 열려 있습니다.
 2. **원격 전송의 인증과 암호화**: 팀에 공유하려면 필요하지만 아직 정하지 않았습니다.
-3. **"모든 input"과 현재 설계의 간격**: 현재 [Wire Protocol](../docs/WIRE_PROTOCOL.md)은 사용자 메시지, 모델 응답, 도구 결과만 다룹니다. 시스템 프롬프트, AGENTS.md, Skill, 도구 정의, compaction, Subagent 프롬프트를 어떻게 다룰지 정하지 않았습니다.
+3. **나머지 input의 전송 형식**: [Wire Protocol](../docs/WIRE_PROTOCOL.md) 버전 1은 LLM Call의 모든 input을 다룹니다. 그 가운데 시스템 프롬프트, AGENTS.md, Skill, 도구 정의, compaction, Subagent 프롬프트를 나타내는 형식은 아직 정하지 않았습니다.
 4. **에이전트별로 얻을 수 있는 정보**: Claude Code, OpenCode, Codex가 각각 3번의 input 중 무엇을 로그에 남기는지 확인하지 않았습니다.
 5. **Subagent와 부모의 연결**: Subagent에 넘긴 프롬프트와 그 Subagent의 Loop를 부모 Tool Call과 어떻게 이을지 정하지 않았습니다.
 6. **"토큰 낭비"의 기준**: 어떤 토큰 사용을 낭비로 볼지 정하지 않았습니다.

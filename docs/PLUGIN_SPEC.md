@@ -110,7 +110,7 @@ Plugin은 Wire Event마다 event id를 붙입니다. Main Server는 이 값으�
 
 ## 에이전트별 문서
 
-에이전트별 Session Log File의 위치와 형식, Hook payload의 형식, 레코드를 Wire Event로 옮기는 방법은 Plugin을 구현할 때 에이전트마다 따로 문서로 정리합니다.
+에이전트별 Session Log File의 위치와 형식, Hook payload의 형식, 레코드를 Wire Event로 옮기는 방법은 Plugin을 구현할 때 에이전트마다 따로 문서로 정리합니다. 이 문서에는 LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log File에 기록하는 것과 기록하지 않는 것도 적습니다. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
 
 ## 결정되지 않은 사항
 

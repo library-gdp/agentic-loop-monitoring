@@ -63,3 +63,8 @@ Input Adapter는 Batch의 Canonical Event가 모두 Ingest API로 처리된 뒤�
 ## Philosophy
 
 각 모듈은 그 모듈에게 주어진 역할을 specification에 맞게 정확히 수행해야 합니다. 다만 각 모듈의 API와 implementation은 엄격히 분리되고 implementation은 API에 의존하되 API는 implementation에 의존해서는 안 됩니다. 그리고 모듈 간 메시지 교환은 API를 통해서 이루어져야 합니다. 이를 통해 애플리케이션의 재사용성, 확장성을 확보하고 모듈 교체가 원활히 이루어질 수 있어야 합니다.
+
+## 결정되지 않은 사항
+
+- 잘못된 판단 지점과 토큰 낭비를 찾기 위해 Visualization이 무엇을 함께 보여 줘야 하는지
+- 어떤 토큰 사용을 낭비로 볼지
