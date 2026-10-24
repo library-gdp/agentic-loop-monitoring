@@ -14,7 +14,7 @@ decision-makers: pgd
 
 Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
-- [Plugin Specification](../docs/PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
+- [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
 - Plugin은 에이전트마다 별도의 모듈로 두고, Daemon은 이 모듈들을 정적 `import`로 모은 등록 목록 하나에서 에이전트 id로 Plugin을 찾습니다.
 
 **범위 밖**
@@ -34,8 +34,8 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/PLUGIN_SPEC.md`](../docs/PLUGIN_SPEC.md): 인터페이스 표기
-  - [`docs/CLIENT_ADAPTER_DAEMON.md`](../docs/CLIENT_ADAPTER_DAEMON.md): Daemon의 구현 언어와 결정되지 않은 사항
+  - [`docs/model/PLUGIN_SPEC.md`](../docs/model/PLUGIN_SPEC.md): 인터페이스 표기
+  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): Daemon의 구현 언어와 결정되지 않은 사항
 - **Dependencies**: TypeScript 컴파일러. 런타임은 후속 결정으로 정합니다.
 - **Patterns to follow**:
   - Plugin 인터페이스 타입은 한 곳에 두고, Daemon과 모든 Plugin이 그 타입만 참조합니다.

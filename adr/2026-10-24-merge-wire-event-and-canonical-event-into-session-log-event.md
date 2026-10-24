@@ -16,7 +16,7 @@ decision-makers: pgd
 
 Wire Event와 Canonical Event를 **Session Log Event** 하나로 합칩니다.
 
-- Session Log Event의 구조는 Wire Event의 구조를 그대로 따릅니다. 구조는 [Domain Model](../docs/DOMAIN_MODEL.md#session-log-event)이 정의합니다.
+- Session Log Event의 구조는 Wire Event의 구조를 그대로 따릅니다. 구조는 [Domain Model](../docs/model/DOMAIN_MODEL.md#session-log-event)이 정의합니다.
 - Client Adapter Daemon과 Main Server의 Core가 같은 Session Log Event 모델을 씁니다. Input Adapter는 Session Log Event를 다른 모델로 변환하지 않고 Core에 넘깁니다. Decoder는 Session Log Event를 deserialization합니다.
 - 이름을 함께 바꿉니다. Wire Protocol은 Agent Logging Protocol이 되며, 문서는 `docs/AGENT_LOGGING_PROTOCOL.md`로 옮깁니다.
 
@@ -29,9 +29,9 @@ Wire Event와 Canonical Event를 **Session Log Event** 하나로 합칩니다.
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/AGENT_LOGGING_PROTOCOL.md`](../docs/AGENT_LOGGING_PROTOCOL.md): `docs/WIRE_PROTOCOL.md`에서 이름을 바꿈
-  - [`docs/GLOSSARY.md`](../docs/GLOSSARY.md): Wire Protocol, Wire Event, Canonical Event를 Agent Logging Protocol, Session Log Event로 바꿈
-  - [`docs/APPLICATION_ARCHITECTURE.md`](../docs/APPLICATION_ARCHITECTURE.md), [`docs/SYSTEM_ARCHITECTURE.md`](../docs/SYSTEM_ARCHITECTURE.md): Input Adapter의 변환 제거
+  - [`docs/model/AGENT_LOGGING_PROTOCOL.md`](../docs/model/AGENT_LOGGING_PROTOCOL.md): `docs/WIRE_PROTOCOL.md`에서 이름을 바꿈
+  - [`docs/model/GLOSSARY.md`](../docs/model/GLOSSARY.md): Wire Protocol, Wire Event, Canonical Event를 Agent Logging Protocol, Session Log Event로 바꿈
+  - [`docs/model/APPLICATION_ARCHITECTURE.md`](../docs/model/APPLICATION_ARCHITECTURE.md), [`docs/model/SYSTEM_ARCHITECTURE.md`](../docs/model/SYSTEM_ARCHITECTURE.md): Input Adapter의 변환 제거
 - **Dependencies**: 없음
 - **Patterns to avoid**:
   - Main Server에 Session Log Event와 별도인 공통 이벤트 모델을 두지 않습니다.
@@ -47,4 +47,4 @@ Wire Event와 Canonical Event를 **Session Log Event** 하나로 합칩니다.
 ## More Information
 
 - 대체하는 부분: [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)의 "Wire Event와 Canonical Event는 서로 다른 모델" 결정
-- 용어: [Glossary](../docs/GLOSSARY.md)
+- 용어: [Glossary](../docs/model/GLOSSARY.md)

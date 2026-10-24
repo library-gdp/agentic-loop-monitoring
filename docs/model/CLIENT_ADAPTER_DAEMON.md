@@ -11,7 +11,7 @@
 
 ## 실행
 
-Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다. Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
+Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다. Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
 
 - 같은 상태 디렉터리를 쓰는 다른 Daemon이 이미 실행 중이면 시작하지 않고 종료합니다.
 - Daemon은 시작할 때 설정에서 활성화한 Plugin을 시작합니다.

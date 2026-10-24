@@ -8,7 +8,7 @@ decision-makers: pgd
 
 ## Context and Problem Statement
 
-Client Adapter Daemon은 에이전트마다 하나씩 있는 Plugin으로 Session Log File을 읽고 Session Log Event로 변환합니다([Plugin Specification](../docs/PLUGIN_SPEC.md)). [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)는 Plugin을 Daemon에 넣는 방식(빌드할 때 포함 또는 실행 중 로딩)을 범위 밖으로 남겼습니다. 구현을 시작하려면 이 방식을 정해야 합니다.
+Client Adapter Daemon은 에이전트마다 하나씩 있는 Plugin으로 Session Log File을 읽고 Session Log Event로 변환합니다([Plugin Specification](../docs/model/PLUGIN_SPEC.md)). [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)는 Plugin을 Daemon에 넣는 방식(빌드할 때 포함 또는 실행 중 로딩)을 범위 밖으로 남겼습니다. 구현을 시작하려면 이 방식을 정해야 합니다.
 
 ## Decision
 
@@ -35,11 +35,11 @@ Plugin 코드를 Daemon 실행 파일에 함께 빌드합니다.
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/PLUGIN_SPEC.md`](../docs/PLUGIN_SPEC.md): Plugin을 Daemon에 넣는 방식
-  - [`docs/CLIENT_ADAPTER_DAEMON.md`](../docs/CLIENT_ADAPTER_DAEMON.md): 설정의 "사용할 Plugin"
+  - [`docs/model/PLUGIN_SPEC.md`](../docs/model/PLUGIN_SPEC.md): Plugin을 Daemon에 넣는 방식
+  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): 설정의 "사용할 Plugin"
 - **Dependencies**: 없음
 - **Patterns to follow**:
-  - Plugin은 Daemon 소스 안에서 에이전트마다 분리된 모듈로 두고, [Plugin Specification](../docs/PLUGIN_SPEC.md)의 인터페이스로만 Daemon과 연결합니다.
+  - Plugin은 Daemon 소스 안에서 에이전트마다 분리된 모듈로 두고, [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 인터페이스로만 Daemon과 연결합니다.
   - Daemon은 에이전트 id로 Plugin을 찾는 등록 목록 하나만 둡니다.
 - **Patterns to avoid**:
   - 동적 라이브러리 로딩, 스크립트 실행, 하위 프로세스로 Plugin을 실행하지 않습니다.

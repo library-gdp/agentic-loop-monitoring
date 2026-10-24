@@ -98,5 +98,5 @@ Daemon은 Batch를 하나씩 보내며, Ack를 받기 전에는 다음 Batch를 
 
 - 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
 - 원격 Transport의 인증과 암호화 방식
-- Main Server의 구현 언어. Client Adapter Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
+- Main Server의 구현 언어. Client Adapter Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
 - 사용 범위를 팀이나 오픈소스로 넓힐 때도 Observe-only, Fail-open, Masking 원칙을 그대로 유지할지
