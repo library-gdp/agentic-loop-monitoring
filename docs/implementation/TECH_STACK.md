@@ -7,4 +7,4 @@
 | 구성 요소 | 구현 언어 | 이유 |
 |---|---|---|
 | Client Adapter Daemon, Plugin | TypeScript | [Implement the Client Adapter Daemon and Plugins in TypeScript](../../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)를 참고하세요. |
-| Main Server | Kotlin | 크로스 플랫폼으로 실행하기 위해서입니다. Main Server를 빌드하는 환경과 구동하는 환경이 다를 수 있습니다. |
+| Main Server | Kotlin | 크로스 플랫폼으로 실행하기 위해서입니다. Main Server를 빌드하는 환경과 구동하는 환경이 다를 수 있습니다. [Implement the Main Server in Kotlin](../../adr/2026-10-24-implement-main-server-in-kotlin.md)을 참고하세요. |

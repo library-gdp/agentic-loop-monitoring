@@ -57,3 +57,4 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
 - 관련 ADR: [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md)
 - 다시 검토할 조건: 상주하는 Daemon의 메모리 사용량이 에이전트 머신에서 문제가 되는 경우
+- 2026-10-24: 범위 밖으로 남긴 Main Server의 구현 언어는 [Implement the Main Server in Kotlin](2026-10-24-implement-main-server-in-kotlin.md)에서 정했습니다.

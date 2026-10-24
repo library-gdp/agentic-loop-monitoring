@@ -99,7 +99,7 @@ Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 
 - **읽는 방식**: [읽는 방식](#읽는-방식)에서 Plugin이 정의하는 것
 - **Session Log**: Log 수집 방식
 - **변환**: 레코드를 Session Log Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 세 기준을 알아보는 방법
-- **input 기록 범위**: LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log File에 기록하는 것과 기록하지 않는 것. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
+- **input 기록 범위**: LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log에 기록하는 것과 기록하지 않는 것. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
 
 ## 결정되지 않은 사항
 

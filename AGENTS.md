@@ -25,9 +25,8 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Tech Stack](docs/implementation/TECH_STACK.md) | 구성 요소별 구현 언어(Client Adapter Daemon과 Plugin은 TypeScript, Main Server는 Kotlin)와 그 이유 | 코드를 작성하기 전에 구현 언어를 확인할 때 |
 | [Client Adapter Daemon 구현](docs/implementation/CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상태 디렉터리 등 구현 설정 | Daemon 코드를 작성, 빌드, 배포할 때 |
 | [Plugin Guide](docs/implementation/PLUGIN_GUIDE.md) | Plugin을 Daemon 실행 파일에 함께 빌드하는 방식, Plugin 구현에 관한 결정되지 않은 사항 | Plugin 코드를 작성하거나 Daemon에 추가할 때 |
-| [Main Server 구현](docs/implementation/MAIN_SERVER.md) | Input Adapter가 지원하는 Transport | Main Server 코드를 작성할 때 |
 | [Message Convention](docs/implementation/MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Batch, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
-| [Transport](docs/implementation/TRANSPORT.md) | Transport(표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때 |
+| [Transport](docs/implementation/TRANSPORT.md) | Transport(표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
