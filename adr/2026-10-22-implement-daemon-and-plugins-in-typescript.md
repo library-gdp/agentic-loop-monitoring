@@ -25,7 +25,7 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
 ## Consequences
 
-- Good, because Plugin 인터페이스와 Wire Event를 타입으로 정의하므로, Plugin이 인터페이스를 어기거나 Wire Event 필드를 잘못 채우면 빌드할 때 드러납니다.
+- Good, because Plugin 인터페이스와 Session Log Event를 타입으로 정의하므로, Plugin이 인터페이스를 어기거나 Session Log Event 필드를 잘못 채우면 빌드할 때 드러납니다.
 - Good, because Session Log File이 대부분 JSON이므로 별도 라이브러리 없이 다루기 쉽습니다.
 - Good, because 정적 `import`만으로 Plugin을 Daemon에 함께 빌드할 수 있어 [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md)을 그대로 따를 수 있습니다.
 - Bad, because TypeScript는 런타임이 있어야 실행됩니다. 배포물을 실행 파일 하나로 유지하려면 런타임을 함께 묶는 빌드 방법을 따로 정해야 합니다.

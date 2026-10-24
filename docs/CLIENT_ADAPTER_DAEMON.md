@@ -6,8 +6,8 @@
 
 | 구성 요소 | 역할 |
 |---|---|
-| Plugin | 에이전트마다 하나씩 둡니다. 자신이 정의한 Trigger와 읽는 방식에 따라 Session Log File을 읽고 Wire Event로 변환합니다. [Plugin Specification](PLUGIN_SPEC.md)을 따릅니다. |
-| Transport Client | 설정된 Transport로 Main Server에 Batch를 보내고 Ack를 받습니다. [Wire Protocol](WIRE_PROTOCOL.md)을 따릅니다. |
+| Plugin | 에이전트마다 하나씩 둡니다. 자신이 정의한 Trigger와 읽는 방식에 따라 Session Log File을 읽고 Session Log Event로 변환합니다. [Plugin Specification](PLUGIN_SPEC.md)을 따릅니다. |
+| Transport Client | 설정된 Transport로 Main Server에 Batch를 보내고 Ack를 받습니다. [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)을 따릅니다. |
 
 ## 실행
 
@@ -18,19 +18,19 @@ Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주�
 - Daemon은 Session Log File을 직접 읽지 않습니다. 언제 읽을지(Trigger)와 어떻게 읽을지는 Plugin이 정합니다([Plugin Specification](PLUGIN_SPEC.md#plugin이-정의하는-것) 참고).
 - Daemon은 Plugin이 Session Log File을 어디까지 읽었는지 기록하지 않습니다. 이것도 Plugin이 맡습니다.
 
-## Wire Event 전송
+## Session Log Event 전송
 
 ### Batch 만들기
 
-Plugin은 한 Session의 끝난 Turn 단위로 Wire Event를 Daemon에 넘깁니다. Daemon은 이를 Batch로 묶습니다.
+Plugin은 한 Session의 끝난 Turn 단위로 Session Log Event를 Daemon에 넘깁니다. Daemon은 이를 Batch로 묶습니다.
 
-- 한 Batch에는 한 Session의 Wire Event만 담습니다.
+- 한 Batch에는 한 Session의 Session Log Event만 담습니다.
 - Turn 하나를 여러 Batch에 나누지 않습니다.
 - Batch는 Batch 크기 한도를 넘지 않습니다. 다만 Turn 하나가 한도보다 크면 그 Turn만 담아 보냅니다.
 
 ### 보내기
 
-Daemon은 Batch를 하나씩 보냅니다. Batch를 보낸 뒤에는 Ack를 받거나 타임아웃이 날 때까지 기다리며, 그동안 다른 Batch를 보내지 않습니다. 여러 Plugin이 넘긴 Wire Event는 넘겨받은 순서대로 보냅니다.
+Daemon은 Batch를 하나씩 보냅니다. Batch를 보낸 뒤에는 Ack를 받거나 타임아웃이 날 때까지 기다리며, 그동안 다른 Batch를 보내지 않습니다. 여러 Plugin이 넘긴 Session Log Event는 넘겨받은 순서대로 보냅니다.
 
 ### Ack 처리
 
@@ -48,7 +48,7 @@ Daemon은 Batch를 하나씩 보냅니다. Batch를 보낸 뒤에는 Ack를 받�
 | Transport | 사용할 Transport의 종류와 주소입니다. 표준입출력이면 실행할 Main Server 명령입니다. |
 | Ack 타임아웃 | Batch를 보낸 뒤 Ack를 기다리는 최대 시간입니다. |
 | 재시도 횟수와 간격 | 재시도 가능한 실패에서 같은 Batch를 다시 보내는 횟수와 간격입니다. |
-| Batch 크기 한도 | Batch 하나에 담는 Wire Event 수와 바이트 수의 최댓값입니다. Turn 하나가 한도보다 크면 그 Turn만 담아 보냅니다. |
+| Batch 크기 한도 | Batch 하나에 담는 Session Log Event 수와 바이트 수의 최댓값입니다. Turn 하나가 한도보다 크면 그 Turn만 담아 보냅니다. |
 | 사용할 Plugin | 실행 파일에 들어 있는 Plugin 가운데 활성화할 에이전트 id 목록입니다. |
 
 ## 로그
@@ -63,7 +63,7 @@ Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무�
 ## 결정되지 않은 사항
 
 - TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법
-- Plugin이 Wire Event를 Daemon에 넘기는 TypeScript 인터페이스
+- Plugin이 Session Log Event를 Daemon에 넘기는 TypeScript 인터페이스
 - 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
 - Plugin이 읽은 위치 같은 자신의 상태를 저장하는 위치
 - Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)

@@ -40,9 +40,9 @@ Session
 
 | 용어 | 정의 |
 |---|---|
-| Client Adapter Daemon | 에이전트가 실행되는 머신에서 상주하는 프로세스입니다. Plugin이 Session Log File을 읽어 만든 Wire Event를 Main Server로 보냅니다. 줄여서 Daemon이라고 부릅니다. |
-| Main Server | Client Adapter Daemon이 보낸 Wire Event를 Canonical Event로 바꾸고 저장, 조회, 시각화하는 서버입니다. Input Adapter, Core, Persistence, Visualization 모듈로 이루어집니다. 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. |
-| Plugin | Client Adapter Daemon 안에 에이전트마다 하나씩 두는 구성 요소입니다. 해당 에이전트의 Session Log File을 언제(Trigger), 어떻게 읽을지 정의하고, 읽은 레코드를 Wire Event로 변환합니다. |
+| Client Adapter Daemon | 에이전트가 실행되는 머신에서 상주하는 프로세스입니다. Plugin이 Session Log File을 읽어 만든 Session Log Event를 Main Server로 보냅니다. 줄여서 Daemon이라고 부릅니다. |
+| Main Server | Client Adapter Daemon이 보낸 Session Log Event를 저장, 조회, 시각화하는 서버입니다. Input Adapter, Core, Persistence, Visualization 모듈로 이루어집니다. 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. |
+| Plugin | Client Adapter Daemon 안에 에이전트마다 하나씩 두는 구성 요소입니다. 해당 에이전트의 Session Log File을 언제(Trigger), 어떻게 읽을지 정의하고, 읽은 레코드를 Session Log Event로 변환합니다. |
 
 ## 수집
 
@@ -55,19 +55,18 @@ Session
 
 | 용어 | 정의 |
 |---|---|
-| Wire Protocol | Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식입니다. |
-| Wire Event | Wire Protocol이 정의하는, 에이전트 종류와 무관한 공통 포맷의 이벤트입니다. Plugin이 만들고 Main Server의 Input Adapter가 Canonical Event로 바꿉니다. |
-| Batch | Wire Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Wire Event는 모두 한 Session의 끝난 Turn에서 나옵니다. |
+| Agent Logging Protocol | Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식입니다. |
+| Session Log Event | Agent Logging Protocol이 정의하는, 에이전트 종류와 무관한 공통 포맷의 이벤트입니다. Plugin이 만들며, Main Server의 Core도 같은 모델을 씁니다. |
+| Batch | Session Log Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Session Log Event는 모두 한 Session의 끝난 Turn에서 나옵니다. |
 | Ack | Main Server가 Batch를 처리한 결과로 돌려주는 응답입니다. |
 | Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket이 있습니다. |
-| Decoder | Main Server의 Input Adapter에서 Wire Event를 deserialization하고 Canonical Event로 변환하는 부분입니다. |
-| Canonical Event | 에이전트 종류와 무관하게 Core가 정의하는 공통 이벤트 모델입니다. Main Server 내부의 객체이며, 전송 형식인 Wire Event와 구분합니다. |
+| Decoder | Main Server의 Input Adapter에서 Session Log Event를 deserialization하는 부분입니다. |
 
 ## 모듈 API
 
 | 용어 | 정의 |
 |---|---|
-| Ingest API | Input Adapter가 Canonical Event를 Core에 전달하기 위한 API입니다. |
+| Ingest API | Input Adapter가 Session Log Event를 Core에 전달하기 위한 API입니다. |
 | Query API | Visualization이 기록된 데이터를 조회하기 위한 API입니다. |
 | Repository API | 데이터 영속화를 위한 API입니다. Core가 정의하고 Persistence가 구현합니다. |
 

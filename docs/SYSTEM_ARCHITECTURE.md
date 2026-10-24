@@ -28,16 +28,16 @@
 
 | 구성 요소 | 실행 위치 | 역할 |
 |---|---|---|
-| Client Adapter Daemon | 에이전트 머신 | 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Plugin이 Session Log File을 읽어 만든 Wire Event를 Batch로 묶어 Main Server에 보냅니다. |
-| Main Server | 정하지 않음 | Batch를 받아 Canonical Event로 바꾸고 저장, 조회, 시각화합니다. |
+| Client Adapter Daemon | 에이전트 머신 | 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Plugin이 Session Log File을 읽어 만든 Session Log Event를 Batch로 묶어 Main Server에 보냅니다. |
+| Main Server | 정하지 않음 | Batch를 받아 Session Log Event를 저장, 조회, 시각화합니다. |
 
-에이전트별 차이는 Client Adapter Daemon의 Plugin이 모두 흡수합니다. Session Log File을 언제 읽을지(Trigger)와 어떻게 읽을지도 Plugin마다 정의합니다. Main Server는 Wire Event만 받으므로 에이전트 종류를 알 필요가 없습니다.
+에이전트별 차이는 Client Adapter Daemon의 Plugin이 모두 흡수합니다. Session Log File을 언제 읽을지(Trigger)와 어떻게 읽을지도 Plugin마다 정의합니다. Main Server는 Session Log Event만 받으므로 에이전트 종류를 알 필요가 없습니다.
 
 세부 설계는 다음 문서에서 다룹니다.
 
 - [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md): Batch 전송, Ack 처리, 설정
 - [Plugin Specification](PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 읽는 방식, 지켜야 하는 규칙
-- [Wire Protocol](WIRE_PROTOCOL.md): Batch, Wire Event, Ack의 형식과 Transport별 전송 방식
+- [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md): Batch, Session Log Event, Ack의 형식과 Transport별 전송 방식
 
 ## 실행 위치와 Transport
 
@@ -56,16 +56,16 @@ Main Server가 어디서 실행되는지는 정하지 않습니다. Client Adapt
 ## 데이터 흐름
 
 1. 에이전트가 Session Log File에 대화 내용과 LLM 호출 정보를 기록합니다.
-2. Plugin은 자신이 정의한 Trigger가 발동하면, 자신이 정의한 방식으로 Session Log File을 읽어 끝난 Turn 단위로 Wire Event로 변환합니다. 사용자가 중단한 Turn은 버리고, 아직 끝나지 않은 Turn은 그 Turn이 끝난 뒤에 읽습니다.
-3. Plugin은 Wire Event를 Daemon에 넘깁니다.
-4. Daemon은 Wire Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다.
-5. Main Server의 Input Adapter는 Batch의 Wire Event를 Canonical Event로 바꿔 Core의 Ingest API로 넘깁니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
+2. Plugin은 자신이 정의한 Trigger가 발동하면, 자신이 정의한 방식으로 Session Log File을 읽어 끝난 Turn 단위로 Session Log Event로 변환합니다. 사용자가 중단한 Turn은 버리고, 아직 끝나지 않은 Turn은 그 Turn이 끝난 뒤에 읽습니다.
+3. Plugin은 Session Log Event를 Daemon에 넘깁니다.
+4. Daemon은 Session Log Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다.
+5. Main Server의 Input Adapter는 Batch의 Session Log Event를 Core의 Ingest API로 넘깁니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
 
 Daemon은 Batch를 하나씩 보내며, Ack를 받기 전에는 다음 Batch를 보내지 않습니다.
 
 ## 전달 보장
 
-같은 Wire Event가 두 번 이상 도착할 수 있습니다. 예를 들어 Main Server는 저장했지만 Ack가 Daemon에 닿지 못하면 Daemon이 같은 Batch를 다시 보냅니다. Wire Event마다 다시 읽어도 바뀌지 않는 event id를 붙이고, Main Server는 이미 받은 event id를 무시합니다.
+같은 Session Log Event가 두 번 이상 도착할 수 있습니다. 예를 들어 Main Server는 저장했지만 Ack가 Daemon에 닿지 못하면 Daemon이 같은 Batch를 다시 보냅니다. Session Log Event마다 다시 읽어도 바뀌지 않는 event id를 붙이고, Main Server는 이미 받은 event id를 무시합니다.
 
 다음 경우에는 이벤트가 유실됩니다. 이 애플리케이션은 이를 허용합니다.
 

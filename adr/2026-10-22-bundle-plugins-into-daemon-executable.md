@@ -8,7 +8,7 @@ decision-makers: pgd
 
 ## Context and Problem Statement
 
-Client Adapter Daemon은 에이전트마다 하나씩 있는 Plugin으로 Session Log File을 읽고 Wire Event로 변환합니다([Plugin Specification](../docs/PLUGIN_SPEC.md)). [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)는 Plugin을 Daemon에 넣는 방식(빌드할 때 포함 또는 실행 중 로딩)을 범위 밖으로 남겼습니다. 구현을 시작하려면 이 방식을 정해야 합니다.
+Client Adapter Daemon은 에이전트마다 하나씩 있는 Plugin으로 Session Log File을 읽고 Session Log Event로 변환합니다([Plugin Specification](../docs/PLUGIN_SPEC.md)). [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)는 Plugin을 Daemon에 넣는 방식(빌드할 때 포함 또는 실행 중 로딩)을 범위 밖으로 남겼습니다. 구현을 시작하려면 이 방식을 정해야 합니다.
 
 ## Decision
 

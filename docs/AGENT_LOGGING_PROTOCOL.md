@@ -1,14 +1,14 @@
-# WIRE_PROTOCOL.md
+# AGENT_LOGGING_PROTOCOL.md
 
-이 문서는 Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식을 정의합니다. 이 문서는 Wire Protocol 버전 `1`을 다룹니다. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
+이 문서는 Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식을 정의합니다. 이 문서는 Agent Logging Protocol 버전 `1`을 다룹니다. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
 
-Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event를 Core의 Canonical Event로 변환하며, Canonical Event 모델은 Core에서 따로 정의합니다.
+Session Log Event는 Client Adapter Daemon과 Main Server가 함께 쓰는 이벤트 모델입니다. Main Server의 Input Adapter는 Session Log Event를 다른 모델로 변환하지 않고 Core에 넘깁니다.
 
 ## 메시지
 
 | 메시지 | 방향 | 설명 |
 |---|---|---|
-| Batch | Daemon → Main Server | 한 Session의 끝난 Turn 하나 이상에서 나온 Wire Event 묶음입니다. |
+| Batch | Daemon → Main Server | 한 Session의 끝난 Turn 하나 이상에서 나온 Session Log Event 묶음입니다. |
 | Ack | Main Server → Daemon | Batch를 처리한 결과입니다. |
 
 모든 메시지는 UTF-8 JSON 객체입니다. Daemon은 Batch 하나를 보내면 그 Ack를 받기 전에 다음 Batch를 보내지 않습니다.
@@ -34,28 +34,28 @@ Wire Event는 전송 형식입니다. Main Server의 Input Adapter가 Wire Event
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `protocol_version` | integer | O | Wire Protocol의 버전입니다. 지금은 `1`입니다. |
+| `protocol_version` | integer | O | Agent Logging Protocol의 버전입니다. 지금은 `1`입니다. |
 | `batch_id` | string | O | Batch를 보낼 때마다 새로 만드는 id입니다. Ack와 짝을 맞추는 데만 쓰며, 중복 제거에는 쓰지 않습니다. |
 | `source.agent` | string | O | 에이전트 id입니다. [Plugin Specification](PLUGIN_SPEC.md#에이전트-id)을 따릅니다. |
-| `source.plugin_version` | string | O | Wire Event를 만든 Plugin의 버전입니다. |
+| `source.plugin_version` | string | O | Session Log Event를 만든 Plugin의 버전입니다. |
 | `source.host` | string | | Daemon이 실행 중인 머신의 이름입니다. |
 | `session.id` | string | O | 에이전트가 부여한 session id입니다. |
 | `session.cwd` | string | | 에이전트의 작업 디렉터리입니다. |
-| `events` | array | O | Wire Event 목록입니다. Session Log File에 기록된 순서를 따르며, 항상 `user_message`로 시작합니다. |
+| `events` | array | O | Session Log Event 목록입니다. Session Log File에 기록된 순서를 따르며, 항상 `user_message`로 시작합니다. |
 
-## Wire Event
+## Session Log Event
 
 ### 공통 필드
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `event_id` | string | O | Plugin이 붙인 event id입니다. `source.agent`와 `session.id`가 같은 범위 안에서 고유하며, 같은 레코드를 다시 읽어도 바뀌지 않습니다. |
-| `type` | string | O | Wire Event의 종류입니다. |
+| `type` | string | O | Session Log Event의 종류입니다. |
 | `timestamp` | string | O | 에이전트가 레코드를 기록한 시각입니다. RFC 3339 형식이며 시간대를 포함합니다. |
 
-Wire Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같은 Session의 Wire Event 순서와 연결 관계로 Turn, Loop, LLM Call, Tool Call을 구성합니다. LLM Call의 input도 따로 보내지 않으며, Core가 그 LLM Call 앞의 Wire Event로 구성합니다.
+Session Log Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같은 Session의 Session Log Event 순서와 연결 관계로 Turn, Loop, LLM Call, Tool Call을 구성합니다. LLM Call의 input도 따로 보내지 않으며, Core가 그 LLM Call 앞의 Session Log Event로 구성합니다.
 
-버전 `1`로 구성할 수 있는 LLM Call의 input은 [Glossary](GLOSSARY.md)가 정의하는 **모든 것**입니다. 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과가 모두 포함됩니다. 이 문서는 아직 이 가운데 사용자 메시지, 모델 응답, 도구 결과의 Wire Event만 정의합니다. 나머지도 버전 `1` 안에서 Wire Event 종류나 선택 필드로 추가합니다([버전](#버전) 참고). 에이전트가 기록하지 않아 Plugin이 얻을 수 없는 input은 보내지 않습니다.
+버전 `1`로 구성할 수 있는 LLM Call의 input은 [Glossary](GLOSSARY.md)가 정의하는 **모든 것**입니다. 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과가 모두 포함됩니다. 이 문서는 아직 이 가운데 사용자 메시지, 모델 응답, 도구 결과의 Session Log Event만 정의합니다. 나머지도 버전 `1` 안에서 Session Log Event 종류나 선택 필드로 추가합니다([버전](#버전) 참고). 에이전트가 기록하지 않아 Plugin이 얻을 수 없는 input은 보내지 않습니다.
 
 ### Turn의 경계
 
@@ -65,7 +65,7 @@ Batch는 끝난 Turn만 담으며, Turn 하나가 여러 Batch에 나뉘지 않�
 
 - `user_message`가 Turn을 시작합니다.
 - Turn은 다음 `user_message` 바로 앞이나 Batch의 끝에서 끝납니다.
-- Turn의 마지막 Wire Event가 `tool_use` 블록이 없는 `assistant_message`(최종 응답)이면 정상적으로 끝난 Turn입니다. 그렇지 않으면 오류나 충돌로 끝난 Turn입니다.
+- Turn의 마지막 Session Log Event가 `tool_use` 블록이 없는 `assistant_message`(최종 응답)이면 정상적으로 끝난 Turn입니다. 그렇지 않으면 오류나 충돌로 끝난 Turn입니다.
 
 Core는 진행 중인 Turn을 두지 않습니다.
 
@@ -88,7 +88,7 @@ LLM Call 한 번의 응답입니다.
 | `usage` | object | | 이 LLM Call의 Token Usage입니다. 아래 표를 참고하세요. |
 | `started_at` | string | | 모델에 요청한 시각입니다. 에이전트가 기록할 때만 넣습니다. |
 
-`timestamp`는 응답이 기록된 시각입니다. `started_at`이 없으면 Core가 앞선 Wire Event의 시각으로 LLM Call의 Duration을 추정합니다.
+`timestamp`는 응답이 기록된 시각입니다. `started_at`이 없으면 Core가 앞선 Session Log Event의 시각으로 LLM Call의 Duration을 추정합니다.
 
 `content` 블록:
 
@@ -120,7 +120,7 @@ Tool Call의 실행 결과입니다. `timestamp`는 결과가 기록된 시각�
 
 ### 알 수 없는 값
 
-Main Server는 모르는 `type`의 Wire Event, 모르는 `content` 블록, 모르는 필드를 무시합니다. 그래서 같은 `protocol_version` 안에서는 Wire Event의 종류나 선택 필드를 추가할 수 있습니다.
+Main Server는 모르는 `type`의 Session Log Event, 모르는 `content` 블록, 모르는 필드를 무시합니다. 그래서 같은 `protocol_version` 안에서는 Session Log Event의 종류나 선택 필드를 추가할 수 있습니다.
 
 ## Ack
 
@@ -148,7 +148,7 @@ Main Server는 모르는 `type`의 Wire Event, 모르는 `content` 블록, 모�
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `protocol_version` | integer | O | Main Server가 응답에 쓴 Wire Protocol 버전입니다. |
+| `protocol_version` | integer | O | Main Server가 응답에 쓴 Agent Logging Protocol 버전입니다. |
 | `batch_id` | string | O | 응답하는 Batch의 `batch_id`입니다. Batch를 해석하지 못해 알 수 없으면 빈 문자열입니다. |
 | `status` | string | O | `accepted` 또는 `rejected`입니다. |
 | `retryable` | boolean | 거절일 때 | 같은 Batch를 다시 보내면 성공할 수 있으면 `true`입니다. |
@@ -157,9 +157,9 @@ Main Server는 모르는 `type`의 Wire Event, 모르는 `content` 블록, 모�
 
 ### 규칙
 
-- Main Server는 Batch의 Wire Event를 모두 저장한 뒤에만 `accepted`를 보냅니다.
-- 이미 저장된 event id의 Wire Event는 무시하며, 그런 Wire Event가 있어도 `accepted`로 응답합니다. 중복 판단의 키는 `source.agent`, `session.id`, `event_id`의 조합입니다.
-- Batch 전체는 올바른데 Wire Event 하나가 잘못되었으면, Main Server는 그 Wire Event만 로그를 남기고 버린 뒤 나머지를 처리해 `accepted`로 응답합니다.
+- Main Server는 Batch의 Session Log Event를 모두 저장한 뒤에만 `accepted`를 보냅니다.
+- 이미 저장된 event id의 Session Log Event는 무시하며, 그런 Session Log Event가 있어도 `accepted`로 응답합니다. 중복 판단의 키는 `source.agent`, `session.id`, `event_id`의 조합입니다.
+- Batch 전체는 올바른데 Session Log Event 하나가 잘못되었으면, Main Server는 그 Session Log Event만 로그를 남기고 버린 뒤 나머지를 처리해 `accepted`로 응답합니다.
 
 | `error.code` | `retryable` | 사용하는 경우 |
 |---|---|---|
@@ -171,7 +171,7 @@ Daemon이 Ack를 받았을 때 하는 일은 [Client Adapter Daemon](CLIENT_ADAP
 
 ## 버전
 
-`protocol_version`은 호환되지 않는 변경이 있을 때만 올립니다. 필드 이름이나 의미를 바꾸거나 필수 필드를 추가하는 것이 호환되지 않는 변경입니다. Wire Event 종류나 선택 필드를 추가할 때는 올리지 않습니다. Main Server는 지원하는 버전마다 Decoder를 하나씩 둡니다.
+`protocol_version`은 호환되지 않는 변경이 있을 때만 올립니다. 필드 이름이나 의미를 바꾸거나 필수 필드를 추가하는 것이 호환되지 않는 변경입니다. Session Log Event 종류나 선택 필드를 추가할 때는 올리지 않습니다. Main Server는 지원하는 버전마다 Decoder를 하나씩 둡니다.
 
 ## Transport 바인딩
 
@@ -236,6 +236,6 @@ Daemon이 Ack를 받았을 때 하는 일은 [Client Adapter Daemon](CLIENT_ADAP
 
 - 원격 Transport(REST API, Streamable HTTP, WebSocket)의 인증과 암호화 방식
 - Main Server가 받아들이는 Batch 크기의 상한과, 상한을 넘었을 때의 응답
-- 에이전트의 원본 레코드를 Wire Event에 함께 실을지 여부
+- 에이전트의 원본 레코드를 Session Log Event에 함께 실을지 여부
 - Subagent를 부모 Tool Call과 잇는 필드
-- 버전 `1`에서 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트를 나타내는 Wire Event의 형식
+- 버전 `1`에서 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트를 나타내는 Session Log Event의 형식
