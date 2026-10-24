@@ -1,0 +1,57 @@
+# CODEX.md
+
+이 문서는 Codex Plugin의 구현 방안을 정합니다. [Plugin Specification](../../model/PLUGIN_SPEC.md#에이전트별-문서)이 정한 에이전트별 문서이며, Plugin의 역할과 규칙은 model 문서를 따릅니다. Plugin 공통 구현 방안은 [Plugin Guide](../PLUGIN_GUIDE.md)를, 용어는 [Glossary](../../model/GLOSSARY.md)를 따릅니다.
+
+에이전트 id는 `codex`입니다.
+
+## Session ID와 Agent ID
+
+Codex는 대화를 thread 단위로 다루며, Main Agent와 Subagent가 각각 자신의 thread를 가집니다.
+
+| Agent | Session ID | Agent ID | 부모 Agent ID |
+|---|---|---|---|
+| Main Agent | Main Agent의 `thread_id` | Main Agent의 `thread_id` | 비움(NULL) |
+| Subagent | Main Agent의 `thread_id` | Subagent의 `thread_id` | 자신을 띄운 Agent의 `thread_id` |
+
+아래 내용은 Codex CLI 0.153.4가 기록한 Session Log에서 확인했습니다.
+
+### Session Log의 위치
+
+Codex는 thread마다 rollout 파일 하나를 JSONL로 기록합니다. Subagent도 자신의 rollout 파일을 가집니다. `~/.codex`는 `CODEX_HOME` 환경 변수로 바뀔 수 있습니다.
+
+```
+~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-<시각>-<thread_id>.jsonl
+```
+
+rollout 파일의 첫 레코드는 `type`이 `session_meta`이며, 그 `payload`에 다음 필드가 있습니다.
+
+| 필드 | 설명 |
+|---|---|
+| `id` | 이 rollout을 기록한 thread의 `thread_id`입니다. |
+| `session_id` | 대화를 처음 시작한 Main Agent의 `thread_id`입니다. Main Agent의 rollout에서는 `id`와 같습니다. |
+| `parent_thread_id` | 이 thread를 띄운 thread의 `thread_id`입니다. Subagent의 rollout에만 있습니다. |
+| `source` | thread를 만든 곳입니다. Main Agent는 `cli`, `vscode` 같은 string이고, Subagent는 `{"subagent": ...}` 형태의 object입니다. |
+
+### Session ID
+
+`session_meta.payload.session_id`를 Session ID로 씁니다. Subagent의 rollout에도 Main Agent의 `thread_id`가 기록되므로, Main Agent와 Subagent가 같은 Session ID를 갖습니다.
+
+### Agent ID
+
+`session_meta.payload.id`, 곧 그 rollout의 `thread_id`를 Agent ID로 씁니다. Main Agent는 Agent ID와 Session ID가 같습니다.
+
+### 부모 Agent ID
+
+- **Main Agent**: `parent_thread_id`가 없으므로 비웁니다.
+- **Subagent**: `session_meta.payload.parent_thread_id`를 부모 Agent ID로 씁니다.
+
+### event id
+
+rollout 파일은 Agent마다 따로 있으므로, rollout 안의 레코드 위치로 event id를 만들면 Agent끼리 겹칩니다. 이때는 [Plugin Specification](../../model/PLUGIN_SPEC.md#event-id)에 따라 앞에 Agent ID를 붙입니다.
+
+## 결정되지 않은 사항
+
+- [Plugin Specification](../../model/PLUGIN_SPEC.md#에이전트별-문서)이 정한 나머지 항목: Trigger, Session Log 수집 방식, 변환, input 기록 범위
+- Tool Call이 아니라 Codex 내부 기능으로 만들어진 subagent thread를 Subagent로 수집할지. 예를 들어 승인 검토를 위한 thread는 `source`가 `{"subagent": {"other": "guardian"}}`이고 `thread_source`가 `guardian_review`입니다.
+- `session_id`나 `parent_thread_id`를 기록하지 않는 이전 버전 Codex의 rollout 처리
+- `codex resume`, `codex fork`처럼 이전 대화를 이어 가거나 갈라낸 경우의 Session ID

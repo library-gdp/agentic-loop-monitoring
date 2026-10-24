@@ -8,7 +8,7 @@ Session Log Event는 Client Adapter Daemon과 Main Server가 함께 쓰는 이�
 
 | 메시지 | 방향 | 설명 |
 |---|---|---|
-| Batch | Daemon → Main Server | 한 Session의 끝난 Turn 하나 이상에서 나온 Session Log Event 묶음입니다. |
+| Batch | Daemon → Main Server | 한 Session, 한 Agent의 끝난 Turn 하나 이상에서 나온 Session Log Event 묶음입니다. |
 | Ack | Main Server → Daemon | Batch를 처리한 결과입니다. |
 
 Daemon은 Batch 하나를 보내면 그 Ack를 받기 전에 다음 Batch를 보내지 않습니다.
@@ -22,8 +22,10 @@ Daemon은 Batch 하나를 보내면 그 Ack를 받기 전에 다음 Batch를 보
 | `source.agent` | string | O | 에이전트 id입니다. [Plugin Specification](PLUGIN_SPEC.md#에이전트-id)을 따릅니다. |
 | `source.plugin_version` | string | O | Session Log Event를 만든 Plugin의 버전입니다. |
 | `source.host` | string | | Daemon이 실행 중인 머신의 이름입니다. |
-| `session.id` | string | O | 에이전트가 부여한 session id입니다. |
+| `session.id` | string | O | Session ID입니다. Main Agent와 Subagent가 같은 값을 씁니다. 에이전트가 Subagent에 따로 session id를 부여하더라도 Main Agent의 Session ID를 넣습니다. |
 | `session.cwd` | string | | 에이전트의 작업 디렉터리입니다. |
+| `agent.id` | string | O | `events`를 기록한 Agent의 Agent ID입니다. |
+| `agent.parent_id` | string | Subagent일 때 | 부모 Agent ID입니다. Main Agent이면 비웁니다. |
 | `events` | array | O | Session Log Event 목록입니다. Session Log에 기록된 순서를 따르며, 항상 `user_message`로 시작합니다. |
 
 ## Session Log Event

@@ -38,7 +38,7 @@
 - [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md): Batch 전송, Ack 처리, 설정
 - [Plugin Specification](PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 수집 방식, 지켜야 하는 규칙
 - [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md): Batch, Ack의 형식과 Transport가 지켜야 하는 규칙
-- [Domain Model](DOMAIN_MODEL.md): Session Log Event와 Core가 구성하는 Session, Turn, Loop, LLM Call, Tool Call의 필드
+- [Domain Model](DOMAIN_MODEL.md): Session Log Event와 Core가 구성하는 Session, Agent, Turn, Loop, LLM Call, Tool Call의 필드
 
 ## 실행 위치와 Transport
 
