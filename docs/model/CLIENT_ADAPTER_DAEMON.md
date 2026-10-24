@@ -21,9 +21,9 @@ Daemon은 에이전트가 실행되는 머신에 상주합니다.
 
 ### Batch 만들기
 
-Plugin은 한 Session의 끝난 Turn 단위로 Session Log Event를 Daemon에 넘깁니다. Daemon은 이를 Batch로 묶습니다.
+Plugin은 한 Agent의 끝난 Turn 단위로 Session Log Event를 Daemon에 넘깁니다. Daemon은 이를 Batch로 묶습니다.
 
-- 한 Batch에는 한 Session의 Session Log Event만 담습니다.
+- 한 Batch에는 한 Session, 한 Agent의 Session Log Event만 담습니다. 같은 Session이라도 Main Agent와 Subagent의 Session Log Event는 다른 Batch에 담습니다.
 - Turn 하나를 여러 Batch에 나누지 않습니다.
 - Batch는 Batch 크기 한도를 넘지 않습니다. 다만 Turn 하나가 한도보다 크면 그 Turn만 담아 보냅니다.
 

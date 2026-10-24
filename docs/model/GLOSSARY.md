@@ -2,27 +2,40 @@
 
 이 문서는 애플리케이션에서 사용하는 도메인 용어를 정의합니다. 다른 문서와 코드에서는 여기서 정의한 용어를 같은 의미로 사용합니다.
 
+"에이전트"는 Claude Code, Codex, OpenCode 같은 AI 코딩 에이전트 자체를 가리키고, "Agent"는 Session 안에서 동작하는 Main Agent와 Subagent를 가리킵니다.
+
 ## 에이전트 활동
 
 AI 에이전트의 작업을 나누는 단위입니다. 위에서 아래로 갈수록 작은 단위이며, 각 단위는 바로 위 단위에 속합니다.
 
 ```
 Session
-└── Turn
-    └── Loop
-        ├── LLM Call
-        └── Tool Call ── (Subagent)
+└── Agent (Main Agent, Subagent)
+    └── Turn
+        └── Loop
+            ├── LLM Call
+            └── Tool Call ── (Subagent)
 ```
 
 | 용어 | 정의 |
 |---|---|
 | Agentic Loop | AI 에이전트가 작업을 처리하는 방식입니다. LLM을 호출하고, LLM이 요청한 도구를 실행한 뒤 그 결과로 다시 LLM을 호출하는 과정을 작업이 끝날 때까지 반복합니다. |
-| Session | 에이전트 프로세스 하나의 대화 단위입니다. 에이전트가 부여한 session id로 식별합니다. |
-| Turn | 사용자 프롬프트 한 번부터 에이전트가 Stop할 때까지의 구간입니다. 하나의 Turn은 하나 이상의 Loop로 이루어집니다. |
+| Session | 사용자가 에이전트와 대화를 시작할 때 만들어지는 대화 단위입니다. Session ID로 식별합니다. 그 대화의 Main Agent와 Subagent가 모두 한 Session에 속하며 같은 Session ID를 공유합니다. |
+| Agent | Session 안에서 Agentic Loop를 수행하는 주체입니다. Main Agent와 Subagent 두 종류가 있습니다. 모든 Agent는 Session ID, Agent ID, 부모 Agent ID를 가집니다. |
+| Main Agent | 사용자와 직접 대화하는 Agent입니다. Session마다 하나이며, 부모 Agent가 없으므로 부모 Agent ID는 NULL입니다. |
+| Turn | Agent가 프롬프트 한 번을 받은 때부터 Stop할 때까지의 구간입니다. Main Agent의 프롬프트는 사용자가 입력하고, Subagent의 프롬프트는 부모 Agent가 넘깁니다. 하나의 Turn은 하나 이상의 Loop로 이루어집니다. |
 | Loop | Turn 안에서 LLM Call 한 번과, 그 응답이 요청한 Tool Call들의 묶음입니다. Agentic Loop의 반복 한 번에 해당합니다. |
 | LLM Call | 모델에 대한 요청과 응답 한 번입니다. input, output, reasoning, 토큰 사용량, 모델 이름, 소요 시간을 가집니다. input은 그 요청으로 모델에 들어간 모든 것입니다. 시스템 프롬프트, AGENTS.md(CLAUDE.md) 같은 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과를 포함합니다. |
 | Tool Call | LLM Call이 요청한 도구 실행 한 번입니다. 도구 이름, 인자, 결과, 성공 여부, 소요 시간을 가집니다. 자신을 요청한 LLM Call과 연결됩니다. |
-| Subagent | 에이전트가 작업 중에 띄운 하위 에이전트입니다. 자신을 띄운 Tool Call과 연결되며, 자체적인 Loop를 가집니다. |
+| Subagent | Agent가 작업 중에 Tool Call로 띄운 하위 Agent입니다. 자신을 띄운 Agent가 부모 Agent이며, Subagent가 띄운 Agent도 Subagent입니다. 자신을 띄운 Tool Call과 연결되며, 부모 Agent와 따로 자체적인 Turn과 Loop를 가집니다. |
+
+## 식별자
+
+| 용어 | 정의 |
+|---|---|
+| Session ID | Session을 식별하는 id입니다. 사용자가 에이전트와 대화를 처음 시작할 때 에이전트가 만들며, Main Agent와 Subagent가 모두 같은 값을 공유합니다. |
+| Agent ID | Session 안에서 Agent를 식별하는 id입니다. 에이전트가 부여하며, 어떤 값을 쓰는지는 에이전트마다 다릅니다. 예를 들어 Main Agent의 Agent ID로 Session ID를 그대로 쓰는 에이전트도 있습니다. [Plugin Specification](PLUGIN_SPEC.md#에이전트-id)의 에이전트 id(`claude-code`처럼 에이전트 종류를 나타내는 값)와는 다릅니다. |
+| 부모 Agent ID | Agent를 띄운 부모 Agent의 Agent ID입니다. Main Agent는 부모 Agent가 없으므로 NULL입니다. |
 
 ## Metric
 
@@ -34,7 +47,7 @@ Session
 | Cache Read Token | prompt cache에서 읽어 처리한 입력 토큰입니다. |
 | Cache Write Token | prompt cache에 새로 기록한 입력 토큰입니다. |
 | Reasoning Token | 모델이 응답 전에 추론 과정에서 생성한 토큰입니다. |
-| Duration | 하나의 단위(LLM Call, Tool Call, Loop, Turn, Session)가 시작해서 끝날 때까지 걸린 시간입니다. |
+| Duration | 하나의 단위(LLM Call, Tool Call, Loop, Turn, Agent, Session)가 시작해서 끝날 때까지 걸린 시간입니다. |
 
 ## 시스템 구성
 
@@ -58,7 +71,7 @@ Session
 |---|---|
 | Agent Logging Protocol | Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식입니다. |
 | Session Log Event | 에이전트 종류와 무관한 공통 포맷의 이벤트입니다. 필드는 [Domain Model](DOMAIN_MODEL.md#session-log-event)에서 정의합니다. Plugin이 만들며, Main Server의 Core도 같은 모델을 씁니다. |
-| Batch | Session Log Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Session Log Event는 모두 한 Session의 끝난 Turn에서 나옵니다. |
+| Batch | Session Log Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Session Log Event는 모두 한 Session, 한 Agent의 끝난 Turn에서 나옵니다. |
 | Ack | Main Server가 Batch를 처리한 결과로 돌려주는 응답입니다. |
 | Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. |
 | Decoder | Main Server의 Input Adapter에서 Session Log Event를 deserialization하는 부분입니다. |
