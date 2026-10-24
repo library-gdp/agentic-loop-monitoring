@@ -34,7 +34,9 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/implementation/CLIENT_ADAPTER_DAEMON.md`](../docs/implementation/CLIENT_ADAPTER_DAEMON.md): Daemon과 Plugin의 구현 언어와 결정되지 않은 사항
+  - [`docs/implementation/TECH_STACK.md`](../docs/implementation/TECH_STACK.md): Daemon과 Plugin의 구현 언어
+  - [`docs/implementation/CLIENT_ADAPTER_DAEMON.md`](../docs/implementation/CLIENT_ADAPTER_DAEMON.md): 런타임과 빌드 방법에 관한 결정되지 않은 사항
+  - [`docs/implementation/PLUGIN_GUIDE.md`](../docs/implementation/PLUGIN_GUIDE.md): Plugin 인터페이스에 관한 결정되지 않은 사항
 - **Dependencies**: TypeScript 컴파일러. 런타임은 후속 결정으로 정합니다.
 - **Patterns to follow**:
   - Plugin 인터페이스 타입은 한 곳에 두고, Daemon과 모든 Plugin이 그 타입만 참조합니다.
