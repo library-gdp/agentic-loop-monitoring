@@ -21,9 +21,15 @@
     "id": "9b2e...",
     "cwd": "/home/user/my-project"
   },
+  "agent": {
+    "id": "a0be...",
+    "parent_id": "9b2e..."
+  },
   "events": []
 }
 ```
+
+위 예시는 Subagent의 Batch입니다. Main Agent의 Batch에서는 `agent.parent_id`를 뺍니다.
 
 ### Ack
 
