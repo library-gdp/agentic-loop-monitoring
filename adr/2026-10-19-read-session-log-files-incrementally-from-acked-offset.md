@@ -1,14 +1,16 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-19
 decision-makers: pgd
 ---
 
 # Read Session Log Files incrementally from an Ack-confirmed offset
 
+> Superseded by [Let each Plugin define its read trigger and reading method](2026-10-22-let-plugins-define-read-trigger-and-method.md). 이 ADR의 Hook Client, Signal, Offset, Offset Store는 더 이상 쓰지 않습니다.
+
 ## Context and Problem Statement
 
-Client Adapter Daemon(이하 Daemon)은 에이전트의 Session Log File을 읽어 Wire Event로 변환하고 Main Server로 보냅니다([Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md) 참고). Session Log File은 에이전트가 Session 동안 계속 덧붙여 쓰는 파일이며, 긴 Session에서는 수 MB까지 커집니다.
+Client Adapter Daemon(이하 Daemon)은 에이전트의 Session Log File을 읽어 Session Log Event로 변환하고 Main Server로 보냅니다([Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md) 참고). Session Log File은 에이전트가 Session 동안 계속 덧붙여 쓰는 파일이며, 긴 Session에서는 수 MB까지 커집니다.
 
 두 가지를 정해야 합니다.
 
@@ -22,12 +24,12 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 - **Trigger**: Daemon은 에이전트의 Stop Hook에만 반응합니다. Stop Hook이 실행하는 Hook Client는 Daemon에 Signal만 보내고, 처리를 기다리지 않고 바로 종료합니다. Daemon은 Signal을 받지 않으면 Session Log File을 읽지 않습니다. 시작할 때 미리 훑거나 파일 변경을 감시하지도 않습니다.
 - **Offset**: Daemon은 Session별로 Offset(Session Log File 처음부터 센 바이트 수)을 저장합니다. 그 Session의 Signal을 받으면 Offset부터 읽습니다. Offset은 상태 디렉터리 아래 `offsets/<agent>/<session_id>.json`에 Session마다 파일 하나로 기록합니다.
 - **갱신 시점**: Daemon은 Batch를 보낸 뒤 Main Server의 Ack를 기다립니다. 성공 Ack를 받은 뒤에만 Offset을 Batch의 끝으로 갱신합니다. Daemon은 비동기일 필요가 없으며, Signal을 하나씩 순서대로 처리합니다.
-- **읽는 범위**: Daemon은 Signal 처리를 시작할 때의 파일 크기를 끝 위치로 기록하고, 그 Signal의 처리에서는 끝 위치까지만 읽습니다.
+- **읽는 범위**: Daemon은 Signal 처리를 시작할 때 Plugin에게서 끝 위치를 받고, 그 Signal의 처리에서는 끝 위치까지만 읽습니다. 끝 위치를 어떻게 정하고 나타낼지는 Plugin이 정합니다.
 - **Turn 단위**: Plugin은 끝난 Turn까지만 소비하므로 Offset은 항상 Turn의 경계에 있습니다. Main Server는 끝난 Turn만 받으며, Turn 하나가 여러 Batch에 나뉘지 않습니다. 사용자가 중단한 Turn은 Plugin이 걸러내고 보내지 않습니다.
-- **중복 처리**: 성공 Ack 전에 실패한 구간은 다시 보내므로, 같은 Wire Event가 여러 번 도착할 수 있습니다. Plugin은 다시 읽어도 바뀌지 않는 event id를 붙입니다. Main Server는 `(agent, session id, event id)`가 이미 저장되어 있으면 무시하고 `accepted`로 응답합니다.
+- **중복 처리**: 성공 Ack 전에 실패한 구간은 다시 보내므로, 같은 Session Log Event가 여러 번 도착할 수 있습니다. Plugin은 다시 읽어도 바뀌지 않는 event id를 붙입니다. Main Server는 `(agent, session id, event id)`가 이미 저장되어 있으면 무시하고 `accepted`로 응답합니다.
 - **경계 상황**:
   - Plugin은 완결된 레코드까지만 읽습니다. 끝나지 않은 Turn은 다음 읽기에서 그 Turn의 처음부터 다시 읽습니다.
-  - 파일의 경로나 inode가 바뀌었거나 크기가 Offset보다 작으면 처음부터 다시 읽습니다.
+  - Session Log File이 바뀌었는지와 그때 처음부터 다시 읽을지는 Plugin이 판단합니다. Daemon은 파일의 경로나 inode를 기록하지 않습니다.
   - Offset 레코드 파일은 임시 파일에 쓰고 `fsync`한 뒤 rename해서 원자적으로 갱신합니다.
 
 세부 규칙은 [Client Adapter Daemon](../docs/CLIENT_ADAPTER_DAEMON.md)과 [Plugin Specification](../docs/PLUGIN_SPEC.md)에 있습니다.
@@ -57,13 +59,13 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
   - [`docs/CLIENT_ADAPTER_DAEMON.md`](../docs/CLIENT_ADAPTER_DAEMON.md): Signal 처리, Ack 처리, Offset Store, Offset 검증
   - [`docs/PLUGIN_SPEC.md`](../docs/PLUGIN_SPEC.md): `read`의 Turn 단위 규칙, Plugin State, event id
-  - [`docs/WIRE_PROTOCOL.md`](../docs/WIRE_PROTOCOL.md): Ack 형식, `retryable`, 중복 처리 규칙
+  - [`docs/AGENT_LOGGING_PROTOCOL.md`](../docs/AGENT_LOGGING_PROTOCOL.md): Ack 형식, `retryable`, 중복 처리 규칙
   - 코드 디렉터리 구성은 구현 언어를 정하는 ADR에서 정합니다.
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - Offset 갱신은 항상 성공 Ack 처리 경로에서만 일어납니다. 재시도할 수 없는 거절은 예외이며, 이때는 Batch를 버리고 Offset을 넘깁니다.
   - Offset과 Plugin State는 한 번의 원자적 쓰기로 함께 갱신합니다.
-  - Main Server는 Batch의 Wire Event를 모두 저장한 뒤에 `accepted`를 보냅니다.
+  - Main Server는 Batch의 Session Log Event를 모두 저장한 뒤에 `accepted`를 보냅니다.
 - **Patterns to avoid**:
   - Batch를 보내기 전이나 Ack를 받기 전에 Offset을 갱신하지 않습니다.
   - Offset 레코드 파일을 제자리에서 덮어쓰지 않습니다.
@@ -74,13 +76,12 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 
 - [ ] 같은 Session에 Stop Hook이 두 번 오면 두 번째에는 첫 번째 성공 Ack 이후에 덧붙은 바이트만 읽습니다.
 - [ ] Main Server를 멈춘 상태에서 Stop Hook이 오면 Offset 레코드 파일이 바뀌지 않습니다. Main Server를 다시 띄우고 다음 Stop Hook이 오면 빠졌던 구간까지 저장됩니다.
-- [ ] 같은 Batch를 Main Server에 두 번 보내도 저장된 Wire Event 수가 한 번 보낸 것과 같습니다.
+- [ ] 같은 Batch를 Main Server에 두 번 보내도 저장된 Session Log Event 수가 한 번 보낸 것과 같습니다.
 - [ ] Session Log File의 마지막 줄이 줄바꿈 없이 끝나 있으면 그 줄이 속한 Turn은 보내지 않습니다. 줄이 완성되고 Turn이 끝난 뒤 다음 Stop Hook에서 보냅니다.
 - [ ] Signal 처리를 시작한 뒤 덧붙은 바이트는 그 Signal의 처리에서 읽지 않습니다.
 - [ ] 끝 위치까지 다음 Turn의 앞부분만 기록되어 있으면 그 부분은 보내지 않고, Offset은 그 Turn의 시작에 머무릅니다.
 - [ ] 모든 Batch는 `user_message`로 시작하고 끝난 Turn만 담습니다.
 - [ ] 사용자가 중단한 Turn은 Main Server에 보내지 않으며, Offset은 그 Turn 뒤로 넘어갑니다.
-- [ ] Session Log File을 같은 경로의 다른 파일로 바꾸거나 Offset보다 짧게 자르면 처음부터 다시 읽습니다.
 - [ ] Offset 레코드 파일 하나를 손상시키면 그 Session만 처음부터 다시 읽고, 다른 Session의 Offset은 그대로입니다.
 - [ ] Offset을 갱신하는 도중 Daemon을 강제로 종료해도 Offset 레코드 파일은 이전 값이나 새 값 중 하나로 남습니다.
 
