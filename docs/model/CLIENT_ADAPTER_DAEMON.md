@@ -6,7 +6,7 @@
 
 | 구성 요소 | 역할 |
 |---|---|
-| Plugin | 에이전트마다 하나씩 둡니다. 자신이 정의한 Trigger와 읽는 방식에 따라 Session Log File을 읽고 Session Log Event로 변환합니다. [Plugin Specification](PLUGIN_SPEC.md)을 따릅니다. |
+| Plugin | 에이전트마다 하나씩 둡니다. 자신이 정의한 Trigger와 수집 방식에 따라 Session Log를 수집하고 Session Log Event로 변환합니다. [Plugin Specification](PLUGIN_SPEC.md)을 따릅니다. |
 | Transport Client | 설정된 Transport로 Main Server에 Batch를 보내고 Ack를 받습니다. [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)을 따릅니다. |
 
 ## 실행
@@ -14,8 +14,8 @@
 Daemon은 에이전트가 실행되는 머신에 상주합니다.
 
 - Daemon은 시작할 때 설정에서 활성화한 Plugin을 시작합니다.
-- Daemon은 Session Log File을 직접 읽지 않습니다. 언제 읽을지(Trigger)와 어떻게 읽을지는 Plugin이 정합니다([Plugin Specification](PLUGIN_SPEC.md#plugin이-정의하는-것) 참고).
-- Daemon은 Plugin이 Session Log File을 어디까지 읽었는지 기록하지 않습니다. 이것도 Plugin이 맡습니다.
+- Daemon은 Session Log를 직접 수집하지 않습니다. 언제 수집할지(Trigger)와 어떻게 수집할지는 Plugin이 정합니다([Plugin Specification](PLUGIN_SPEC.md#plugin이-정의하는-것) 참고).
+- Daemon은 Plugin이 Session Log를 어디까지 수집했는지 기록하지 않습니다. 이것도 Plugin이 맡습니다.
 
 ## Session Log Event 전송
 

@@ -57,7 +57,7 @@ AI 코딩 에이전트에게 작업을 맡기고 그 결과를 검증하는 개�
 
 ### 관련 시스템
 
-- 에이전트가 실행되는 머신의 에이전트 프로세스와 Session Log File
+- 에이전트가 실행되는 머신의 에이전트 프로세스와 Session Log
 - 이 프로젝트의 Client Adapter Daemon과 Main Server([System Architecture](../docs/model/SYSTEM_ARCHITECTURE.md) 참고)
 
 ## Constraints

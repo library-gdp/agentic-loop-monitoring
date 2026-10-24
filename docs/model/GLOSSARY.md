@@ -40,16 +40,17 @@ Session
 
 | 용어 | 정의 |
 |---|---|
-| Client Adapter Daemon | 에이전트가 실행되는 머신에서 상주하는 프로세스입니다. Plugin이 Session Log File을 읽어 만든 Session Log Event를 Main Server로 보냅니다. 줄여서 Daemon이라고 부릅니다. |
+| Client Adapter Daemon | 에이전트가 실행되는 머신에서 상주하는 프로세스입니다. Plugin이 Session Log를 수집해 만든 Session Log Event를 Main Server로 보냅니다. 줄여서 Daemon이라고 부릅니다. |
 | Main Server | Client Adapter Daemon이 보낸 Session Log Event를 저장, 조회, 시각화하는 서버입니다. Input Adapter, Core, Persistence, Visualization 모듈로 이루어집니다. 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. |
-| Plugin | Client Adapter Daemon 안에 에이전트마다 하나씩 두는 구성 요소입니다. 해당 에이전트의 Session Log File을 언제(Trigger), 어떻게 읽을지 정의하고, 읽은 레코드를 Session Log Event로 변환합니다. |
+| Plugin | Client Adapter Daemon 안에 에이전트마다 하나씩 두는 구성 요소입니다. 해당 에이전트의 Session Log를 언제(Trigger), 어떻게 수집할지 정의하고, 수집한 레코드를 Session Log Event로 변환합니다. |
 
 ## 수집
 
 | 용어 | 정의 |
 |---|---|
-| Session Log File | 에이전트가 세션의 대화 내용과 LLM 호출 정보를 기록하는 파일입니다. 에이전트마다 위치와 형식, 파일 구성이 다릅니다. |
-| Trigger | Plugin이 Session Log File 읽기를 시작하는 조건입니다. 에이전트마다 다르며 Plugin이 정의합니다. |
+| Session Log | 에이전트가 Session의 대화 내용과 LLM 호출 정보를 기록한 것입니다. 레코드로 이루어지며, 어디에 어떤 형식으로 기록하는지는 에이전트마다 다릅니다. |
+| Session Log 수집 | Plugin이 에이전트의 Session Log를 가져오는 일입니다. 언제 수집할지(Trigger)와 어떻게 수집할지(수집 방식)는 에이전트마다 다르며 Plugin이 정의합니다. |
+| Trigger | Plugin이 Session Log 수집을 시작하는 조건입니다. 에이전트마다 다르며 Plugin이 정의합니다. |
 
 ## 전송
 

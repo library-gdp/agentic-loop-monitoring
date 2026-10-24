@@ -24,7 +24,7 @@ Daemon은 Batch 하나를 보내면 그 Ack를 받기 전에 다음 Batch를 보
 | `source.host` | string | | Daemon이 실행 중인 머신의 이름입니다. |
 | `session.id` | string | O | 에이전트가 부여한 session id입니다. |
 | `session.cwd` | string | | 에이전트의 작업 디렉터리입니다. |
-| `events` | array | O | Session Log Event 목록입니다. Session Log File에 기록된 순서를 따르며, 항상 `user_message`로 시작합니다. |
+| `events` | array | O | Session Log Event 목록입니다. Session Log에 기록된 순서를 따르며, 항상 `user_message`로 시작합니다. |
 
 ## Session Log Event
 

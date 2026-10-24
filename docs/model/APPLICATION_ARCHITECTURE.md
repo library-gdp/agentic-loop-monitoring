@@ -2,7 +2,7 @@
 
 이 문서는 Main Server의 애플리케이션 아키텍처에 대해서 설명합니다. 이 애플리케이션의 목적은 Codex, Claude Code, Open Code 등 AI 에이전트의 작업을 모니터링하고 LLM에 어떤 input과 output이 있었는지, 토큰 사용량은 얼마나 되는지, 한 번의 LLM reasoning에 대해 어떤 도구가 호출이 되었는지 등을 기록하고 나중에 시각화 합니다.
 
-시스템은 에이전트가 실행되는 머신의 Client Adapter Daemon과 Main Server로 나뉩니다. Client Adapter Daemon은 에이전트별 Session Log File을 읽어 공통 포맷인 Session Log Event로 변환해 Main Server로 보내고, Main Server는 이를 받아 처리합니다. 시스템 전체 구성과 데이터 흐름은 [System Architecture](SYSTEM_ARCHITECTURE.md)를 참고하세요. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
+시스템은 에이전트가 실행되는 머신의 Client Adapter Daemon과 Main Server로 나뉩니다. Client Adapter Daemon은 에이전트별 Session Log를 수집해 공통 포맷인 Session Log Event로 변환해 Main Server로 보내고, Main Server는 이를 받아 처리합니다. 시스템 전체 구성과 데이터 흐름은 [System Architecture](SYSTEM_ARCHITECTURE.md)를 참고하세요. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
 
 ## Module Description
 

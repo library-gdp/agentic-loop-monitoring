@@ -6,7 +6,7 @@
 
 도메인 모델은 두 가지로 나뉩니다.
 
-- **Session Log Event**: Plugin이 Session Log File의 레코드로 만드는 이벤트입니다. Client Adapter Daemon과 Main Server가 같은 모델을 쓰며, Main Server는 받은 그대로 저장합니다.
+- **Session Log Event**: Plugin이 Session Log의 레코드로 만드는 이벤트입니다. Client Adapter Daemon과 Main Server가 같은 모델을 쓰며, Main Server는 받은 그대로 저장합니다.
 - **활동 모델**: Main Server의 Core가 같은 Session의 Session Log Event 순서와 연결 관계로 구성하는 모델입니다. Session, Turn, Loop, LLM Call, Tool Call, Subagent가 있습니다. Session Log Event는 이 모델들을 직접 나타내지 않습니다.
 
 Token Usage는 LLM Call과 활동 모델의 합계에서 쓰는 값입니다.
@@ -35,7 +35,7 @@ Session Log Event는 자신이 속한 Session을 필드로 갖지 않습니다. 
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `event_id` | string | O | Plugin이 붙인 event id입니다. `source.agent`와 `session.id`가 같은 범위 안에서 고유하며, 같은 레코드를 다시 읽어도 바뀌지 않습니다. |
+| `event_id` | string | O | Plugin이 붙인 event id입니다. `source.agent`와 `session.id`가 같은 범위 안에서 고유하며, 같은 레코드를 다시 수집해도 바뀌지 않습니다. |
 | `type` | string | O | Session Log Event의 종류입니다. `user_message`, `assistant_message`, `tool_result`가 있습니다. |
 | `timestamp` | 시각 | O | 에이전트가 레코드를 기록한 시각입니다. 시간대를 포함합니다. |
 
