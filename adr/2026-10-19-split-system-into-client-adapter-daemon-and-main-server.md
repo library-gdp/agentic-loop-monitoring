@@ -13,7 +13,7 @@ decision-makers: pgd
 - **Hook**: 에이전트가 특정 시점에 외부 명령을 실행하게 해 주는 확장 지점입니다.
 - **Session Log File**: 에이전트가 세션의 대화 내용과 LLM 호출 정보를 기록하는 파일입니다. 에이전트마다 위치와 형식이 다르며, 에이전트가 실행되는 머신의 로컬 디스크에만 있습니다.
 
-처음 설계([Application Architecture](../docs/APPLICATION_ARCHITECTURE.md)의 이전 판)는 애플리케이션 하나가 Hook을 받고, Session Log File을 읽고, 에이전트별 Translator로 변환하고, 저장과 시각화까지 하는 구조였습니다. 하지만 데이터를 저장하고 보여주는 서버는 원격에서 실행될 수도 있어야 합니다. 원격 서버는 에이전트 머신의 Session Log File을 직접 읽을 수 없습니다. 그래서 파일을 읽는 부분과 저장하고 보여주는 부분을 다른 프로세스로 나눠야 합니다.
+처음 설계([Application Architecture](../docs/model/APPLICATION_ARCHITECTURE.md)의 이전 판)는 애플리케이션 하나가 Hook을 받고, Session Log File을 읽고, 에이전트별 Translator로 변환하고, 저장과 시각화까지 하는 구조였습니다. 하지만 데이터를 저장하고 보여주는 서버는 원격에서 실행될 수도 있어야 합니다. 원격 서버는 에이전트 머신의 Session Log File을 직접 읽을 수 없습니다. 그래서 파일을 읽는 부분과 저장하고 보여주는 부분을 다른 프로세스로 나눠야 합니다.
 
 ## Decision
 
@@ -39,23 +39,23 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
 - Good, because Main Server가 원격에 있어도 Session Log File을 읽을 수 있습니다. 파일은 항상 같은 머신의 Daemon이 읽습니다.
 - Good, because 에이전트별 차이가 Plugin 안에 갇힙니다. Main Server는 Agent Logging Protocol 하나만 이해하면 되고, 에이전트 형식이 바뀌어도 Main Server를 다시 배포하지 않습니다.
 - Good, because 여러 머신의 Daemon이 Main Server 하나로 데이터를 보낼 수 있습니다(표준입출력 제외).
-- Bad, because 프로세스 사이의 계약인 [Agent Logging Protocol](../docs/AGENT_LOGGING_PROTOCOL.md)을 따로 정의하고 버전을 관리해야 합니다.
+- Bad, because 프로세스 사이의 계약인 [Agent Logging Protocol](../docs/model/AGENT_LOGGING_PROTOCOL.md)을 따로 정의하고 버전을 관리해야 합니다.
 - Bad, because Plugin을 고치면 각 에이전트 머신의 Daemon을 갱신해야 합니다. Plugin 버전이 머신마다 다를 수 있으므로 Batch에 `plugin_version`을 싣습니다.
 - Bad, because Main Server가 원격에 있으면 마스킹하지 않은 프롬프트와 Tool Call 결과가 네트워크로 나갑니다. 원격 Transport의 인증과 암호화를 후속 결정으로 남깁니다.
 
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/SYSTEM_ARCHITECTURE.md`](../docs/SYSTEM_ARCHITECTURE.md): 프로세스 구성과 데이터 흐름
-  - [`docs/APPLICATION_ARCHITECTURE.md`](../docs/APPLICATION_ARCHITECTURE.md): Main Server 모듈 구성
-  - [`docs/CLIENT_ADAPTER_DAEMON.md`](../docs/CLIENT_ADAPTER_DAEMON.md): Daemon과 Hook Client
-  - [`docs/PLUGIN_SPEC.md`](../docs/PLUGIN_SPEC.md): Plugin 인터페이스
-  - [`docs/AGENT_LOGGING_PROTOCOL.md`](../docs/AGENT_LOGGING_PROTOCOL.md): Daemon과 Main Server 사이의 메시지 형식
+  - [`docs/model/SYSTEM_ARCHITECTURE.md`](../docs/model/SYSTEM_ARCHITECTURE.md): 프로세스 구성과 데이터 흐름
+  - [`docs/model/APPLICATION_ARCHITECTURE.md`](../docs/model/APPLICATION_ARCHITECTURE.md): Main Server 모듈 구성
+  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): Daemon과 Hook Client
+  - [`docs/model/PLUGIN_SPEC.md`](../docs/model/PLUGIN_SPEC.md): Plugin 인터페이스
+  - [`docs/model/AGENT_LOGGING_PROTOCOL.md`](../docs/model/AGENT_LOGGING_PROTOCOL.md): Daemon과 Main Server 사이의 메시지 형식
   - 코드 디렉터리 구성은 구현 언어를 정하는 ADR에서 정합니다.
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - Daemon과 Main Server는 별도로 빌드하고 배포할 수 있는 실행 단위로 둡니다.
-  - 에이전트별 형식 해석은 모두 [Plugin Specification](../docs/PLUGIN_SPEC.md)의 `resolve`와 `read` 안에서 합니다.
+  - 에이전트별 형식 해석은 모두 [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 `resolve`와 `read` 안에서 합니다.
   - Main Server의 Input Adapter는 Agent Logging Protocol 버전마다 Decoder를 하나씩 둡니다.
 - **Patterns to avoid**:
   - Main Server 코드에서 에이전트 id에 따라 분기하지 않습니다.
@@ -77,5 +77,5 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
 - 관련 ADR: [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md) (superseded)
 - Daemon이 Stop Hook과 Signal로 읽기를 시작한다는 부분은 [Let each Plugin define its read trigger and reading method](2026-10-22-let-plugins-define-read-trigger-and-method.md)로 대체되었습니다. Session Log File을 언제, 어떻게 읽을지는 Plugin마다 정의합니다.
 - 2026-10-24: 전송 형식(Wire Event)과 Core의 이벤트 모델(Canonical Event)을 서로 다른 모델로 둔다는 부분은 [Merge Wire Event and Canonical Event into Session Log Event](2026-10-24-merge-wire-event-and-canonical-event-into-session-log-event.md)로 대체되었습니다. 이 문서의 Decision, Patterns to avoid, Verification도 그에 맞게 고쳤습니다.
-- 용어: [Glossary](../docs/GLOSSARY.md)
+- 용어: [Glossary](../docs/model/GLOSSARY.md)
 - 다시 검토할 조건: 에이전트가 Session Log File 없이 원격 API로만 기록을 제공하게 되는 경우

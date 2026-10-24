@@ -2,7 +2,7 @@
 
 이 문서는 Main Server의 애플리케이션 아키텍처에 대해서 설명합니다. 이 애플리케이션의 목적은 Codex, Claude Code, Open Code 등 AI 에이전트의 작업을 모니터링하고 LLM에 어떤 input과 output이 있었는지, 토큰 사용량은 얼마나 되는지, 한 번의 LLM reasoning에 대해 어떤 도구가 호출이 되었는지 등을 기록하고 나중에 시각화 합니다.
 
-시스템은 에이전트가 실행되는 머신의 Client Adapter Daemon과 Main Server로 나뉩니다. Client Adapter Daemon은 에이전트별 Session Log File을 읽어 공통 포맷인 Session Log Event로 변환해 Main Server로 보내고, Main Server는 이를 받아 처리합니다. 시스템 전체 구성과 데이터 흐름은 [System Architecture](SYSTEM_ARCHITECTURE.md)를 참고하세요. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
+시스템은 에이전트가 실행되는 머신의 Client Adapter Daemon과 Main Server로 나뉩니다. Client Adapter Daemon은 에이전트별 Session Log를 수집해 공통 포맷인 Session Log Event로 변환해 Main Server로 보내고, Main Server는 이를 받아 처리합니다. 시스템 전체 구성과 데이터 흐름은 [System Architecture](SYSTEM_ARCHITECTURE.md)를 참고하세요. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
 
 ## Module Description
 
@@ -43,7 +43,7 @@ Main Server의 entrypoint입니다. Client Adapter Daemon이 보낸 Batch를 받
 
 Input Adapter는 두 가지 관심사로 나뉩니다.
 
-- **Transport**: Batch를 받고 Ack를 돌려주는 방식을 다룹니다. 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket 등을 지원합니다. Transport별 전송 방식은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)에서 정의합니다.
+- **Transport**: Batch를 받고 Ack를 돌려주는 방식을 다룹니다. Transport가 지켜야 하는 규칙은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md#transport)에서 정의합니다.
 - **Decoder**: Session Log Event를 deserialization합니다. Agent Logging Protocol의 버전마다 하나의 Decoder를 둡니다.
 
 Input Adapter는 Batch의 Session Log Event가 모두 Ingest API로 처리된 뒤에 성공 Ack를 돌려줍니다. Client Adapter Daemon은 이 Ack로 전송에 성공했다고 판단하므로, 저장이 끝나기 전에 성공 Ack를 보내서는 안 됩니다. Ack 규칙은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)을 참고하세요.
