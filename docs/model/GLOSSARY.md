@@ -59,7 +59,7 @@ Session
 | Session Log Event | 에이전트 종류와 무관한 공통 포맷의 이벤트입니다. 필드는 [Domain Model](DOMAIN_MODEL.md#session-log-event)에서 정의합니다. Plugin이 만들며, Main Server의 Core도 같은 모델을 씁니다. |
 | Batch | Session Log Event를 묶어 한 번에 Main Server로 보내는 단위입니다. 한 Batch의 Session Log Event는 모두 한 Session의 끝난 Turn에서 나옵니다. |
 | Ack | Main Server가 Batch를 처리한 결과로 돌려주는 응답입니다. |
-| Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket이 있습니다. |
+| Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. |
 | Decoder | Main Server의 Input Adapter에서 Session Log Event를 deserialization하는 부분입니다. |
 
 ## 모듈 API

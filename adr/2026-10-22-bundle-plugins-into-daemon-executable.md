@@ -35,8 +35,7 @@ Plugin 코드를 Daemon 실행 파일에 함께 빌드합니다.
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/model/PLUGIN_SPEC.md`](../docs/model/PLUGIN_SPEC.md): Plugin을 Daemon에 넣는 방식
-  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): 설정의 "사용할 Plugin"
+  - [`docs/implementation/CLIENT_ADAPTER_DAEMON.md`](../docs/implementation/CLIENT_ADAPTER_DAEMON.md): Plugin을 Daemon에 넣는 방식
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - Plugin은 Daemon 소스 안에서 에이전트마다 분리된 모듈로 두고, [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 인터페이스로만 Daemon과 연결합니다.

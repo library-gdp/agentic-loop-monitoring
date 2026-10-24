@@ -28,7 +28,7 @@
 
 | 구성 요소 | 실행 위치 | 역할 |
 |---|---|---|
-| Client Adapter Daemon | 에이전트 머신 | 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Plugin이 Session Log File을 읽어 만든 Session Log Event를 Batch로 묶어 Main Server에 보냅니다. |
+| Client Adapter Daemon | 에이전트 머신 | 에이전트 머신에 상주합니다. Plugin이 Session Log File을 읽어 만든 Session Log Event를 Batch로 묶어 Main Server에 보냅니다. |
 | Main Server | 정하지 않음 | Batch를 받아 Session Log Event를 저장, 조회, 시각화합니다. |
 
 에이전트별 차이는 Client Adapter Daemon의 Plugin이 모두 흡수합니다. Session Log File을 언제 읽을지(Trigger)와 어떻게 읽을지도 Plugin마다 정의합니다. Main Server는 Session Log Event만 받으므로 에이전트 종류를 알 필요가 없습니다.
@@ -37,22 +37,12 @@
 
 - [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md): Batch 전송, Ack 처리, 설정
 - [Plugin Specification](PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 읽는 방식, 지켜야 하는 규칙
-- [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md): Batch, Ack의 형식과 Transport별 전송 방식
+- [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md): Batch, Ack의 형식과 Transport가 지켜야 하는 규칙
 - [Domain Model](DOMAIN_MODEL.md): Session Log Event와 Core가 구성하는 Session, Turn, Loop, LLM Call, Tool Call의 필드
 
 ## 실행 위치와 Transport
 
-Main Server가 어디서 실행되는지는 정하지 않습니다. Client Adapter Daemon과 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. 쓸 수 있는 Transport는 실행 위치에 따라 다릅니다.
-
-| Transport | 같은 머신 | 원격 |
-|---|---|---|
-| 표준입출력 | O | X |
-| Unix Socket | O | X |
-| REST API | O | O |
-| Streamable HTTP | O | O |
-| WebSocket | O | O |
-
-표준입출력과 Unix Socket은 같은 머신의 프로세스끼리만 연결할 수 있습니다. 표준입출력은 Daemon과 Main Server를 1:1로 연결합니다. 나머지 Transport로는 여러 머신의 Daemon이 Main Server 하나에 데이터를 보낼 수 있습니다.
+Main Server가 어디서 실행되는지는 정하지 않습니다. Client Adapter Daemon과 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. 쓸 수 있는 Transport는 실행 위치에 따라 다릅니다. 같은 머신의 프로세스끼리만 연결할 수 있는 Transport도 있고, 여러 머신의 Daemon이 Main Server 하나에 데이터를 보낼 수 있는 Transport도 있습니다.
 
 ## 데이터 흐름
 
@@ -97,6 +87,4 @@ Daemon은 Batch를 하나씩 보내며, Ack를 받기 전에는 다음 Batch를 
 ## 결정되지 않은 사항
 
 - 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
-- 원격 Transport의 인증과 암호화 방식
-- Main Server의 구현 언어. Client Adapter Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
 - 사용 범위를 팀이나 오픈소스로 넓힐 때도 Observe-only, Fail-open, Masking 원칙을 그대로 유지할지

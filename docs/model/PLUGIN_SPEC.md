@@ -12,12 +12,6 @@ Plugin은 다음 세 가지를 맡습니다.
 
 Plugin은 Main Server와 통신하거나 재시도를 판단하지 않습니다. 이 일은 Daemon이 맡습니다.
 
-## Daemon에 넣는 방식
-
-Plugin 코드는 Daemon 실행 파일에 함께 빌드합니다. Daemon은 실행 중에 Plugin을 불러오지 않으며, Daemon 설정에서는 실행 파일에 들어 있는 Plugin 가운데 활성화할 것을 고릅니다. 새 에이전트를 지원하거나 Plugin을 고치면 Daemon을 다시 빌드하고 배포합니다. 결정 배경은 [Bundle Plugins into the Client Adapter Daemon executable](../../adr/2026-10-22-bundle-plugins-into-daemon-executable.md)을 참고하세요.
-
-Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
-
 ## 에이전트 id
 
 Plugin은 자신이 맡는 에이전트의 id를 하나 가집니다. 에이전트 id는 소문자와 하이픈으로 이루어지며, Daemon 설정의 "사용할 Plugin"과 Session Log Event의 Batch에서 같은 값을 씁니다.
@@ -30,7 +24,7 @@ Plugin은 자신이 맡는 에이전트의 id를 하나 가집니다. 에이전�
 
 ## Plugin이 정의하는 것
 
-Session Log File을 언제, 어떻게 읽을지는 에이전트마다 다릅니다. 에이전트가 외부에 알려 주는 시점도, Session Log File의 형식과 파일 구성도 에이전트마다 다르기 때문입니다. 그래서 Daemon과 이 문서는 Trigger와 읽는 방식을 정하지 않습니다. **각 Plugin이 Trigger와 읽는 방식을 정의해야 하며**, 그 내용을 [에이전트별 문서](#에이전트별-문서)에 적습니다. 어떻게 정의하든 아래 규칙은 지켜야 합니다.
+Session Log File을 언제, 어떻게 읽을지는 에이전트마다 다릅니다. 에이전트가 외부에 알려 주는 시점도, Session Log File의 형식과 파일 구성도 에이전트마다 다르기 때문입니다. 그래서 Daemon과 이 문서는 Trigger와 읽는 방식을 정하지 않습니다. **각 Plugin이 Trigger와 읽는 방식을 정의해야 합니다.** 어떻게 정의하든 아래 규칙은 지켜야 합니다.
 
 ### Trigger
 
@@ -45,7 +39,7 @@ Trigger는 다음 규칙을 지킵니다.
 1. **에이전트를 기다리게 하지 않습니다.** 에이전트의 동작을 막거나 늦추지 않으며, 에이전트가 Plugin의 처리 결과를 기다리지 않게 합니다.
 2. **에이전트에 아무것도 주입하지 않습니다.** 에이전트의 컨텍스트나 출력에 영향을 주지 않습니다.
 3. **실패해도 에이전트는 정상적으로 동작합니다.** Daemon이 실행 중이지 않거나 Trigger가 실패해도 에이전트의 작업은 멈추지 않습니다.
-4. **끝난 Turn을 읽을 기회가 있어야 합니다.** Turn이 끝난 뒤 그 Turn을 읽도록 Trigger가 발동해야 합니다. Session의 마지막 Turn처럼 읽지 못하고 남는 경우가 있으면 에이전트별 문서에 적습니다.
+4. **끝난 Turn을 읽을 기회가 있어야 합니다.** Turn이 끝난 뒤 그 Turn을 읽도록 Trigger가 발동해야 합니다. Session의 마지막 Turn처럼 읽지 못하고 남는 경우가 있으면 Plugin은 그 경우도 정의합니다.
 
 ### 읽는 방식
 
@@ -78,7 +72,7 @@ Turn은 사용자 프롬프트 레코드에서 시작하며, 다음 중 가장 �
 | 사용자 중단 | 에이전트가 사용자 중단을 기록함 | Turn 전체를 읽은 것으로 치되 Session Log Event를 만들지 않습니다. |
 | 다음 Turn 시작 | 위 두 가지 없이 다음 사용자 프롬프트 레코드가 나옴 | 오류나 충돌로 끝난 Turn으로 보고, 그때까지의 Session Log Event를 넘깁니다. |
 
-- 세 기준을 Session Log File에서 어떻게 알아보는지는 에이전트마다 다르므로 [에이전트별 문서](#에이전트별-문서)에 적습니다. 예를 들어 사용자 중단을 나타내는 레코드가 사용자 프롬프트와 같은 종류로 기록되는 에이전트라면, Plugin은 이를 프롬프트로 다루지 않아야 합니다.
+- 세 기준을 Session Log File에서 어떻게 알아보는지는 에이전트마다 다르므로 Plugin이 정의합니다. 예를 들어 사용자 중단을 나타내는 레코드가 사용자 프롬프트와 같은 종류로 기록되는 에이전트라면, Plugin은 이를 프롬프트로 다루지 않아야 합니다.
 - 에이전트가 사용자 중단을 기록하지 않으면 Plugin은 중단을 알아볼 수 없습니다. 이때 중단된 Turn은 다음 Turn이 시작될 때 오류로 끝난 Turn으로 보내집니다.
 - 첫 사용자 프롬프트 앞에 있는 레코드(예: Session 메타데이터)는 Turn에 속하지 않습니다. Session Log Event를 만드는 데 필요한 정보(예: 모델 이름)는 Plugin이 따로 기억해 두고, 이 레코드로 Session Log Event를 만들지 않습니다.
 
@@ -97,19 +91,7 @@ Plugin은 Session Log Event마다 event id를 붙입니다. Main Server는 이 �
 
 에이전트가 레코드마다 고유 id를 기록하면 그 값을 바탕으로 만듭니다. 그렇지 않으면 Session Log File 안에서 레코드의 위치처럼 다시 읽어도 바뀌지 않는 값으로 만듭니다. 레코드 하나에서 Session Log Event가 여러 개 나오면 뒤에 순번을 붙입니다(예: `<레코드 값>:0`, `<레코드 값>:1`).
 
-## 에이전트별 문서
-
-Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 적습니다.
-
-- **Trigger**: [Trigger](#trigger)에서 Plugin이 정의하는 것
-- **읽는 방식**: [읽는 방식](#읽는-방식)에서 Plugin이 정의하는 것
-- **Session Log File**: 위치와 형식
-- **변환**: 레코드를 Session Log Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 세 기준을 알아보는 방법
-- **input 기록 범위**: LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log File에 기록하는 것과 기록하지 않는 것. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
-
 ## 결정되지 않은 사항
 
-- Plugin이 Session Log Event를 Daemon에 넘기는 TypeScript 인터페이스
 - 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
-- Plugin이 읽은 위치 같은 자신의 상태를 저장하는 위치
 - Subagent가 별도의 Session Log File을 쓰는 경우, 부모 Session과 어떻게 연결할지

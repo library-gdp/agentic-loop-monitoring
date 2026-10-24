@@ -11,9 +11,8 @@
 
 ## 실행
 
-Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. Session Log File은 보통 사용자의 홈 디렉터리 아래에 있으므로, Daemon은 그 사용자의 권한으로 실행합니다. Daemon과 Plugin은 TypeScript로 구현합니다([Implement the Client Adapter Daemon and Plugins in TypeScript](../../adr/2026-10-22-implement-daemon-and-plugins-in-typescript.md)).
+Daemon은 에이전트가 실행되는 머신에 상주합니다.
 
-- 같은 상태 디렉터리를 쓰는 다른 Daemon이 이미 실행 중이면 시작하지 않고 종료합니다.
 - Daemon은 시작할 때 설정에서 활성화한 Plugin을 시작합니다.
 - Daemon은 Session Log File을 직접 읽지 않습니다. 언제 읽을지(Trigger)와 어떻게 읽을지는 Plugin이 정합니다([Plugin Specification](PLUGIN_SPEC.md#plugin이-정의하는-것) 참고).
 - Daemon은 Plugin이 Session Log File을 어디까지 읽었는지 기록하지 않습니다. 이것도 Plugin이 맡습니다.
@@ -44,12 +43,11 @@ Daemon은 Batch를 하나씩 보냅니다. Batch를 보낸 뒤에는 Ack를 받�
 
 | 항목 | 설명 |
 |---|---|
-| 상태 디렉터리 | Daemon 로그 등 Daemon이 쓰는 파일을 두는 디렉터리입니다. |
-| Transport | 사용할 Transport의 종류와 주소입니다. 표준입출력이면 실행할 Main Server 명령입니다. |
+| Transport | 사용할 Transport의 종류와 주소입니다. |
 | Ack 타임아웃 | Batch를 보낸 뒤 Ack를 기다리는 최대 시간입니다. |
 | 재시도 횟수와 간격 | 재시도 가능한 실패에서 같은 Batch를 다시 보내는 횟수와 간격입니다. |
 | Batch 크기 한도 | Batch 하나에 담는 Session Log Event 수와 바이트 수의 최댓값입니다. Turn 하나가 한도보다 크면 그 Turn만 담아 보냅니다. |
-| 사용할 Plugin | 실행 파일에 들어 있는 Plugin 가운데 활성화할 에이전트 id 목록입니다. |
+| 사용할 Plugin | 활성화할 Plugin의 에이전트 id 목록입니다. |
 
 ## 로그
 
@@ -62,10 +60,4 @@ Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무�
 
 ## 결정되지 않은 사항
 
-- TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법
-- Plugin이 Session Log Event를 Daemon에 넘기는 TypeScript 인터페이스
 - 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
-- Plugin이 읽은 위치 같은 자신의 상태를 저장하는 위치
-- Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)
-- 상태 디렉터리의 기본 위치
-- Ack 타임아웃, 재시도 횟수, Batch 크기 한도의 기본값
