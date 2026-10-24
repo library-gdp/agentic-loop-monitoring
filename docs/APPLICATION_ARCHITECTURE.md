@@ -31,7 +31,7 @@ Daemon ────────▶ │    Input Adapter     │
 
 Core 모듈은 다음을 정의합니다.
 
-- **엔티티와 데이터 구조**: 애플리케이션의 추상화된 도메인 모델 객체를 정의합니다. 에이전트 종류와 무관한 공통 이벤트 모델인 Session Log Event도 Core에서 다룹니다. Session Log Event의 구조는 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md#session-log-event)이 정의합니다.
+- **엔티티와 데이터 구조**: 애플리케이션의 추상화된 도메인 모델 객체를 정의합니다. 에이전트 종류와 무관한 공통 이벤트 모델인 Session Log Event도 Core에서 다룹니다. 도메인 모델과 그 필드는 [Domain Model](DOMAIN_MODEL.md)에서 정의합니다.
 - **API**: 다른 모듈과 메시지를 교환하기 위한 API를 정의합니다.
   - **Ingest API**: Input Adapter가 Session Log Event를 Core에 전달하기 위한 API입니다. 같은 Session Log Event가 여러 번 들어와도 결과가 같아야 합니다. 이미 받은 event id의 Session Log Event는 무시합니다.
   - **Query API**: Visualization이 기록된 데이터를 조회하기 위한 API입니다.

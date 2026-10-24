@@ -1,6 +1,6 @@
 # PLUGIN_SPEC.md
 
-이 문서는 Client Adapter Daemon의 Plugin이 정의하고 지켜야 하는 규칙을 정합니다. Plugin은 에이전트마다 하나씩 두며, 새 에이전트를 지원할 때는 이 문서를 따르는 Plugin을 추가합니다. Daemon이 Plugin이 넘긴 Session Log Event를 어떻게 보내는지는 [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md)을, Plugin이 만드는 Session Log Event의 형식은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)을 참고하세요.
+이 문서는 Client Adapter Daemon의 Plugin이 정의하고 지켜야 하는 규칙을 정합니다. Plugin은 에이전트마다 하나씩 두며, 새 에이전트를 지원할 때는 이 문서를 따르는 Plugin을 추가합니다. Daemon이 Plugin이 넘긴 Session Log Event를 어떻게 보내는지는 [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md)을, Plugin이 만드는 Session Log Event의 형식은 [Domain Model](DOMAIN_MODEL.md#session-log-event)을 참고하세요.
 
 ## 역할
 

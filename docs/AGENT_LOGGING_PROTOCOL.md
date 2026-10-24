@@ -45,78 +45,7 @@ Session Log Event는 Client Adapter Daemon과 Main Server가 함께 쓰는 이�
 
 ## Session Log Event
 
-### 공통 필드
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `event_id` | string | O | Plugin이 붙인 event id입니다. `source.agent`와 `session.id`가 같은 범위 안에서 고유하며, 같은 레코드를 다시 읽어도 바뀌지 않습니다. |
-| `type` | string | O | Session Log Event의 종류입니다. |
-| `timestamp` | string | O | 에이전트가 레코드를 기록한 시각입니다. RFC 3339 형식이며 시간대를 포함합니다. |
-
-Session Log Event는 Turn이나 Loop를 직접 나타내지 않습니다. Core가 같은 Session의 Session Log Event 순서와 연결 관계로 Turn, Loop, LLM Call, Tool Call을 구성합니다. LLM Call의 input도 따로 보내지 않으며, Core가 그 LLM Call 앞의 Session Log Event로 구성합니다.
-
-버전 `1`로 구성할 수 있는 LLM Call의 input은 [Glossary](GLOSSARY.md)가 정의하는 **모든 것**입니다. 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과가 모두 포함됩니다. 이 문서는 아직 이 가운데 사용자 메시지, 모델 응답, 도구 결과의 Session Log Event만 정의합니다. 나머지도 버전 `1` 안에서 Session Log Event 종류나 선택 필드로 추가합니다([버전](#버전) 참고). 에이전트가 기록하지 않아 Plugin이 얻을 수 없는 input은 보내지 않습니다.
-
-### Turn의 경계
-
-Batch는 끝난 Turn만 담으며, Turn 하나가 여러 Batch에 나뉘지 않습니다. 사용자가 중단한 Turn은 Plugin이 걸러내므로 보내지 않습니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고).
-
-그래서 Core는 Batch 안에서 Turn을 나눕니다.
-
-- `user_message`가 Turn을 시작합니다.
-- Turn은 다음 `user_message` 바로 앞이나 Batch의 끝에서 끝납니다.
-- Turn의 마지막 Session Log Event가 `tool_use` 블록이 없는 `assistant_message`(최종 응답)이면 정상적으로 끝난 Turn입니다. 그렇지 않으면 오류나 충돌로 끝난 Turn입니다.
-
-Core는 진행 중인 Turn을 두지 않습니다.
-
-### `user_message`
-
-사용자가 입력한 프롬프트입니다. Turn은 `user_message`에서 시작합니다.
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `text` | string | O | 프롬프트 원문입니다. |
-
-### `assistant_message`
-
-LLM Call 한 번의 응답입니다.
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `model` | string | | 응답한 모델의 이름입니다. |
-| `content` | array | O | 응답 내용 블록의 목록입니다. 아래 표를 참고하세요. |
-| `usage` | object | | 이 LLM Call의 Token Usage입니다. 아래 표를 참고하세요. |
-| `started_at` | string | | 모델에 요청한 시각입니다. 에이전트가 기록할 때만 넣습니다. |
-
-`timestamp`는 응답이 기록된 시각입니다. `started_at`이 없으면 Core가 앞선 Session Log Event의 시각으로 LLM Call의 Duration을 추정합니다.
-
-`content` 블록:
-
-| `type` | 필드 | 설명 |
-|---|---|---|
-| `text` | `text`: string | 모델이 출력한 텍스트입니다. |
-| `reasoning` | `text`: string | 모델의 reasoning입니다. 에이전트가 원문을 기록하지 않으면 블록을 넣지 않습니다. |
-| `tool_use` | `tool_use_id`: string, `name`: string, `input`: object | 모델이 요청한 도구 실행입니다. `tool_use_id`는 이 요청을 `tool_result`와 잇는 값입니다. |
-
-`usage` 필드는 모두 0 이상의 integer이며 선택입니다. 에이전트가 기록하지 않은 항목은 `0`으로 채우지 않고 뺍니다. 각 항목의 의미는 [Glossary](GLOSSARY.md#metric)를 따릅니다.
-
-| 필드 | 설명 |
-|---|---|
-| `input_tokens` | Input Token |
-| `output_tokens` | Output Token |
-| `cache_read_tokens` | Cache Read Token |
-| `cache_write_tokens` | Cache Write Token |
-| `reasoning_tokens` | Reasoning Token |
-
-### `tool_result`
-
-Tool Call의 실행 결과입니다. `timestamp`는 결과가 기록된 시각입니다.
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `tool_use_id` | string | O | 이 결과를 요청한 `tool_use` 블록의 `tool_use_id`입니다. |
-| `output` | string 또는 object | O | 도구가 돌려준 결과입니다. |
-| `is_error` | boolean | | 도구 실행이 실패했으면 `true`입니다. 에이전트가 기록하지 않으면 뺍니다. |
+Batch의 `events`에 담는 Session Log Event의 필드와, Core가 Session Log Event로 Turn, Loop, LLM Call, Tool Call을 구성하는 규칙은 [Domain Model](DOMAIN_MODEL.md#session-log-event)에서 정의합니다.
 
 ### 알 수 없는 값
 
@@ -236,6 +165,4 @@ Daemon이 Ack를 받았을 때 하는 일은 [Client Adapter Daemon](CLIENT_ADAP
 
 - 원격 Transport(REST API, Streamable HTTP, WebSocket)의 인증과 암호화 방식
 - Main Server가 받아들이는 Batch 크기의 상한과, 상한을 넘었을 때의 응답
-- 에이전트의 원본 레코드를 Session Log Event에 함께 실을지 여부
-- Subagent를 부모 Tool Call과 잇는 필드
-- 버전 `1`에서 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트를 나타내는 Session Log Event의 형식
+- Session Log Event의 형식에 관한 사항은 [Domain Model](DOMAIN_MODEL.md#결정되지-않은-사항)을 참고하세요.
