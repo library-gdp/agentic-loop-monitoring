@@ -50,7 +50,7 @@ Input Adapter는 Batch의 Session Log Event가 모두 Ingest API로 처리된 �
 
 ### Persistence
 
-데이터의 영속화를 책임지는 모듈입니다. Core가 정의한 Repository API를 구현합니다. 데이터의 흐름과 로직을 정의하지 않습니다. 데이터가 저장되는 방식만 다룹니다.
+데이터의 영속화를 책임지는 모듈입니다. Core가 정의한 Repository API를 구현합니다. 데이터의 흐름과 로직을 정의하지 않습니다. 데이터가 저장되는 방식만 다룹니다. 저장하는 데이터의 구분(원본 데이터, 파생 데이터)과 쓰기, 읽기 규칙은 [Data Architecture](DATA_ARCHITECTURE.md)를 참고하세요.
 
 ### Visualization
 

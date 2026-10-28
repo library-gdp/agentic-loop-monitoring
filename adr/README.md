@@ -28,3 +28,5 @@ An Architecture Decision Record (ADR) captures an important architecture decisio
 - [Merge Wire Event and Canonical Event into Session Log Event](2026-10-24-merge-wire-event-and-canonical-event-into-session-log-event.md) (accepted, 2026-10-24)
 - [Implement the Main Server in Kotlin](2026-10-24-implement-main-server-in-kotlin.md) (accepted, 2026-10-24)
 - [Let each Plugin define the Batch unit](2026-10-28-let-plugins-define-batch-unit.md) (accepted, 2026-10-28)
+- [Keep Session Log Events as the source data and derive the activity model](2026-10-28-keep-session-log-events-as-source-and-derive-activity-model.md) (proposed, 2026-10-28)
+- [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md) (proposed, 2026-10-28)
