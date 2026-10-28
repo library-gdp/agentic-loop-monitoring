@@ -27,5 +27,5 @@ Plugin 코드는 Daemon 실행 파일에 함께 빌드합니다. Daemon은 실�
 
 ## 결정되지 않은 사항
 
-- Plugin이 Session Log Event를 Daemon에 넘기는 TypeScript 인터페이스
+- Plugin이 Batch 단위로 묶은 Session Log Event를 Daemon에 넘기는 TypeScript 인터페이스
 - Plugin이 수집한 위치 같은 자신의 상태를 저장하는 위치
