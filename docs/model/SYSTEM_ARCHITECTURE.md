@@ -28,15 +28,15 @@
 
 | 구성 요소 | 실행 위치 | 역할 |
 |---|---|---|
-| Client Adapter Daemon | 에이전트 머신 | 에이전트 머신에 상주합니다. Plugin이 Session Log를 수집해 만든 Session Log Event를 Batch로 묶어 Main Server에 보냅니다. |
+| Client Adapter Daemon | 에이전트 머신 | 에이전트 머신에 상주합니다. Plugin이 Session Log를 수집해 만들고 Batch로 묶은 Session Log Event를 Main Server에 보냅니다. |
 | Main Server | 정하지 않음 | Batch를 받아 Session Log Event를 저장, 조회, 시각화합니다. |
 
-에이전트별 차이는 Client Adapter Daemon의 Plugin이 모두 흡수합니다. Session Log를 언제 수집할지(Trigger)와 어떻게 수집할지도 Plugin마다 정의합니다. Main Server는 Session Log Event만 받으므로 에이전트 종류를 알 필요가 없습니다.
+에이전트별 차이는 Client Adapter Daemon의 Plugin이 모두 흡수합니다. Session Log를 언제 수집할지(Trigger), 어떻게 수집할지, Session Log Event를 어떻게 Batch로 묶을지도 Plugin마다 정의합니다. Main Server는 Session Log Event만 받으므로 에이전트 종류를 알 필요가 없습니다.
 
 세부 설계는 다음 문서에서 다룹니다.
 
 - [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md): Batch 전송, Ack 처리, 설정
-- [Plugin Specification](PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 수집 방식, 지켜야 하는 규칙
+- [Plugin Specification](PLUGIN_SPEC.md): Plugin이 정의하는 Trigger, 수집 방식, Batch 단위와 지켜야 하는 규칙
 - [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md): Batch, Ack의 형식과 Transport가 지켜야 하는 규칙
 - [Domain Model](DOMAIN_MODEL.md): Session Log Event와 Core가 구성하는 Session, Agent, Turn, Loop, LLM Call, Tool Call의 필드
 
@@ -48,8 +48,8 @@ Main Server가 어디서 실행되는지는 정하지 않습니다. Client Adapt
 
 1. 에이전트가 Session Log에 대화 내용과 LLM 호출 정보를 기록합니다.
 2. Plugin은 자신이 정의한 Trigger가 발동하면, 자신이 정의한 방식으로 Session Log를 수집해 끝난 Turn 단위로 Session Log Event로 변환합니다. 사용자가 중단한 Turn은 버리고, 아직 끝나지 않은 Turn은 그 Turn이 끝난 뒤에 수집합니다.
-3. Plugin은 Session Log Event를 Daemon에 넘깁니다.
-4. Daemon은 Session Log Event를 Batch로 묶어 Main Server에 보내고 Ack를 기다립니다.
+3. Plugin은 Session Log Event를 자신이 정의한 Batch 단위로 묶어 Daemon에 넘깁니다.
+4. Daemon은 Plugin이 넘긴 묶음을 Batch로 Main Server에 보내고 Ack를 기다립니다.
 5. Main Server의 Input Adapter는 Batch의 Session Log Event를 Core의 Ingest API로 넘깁니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
 
 Daemon은 Batch를 하나씩 보내며, Ack를 받기 전에는 다음 Batch를 보내지 않습니다.

@@ -22,4 +22,4 @@ Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주�
 - TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법
 - Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)
 - 상태 디렉터리의 기본 위치
-- Ack 타임아웃, 재시도 횟수, Batch 크기 한도의 기본값
+- Ack 타임아웃, 재시도 횟수의 기본값

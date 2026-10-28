@@ -4,11 +4,12 @@
 
 ## 역할
 
-Plugin은 다음 세 가지를 맡습니다.
+Plugin은 다음 네 가지를 맡습니다.
 
 1. **Trigger**: 언제 Session Log를 수집할지 정하고, 그때 수집을 시작합니다.
 2. **수집 방식**: Session Log를 찾아 수집하고, 어디까지 수집했는지 기록해 다음에 이어 수집합니다.
 3. **변환**: 수집한 레코드를 Turn 단위로 묶어 Session Log Event로 변환합니다. 사용자가 중단한 Turn은 걸러냅니다.
+4. **Batch 구성**: 변환한 Session Log Event를 Batch 단위로 묶어 Daemon에 넘깁니다.
 
 Plugin은 Main Server와 통신하거나 재시도를 판단하지 않습니다. 이 일은 Daemon이 맡습니다.
 
@@ -35,7 +36,7 @@ Plugin은 Session Log에서 Agent마다 Session ID, Agent ID, 부모 Agent ID를
 
 ## Plugin이 정의하는 것
 
-Session Log를 언제, 어떻게 수집할지는 에이전트마다 다릅니다. 에이전트가 외부에 알려 주는 시점도, Session Log를 기록하는 곳과 형식, 구성도 에이전트마다 다르기 때문입니다. 그래서 Daemon과 이 문서는 Trigger와 수집 방식을 정하지 않습니다. **각 Plugin이 Trigger와 수집 방식을 정의해야 하며**, 그 내용을 [에이전트별 문서](#에이전트별-문서)에 적습니다. 어떻게 정의하든 아래 규칙은 지켜야 합니다.
+Session Log를 언제, 어떻게 수집할지는 에이전트마다 다릅니다. 에이전트가 외부에 알려 주는 시점도, Session Log를 기록하는 곳과 형식, 구성도 에이전트마다 다르기 때문입니다. 한 번에 수집하는 Turn의 수와 크기도 그에 따라 달라집니다. 그래서 Daemon과 이 문서는 Trigger, 수집 방식, Batch 단위를 정하지 않습니다. **각 Plugin이 Trigger, 수집 방식, Batch 단위를 정의해야 하며**, 그 내용을 [에이전트별 문서](#에이전트별-문서)에 적습니다. 어떻게 정의하든 아래 규칙은 지켜야 합니다.
 
 ### Trigger
 
@@ -87,10 +88,24 @@ Plugin은 Agent마다 따로 Turn을 나눕니다. Turn은 프롬프트 레코�
 - 에이전트가 사용자 중단을 기록하지 않으면 Plugin은 중단을 알아볼 수 없습니다. 이때 중단된 Turn은 다음 Turn이 시작될 때 오류로 끝난 Turn으로 보내집니다.
 - 첫 사용자 프롬프트 앞에 있는 레코드(예: Session 메타데이터)는 Turn에 속하지 않습니다. Session Log Event를 만드는 데 필요한 정보(예: 모델 이름)는 Plugin이 따로 기억해 두고, 이 레코드로 Session Log Event를 만들지 않습니다.
 
+### Batch 단위
+
+Batch는 Main Server에 한 번에 보내는 Session Log Event 묶음입니다. Plugin이 Session Log Event를 Batch 단위로 묶어 Daemon에 넘기면, Daemon은 이를 합치거나 나누지 않고 Batch 하나로 보냅니다. Plugin은 다음을 정의합니다.
+
+- 끝난 Turn을 어떻게 Batch로 묶는지(예: Turn마다 Batch 하나, 한 번 수집한 범위에서 Agent마다 Batch 하나)
+- Batch 하나에 담는 Session Log Event 수와 바이트 수의 최댓값
+
+Batch는 다음 규칙을 지킵니다.
+
+1. **한 Session, 한 Agent의 Session Log Event만 담습니다.** 같은 Session이라도 Main Agent와 Subagent의 Session Log Event는 다른 Batch에 담습니다.
+2. **끝난 Turn을 하나 이상 온전히 담습니다.** Turn 하나를 여러 Batch에 나누지 않으므로, Batch는 항상 Turn의 시작에서 시작합니다.
+3. **Session Log에 기록된 순서를 따릅니다.** Batch 안의 Session Log Event는 Session Log에 기록된 순서대로 담습니다.
+4. **최댓값을 넘지 않습니다.** 다만 Turn 하나가 최댓값보다 크면 그 Turn만 담아 넘깁니다.
+
 ## Daemon과의 관계
 
-- Plugin은 한 Agent의 끝난 Turn 단위로 Session Log Event를 Daemon에 넘깁니다. 이때 [Session ID와 Agent ID](#session-id와-agent-id)에서 알아낸 Session ID, Agent ID, 부모 Agent ID와, 알 수 있으면 에이전트의 작업 디렉터리를 함께 넘깁니다.
-- Daemon은 Session Log Event를 Batch로 묶어 Main Server에 보냅니다. Batch 크기 한도와 재시도는 Daemon이 맡습니다([Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
+- Plugin은 [Batch 단위](#batch-단위)로 묶은 Session Log Event를 Daemon에 넘깁니다. 이때 [Session ID와 Agent ID](#session-id와-agent-id)에서 알아낸 Session ID, Agent ID, 부모 Agent ID와, 알 수 있으면 에이전트의 작업 디렉터리를 함께 넘깁니다.
+- Daemon은 Plugin이 넘긴 묶음을 그대로 Batch 하나로 Main Server에 보냅니다. 재시도는 Daemon이 맡습니다([Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
 - Plugin은 다른 Plugin이나 Daemon 내부를 직접 부르지 않습니다.
 
 ## event id
@@ -110,6 +125,7 @@ Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 
 - **Trigger**: [Trigger](#trigger)에서 Plugin이 정의하는 것
 - **Session Log**: Log 수집 방식. [수집 방식](#수집-방식)에서 Plugin이 정의하는 것을 포함합니다.
 - **변환**: 레코드를 Session Log Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 세 기준을 알아보는 방법
+- **Batch 단위**: [Batch 단위](#batch-단위)에서 Plugin이 정의하는 것
 - **input 기록 범위**: LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log에 기록하는 것과 기록하지 않는 것. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
 
 ## 결정되지 않은 사항
