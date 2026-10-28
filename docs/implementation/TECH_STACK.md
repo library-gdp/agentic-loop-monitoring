@@ -13,4 +13,4 @@
 
 | 구성 요소 | 저장소 | 이유 |
 |---|---|---|
-| Main Server | SQLite | 따로 띄울 서버 없이 파일 하나로 동작해 Main Server의 모든 실행 위치와 Transport에서 쓸 수 있습니다. [Store Main Server data in SQLite](../../adr/2026-10-28-store-main-server-data-in-sqlite.md)를 참고하세요. 스키마는 [Data Storage](DATA_STORAGE.md)에서 정합니다. |
+| Main Server | SQLite | 따로 띄울 서버 없이 파일 하나로 동작해 Main Server의 모든 실행 위치와 Transport에서 쓸 수 있습니다. [Store Main Server data in SQLite](../../adr/2026-10-28-store-main-server-data-in-sqlite.md)를 참고하세요. 테이블은 [Table Definition](TABLE_DEFINITION.md)에서 정합니다. |

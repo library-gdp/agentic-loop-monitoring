@@ -31,7 +31,7 @@ decision-makers: pgd
 
 Chosen option: "SQLite", because 따로 띄울 서버 없이 파일 하나로 동작해 모든 실행 위치와 Transport에서 쓸 수 있고, 트랜잭션과 고유 키로 원자적 저장과 중복 제거를 그대로 지원하며, WAL 모드에서 여러 프로세스가 같은 파일을 읽을 수 있기 때문입니다. JVM과 Native 모두에서 쓸 수 있어 Kotlin의 컴파일 대상도 묶지 않습니다.
 
-물리 스키마와 설정은 [Data Storage](../docs/implementation/DATA_STORAGE.md)가 정합니다.
+설정과 쓰기, 읽기 절차는 [Data Storage](../docs/implementation/DATA_STORAGE.md)가, 테이블은 [Table Definition](../docs/implementation/TABLE_DEFINITION.md)이 정합니다.
 
 **범위 밖**
 
@@ -51,6 +51,7 @@ Chosen option: "SQLite", because 따로 띄울 서버 없이 파일 하나로 �
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
   - [`docs/implementation/DATA_STORAGE.md`](../docs/implementation/DATA_STORAGE.md): 새 문서
+  - [`docs/implementation/TABLE_DEFINITION.md`](../docs/implementation/TABLE_DEFINITION.md): 새 문서
   - [`docs/implementation/TECH_STACK.md`](../docs/implementation/TECH_STACK.md): 저장소 추가
 - **Dependencies**: SQLite 드라이버. 라이브러리는 Kotlin 컴파일 대상과 함께 정합니다.
 - **Patterns to follow**:

@@ -30,7 +30,8 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Codex Plugin](docs/implementation/plugin/CODEX.md) | Codex Plugin 구현 방안. thread_id로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | Codex Plugin을 구현하거나 바꿀 때 |
 | [OpenCode Plugin](docs/implementation/plugin/OPENCODE.md) | OpenCode Plugin 구현 방안. session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | OpenCode Plugin을 구현하거나 바꿀 때 |
 | [Message Convention](docs/implementation/MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Batch, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
-| [Data Storage](docs/implementation/DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정, 테이블 스키마, Batch 트랜잭션, LLM Call input 질의, 스키마 버전 | Persistence를 구현하거나 스키마를 바꿀 때 |
+| [Data Storage](docs/implementation/DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정, Batch 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
+| [Table Definition](docs/implementation/TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
 | [Transport](docs/implementation/TRANSPORT.md) | Transport(표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
