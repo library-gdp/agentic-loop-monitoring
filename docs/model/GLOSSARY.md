@@ -76,6 +76,16 @@ Session
 | Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. |
 | Decoder | Main Server의 Input Adapter에서 Session Log Event를 deserialization하는 부분입니다. |
 
+## 데이터
+
+| 용어 | 정의 |
+|---|---|
+| 원본 데이터 | Main Server가 Batch로 받아 저장하고 다른 데이터로 다시 계산할 수 없는 데이터입니다. Session, Agent, Session Log Event, 수신 기록이 있습니다. 추가만 하고 고치지 않습니다. |
+| 파생 데이터 | Core가 원본 데이터로 계산해 저장하는 활동 모델의 색인입니다. 언제든 버리고 다시 만들 수 있습니다. |
+| 수신 기록 | Main Server가 받은 Batch마다 남기는 기록입니다. `batch_id`, `protocol_version`, `source.plugin_version`, 받은 시각 등을 가집니다. |
+
+자세한 내용은 [Data Architecture](DATA_ARCHITECTURE.md)를 참고하세요.
+
 ## 모듈 API
 
 | 용어 | 정의 |

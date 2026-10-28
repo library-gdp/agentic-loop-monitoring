@@ -34,7 +34,7 @@ Batch의 `events`에 담는 Session Log Event의 필드와, Core가 Session Log 
 
 ### 알 수 없는 값
 
-Main Server는 모르는 `type`의 Session Log Event, 모르는 `content` 블록, 모르는 필드를 무시합니다. 그래서 같은 `protocol_version` 안에서는 Session Log Event의 종류나 선택 필드를 추가할 수 있습니다.
+Main Server는 모르는 `type`의 Session Log Event, 모르는 `content` 블록, 모르는 필드를 무시합니다. 무시한다는 것은 활동 모델을 구성할 때 쓰지 않는다는 뜻이며, 원문은 저장합니다([Data Architecture](DATA_ARCHITECTURE.md#원칙) 참고). 그래서 같은 `protocol_version` 안에서는 Session Log Event의 종류나 선택 필드를 추가할 수 있습니다.
 
 ## Ack
 
