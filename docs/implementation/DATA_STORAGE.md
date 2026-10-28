@@ -22,6 +22,19 @@ Main Server의 데이터를 SQLite 데이터베이스 파일 하나에 저장합
 
 ## 스키마
 
+[Data Architecture의 Entity](../model/DATA_ARCHITECTURE.md#entity-목록)마다 테이블을 하나씩 둡니다. 열 이름은 Entity의 필드 이름을 따르되 다음은 바꿉니다.
+
+| Entity의 필드 | 열 |
+|---|---|
+| 참조 필드 `session`, `agent` | 대상 테이블의 대리 키 `session_pk`, `agent_pk` |
+| 참조 필드 `ingest` | `ingest_id` |
+| Session의 `agent`, `id` | `agent_kind`, `session_id` |
+| Agent의 `id`, `parent_id` | `agent_id`, `parent_agent_id` |
+| Turn, LLM Call의 `id` | `turn_id`, `llm_call_id` |
+| Tool Call의 `id` | `tool_use_id` |
+| 시각 필드 | 이름 뒤에 `_us`(예: `started_at_us`) |
+| LLM Call의 `usage` | Token Usage 항목마다 열 하나(`input_tokens` 등) |
+
 시각은 모두 UTC 기준 Unix epoch 마이크로초의 `INTEGER`로 저장해 정렬에 씁니다. 원래의 시각 문자열과 시간대는 원문(`event.body`)에 남아 있습니다.
 
 ### 원본 데이터
@@ -88,7 +101,7 @@ CREATE TABLE turn (
   status          TEXT    NOT NULL,      -- completed, errored
   started_at_us   INTEGER NOT NULL,
   ended_at_us     INTEGER NOT NULL,
-  first_ingest_id INTEGER NOT NULL REFERENCES ingest(id),
+  ingest_id       INTEGER NOT NULL REFERENCES ingest(id),  -- user_message를 처음 저장한 수신 기록
   PRIMARY KEY (agent_pk, turn_id)
 );
 CREATE INDEX turn_by_time ON turn (agent_pk, started_at_us);
@@ -161,7 +174,7 @@ WHERE e.agent_pk = :agent_pk
 ORDER BY <Turn 순서>, e.position;
 ```
 
-`<Turn 순서>`는 Agent 안 Turn의 순서 기준이 정해지면 그것을 따릅니다([Domain Model](../model/DOMAIN_MODEL.md#결정되지-않은-사항) 참고). `turn` 테이블은 후보가 되는 `started_at_us`와 `first_ingest_id`를 모두 가지므로, 기준이 정해져도 테이블을 바꾸지 않습니다.
+`<Turn 순서>`는 Agent 안 Turn의 순서 기준이 정해지면 그것을 따릅니다([Domain Model](../model/DOMAIN_MODEL.md#결정되지-않은-사항) 참고). `turn` 테이블은 후보가 되는 `started_at_us`와 `ingest_id`를 모두 가지므로, 기준이 정해져도 테이블을 바꾸지 않습니다.
 
 Session 목록의 시작 시각은 그 Session의 `agent`에 속한 `turn.started_at_us`의 최솟값입니다.
 
