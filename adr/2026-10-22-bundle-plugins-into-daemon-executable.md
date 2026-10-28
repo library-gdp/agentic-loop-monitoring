@@ -58,4 +58,5 @@ Plugin 코드를 Daemon 실행 파일에 함께 빌드합니다.
 ## More Information
 
 - 관련 ADR: [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)
+- 2026-10-28: 범위 밖으로 남긴 Plugin을 등록하는 구체적인 방법과 `plugin_version`은 [Add Plugins to the Daemon as library packages](2026-10-28-add-plugins-to-daemon-as-library-packages.md)에서 정했습니다. Plugin은 에이전트마다 패키지 하나로 만들고, `plugin_version`은 Plugin 패키지의 버전을 씁니다.
 - 다시 검토할 조건: Daemon 소스를 빌드하지 않는 사람이 Plugin을 추가해야 하는 경우(예: 오픈소스로 공개해 외부 기여를 받는 경우)

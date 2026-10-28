@@ -30,3 +30,4 @@ An Architecture Decision Record (ADR) captures an important architecture decisio
 - [Let each Plugin define the Batch unit](2026-10-28-let-plugins-define-batch-unit.md) (accepted, 2026-10-28)
 - [Keep Session Log Events as the source data and derive the activity model](2026-10-28-keep-session-log-events-as-source-and-derive-activity-model.md) (proposed, 2026-10-28)
 - [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md) (proposed, 2026-10-28)
+- [Add Plugins to the Daemon as library packages](2026-10-28-add-plugins-to-daemon-as-library-packages.md) (proposed, 2026-10-28)
