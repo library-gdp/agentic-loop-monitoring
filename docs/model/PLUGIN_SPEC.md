@@ -22,6 +22,17 @@ Plugin은 자신이 맡는 에이전트의 id를 하나 가집니다. 에이전�
 | Codex | `codex` |
 | OpenCode | `opencode` |
 
+에이전트 id는 에이전트의 종류를 나타내며, Session 안의 Agent를 식별하는 Agent ID([Glossary](GLOSSARY.md#식별자) 참고)와 다릅니다.
+
+## Session ID와 Agent ID
+
+Plugin은 Session Log에서 Agent마다 Session ID, Agent ID, 부모 Agent ID를 알아내 Session Log Event와 함께 Daemon에 넘깁니다. 각 값이 Session Log의 어디에 기록되는지는 에이전트마다 다르므로 [에이전트별 문서](#에이전트별-문서)에 적습니다. 어떻게 알아내든 다음을 지킵니다.
+
+1. **Session ID는 Session의 모든 Agent가 같습니다.** 사용자가 대화를 처음 시작할 때 만들어진 Session ID를 씁니다. 에이전트가 Subagent에 따로 session id를 부여하더라도, 그 값이 아니라 Main Agent의 Session ID를 넘깁니다.
+2. **Agent ID는 Session 안에서 Agent마다 다르고, 다시 수집해도 바뀌지 않습니다.**
+3. **부모 Agent ID는 자신을 띄운 Agent의 Agent ID입니다.** Main Agent는 부모 Agent ID를 비웁니다. Subagent의 부모 Agent는 Main Agent일 수도 있고 다른 Subagent일 수도 있습니다.
+4. **Subagent의 Session Log도 수집합니다.** 에이전트가 Subagent의 Session Log를 Main Agent와 따로 기록하면 Plugin은 그것도 찾아 수집합니다.
+
 ## Plugin이 정의하는 것
 
 Session Log를 언제, 어떻게 수집할지는 에이전트마다 다릅니다. 에이전트가 외부에 알려 주는 시점도, Session Log를 기록하는 곳과 형식, 구성도 에이전트마다 다르기 때문입니다. 그래서 Daemon과 이 문서는 Trigger와 수집 방식을 정하지 않습니다. **각 Plugin이 Trigger와 수집 방식을 정의해야 하며**, 그 내용을 [에이전트별 문서](#에이전트별-문서)에 적습니다. 어떻게 정의하든 아래 규칙은 지켜야 합니다.
@@ -64,7 +75,7 @@ Plugin은 다음을 정의합니다.
 
 Main Server는 Session Log Event를 항상 끝난 Turn 단위로 받습니다. 그래서 Turn을 나누고 거르는 일은 Plugin이 맡습니다.
 
-Turn은 사용자 프롬프트 레코드에서 시작하며, 다음 중 가장 먼저 나오는 것에서 끝납니다.
+Plugin은 Agent마다 따로 Turn을 나눕니다. Turn은 프롬프트 레코드에서 시작합니다. Main Agent에서는 사용자 프롬프트 레코드이고, Subagent에서는 부모 Agent가 넘긴 프롬프트 레코드입니다. Turn은 다음 중 가장 먼저 나오는 것에서 끝납니다.
 
 | 끝나는 방식 | 판단 기준 | 처리 |
 |---|---|---|
@@ -78,7 +89,7 @@ Turn은 사용자 프롬프트 레코드에서 시작하며, 다음 중 가장 �
 
 ## Daemon과의 관계
 
-- Plugin은 한 Session의 끝난 Turn 단위로 Session Log Event를 Daemon에 넘깁니다. 이때 에이전트가 부여한 session id와, 알 수 있으면 에이전트의 작업 디렉터리를 함께 넘깁니다.
+- Plugin은 한 Agent의 끝난 Turn 단위로 Session Log Event를 Daemon에 넘깁니다. 이때 [Session ID와 Agent ID](#session-id와-agent-id)에서 알아낸 Session ID, Agent ID, 부모 Agent ID와, 알 수 있으면 에이전트의 작업 디렉터리를 함께 넘깁니다.
 - Daemon은 Session Log Event를 Batch로 묶어 Main Server에 보냅니다. Batch 크기 한도와 재시도는 Daemon이 맡습니다([Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
 - Plugin은 다른 Plugin이나 Daemon 내부를 직접 부르지 않습니다.
 
@@ -86,15 +97,16 @@ Turn은 사용자 프롬프트 레코드에서 시작하며, 다음 중 가장 �
 
 Plugin은 Session Log Event마다 event id를 붙입니다. Main Server는 이 값으로 중복을 걸러내므로 다음을 지켜야 합니다.
 
-- 같은 Session 안에서 Session Log Event마다 다릅니다.
+- 같은 Session 안에서 Session Log Event마다 다릅니다. Session은 Main Agent와 Subagent가 함께 쓰므로, 다른 Agent의 Session Log Event와도 겹치지 않아야 합니다.
 - 같은 레코드를 다시 수집하면 같은 값이 나옵니다.
 
-에이전트가 레코드마다 고유 id를 기록하면 그 값을 바탕으로 만듭니다. 그렇지 않으면 Session Log 안에서 레코드의 위치처럼 다시 수집해도 바뀌지 않는 값으로 만듭니다. 레코드 하나에서 Session Log Event가 여러 개 나오면 뒤에 순번을 붙입니다(예: `<레코드 값>:0`, `<레코드 값>:1`).
+에이전트가 레코드마다 고유 id를 기록하면 그 값을 바탕으로 만듭니다. 그렇지 않으면 Session Log 안에서 레코드의 위치처럼 다시 수집해도 바뀌지 않는 값으로 만듭니다. 레코드의 위치처럼 Agent마다 겹칠 수 있는 값으로 만들면 앞에 Agent ID를 붙입니다(예: `<Agent ID>:<레코드 위치>`). 레코드 하나에서 Session Log Event가 여러 개 나오면 뒤에 순번을 붙입니다(예: `<레코드 값>:0`, `<레코드 값>:1`).
 
 ## 에이전트별 문서
 
 Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 적습니다.
 
+- **Session ID와 Agent ID**: Main Agent와 Subagent 각각의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법. [Session ID와 Agent ID](#session-id와-agent-id)의 규칙을 지키는 방법을 포함합니다.
 - **Trigger**: [Trigger](#trigger)에서 Plugin이 정의하는 것
 - **Session Log**: Log 수집 방식. [수집 방식](#수집-방식)에서 Plugin이 정의하는 것을 포함합니다.
 - **변환**: 레코드를 Session Log Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 세 기준을 알아보는 방법
@@ -103,4 +115,4 @@ Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 
 ## 결정되지 않은 사항
 
 - 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
-- Subagent의 Session Log가 따로 기록되는 경우, 부모 Session과 어떻게 연결할지
+- Subagent를 자신을 띄운 Tool Call과 잇는 방법([Domain Model](DOMAIN_MODEL.md#결정되지-않은-사항) 참고)

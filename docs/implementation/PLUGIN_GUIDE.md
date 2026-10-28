@@ -6,6 +6,16 @@
 
 Plugin 코드는 Daemon 실행 파일에 함께 빌드합니다. Daemon은 실행 중에 Plugin을 불러오지 않으며, Daemon 설정의 "사용할 Plugin"은 실행 파일에 들어 있는 Plugin 가운데 활성화할 것을 고릅니다. 새 에이전트를 지원하거나 Plugin을 고치면 Daemon을 다시 빌드하고 배포합니다. 결정 배경은 [Bundle Plugins into the Client Adapter Daemon executable](../../adr/2026-10-22-bundle-plugins-into-daemon-executable.md)을 참고하세요.
 
+## 에이전트별 문서
+
+[Plugin Specification](../model/PLUGIN_SPEC.md#에이전트별-문서)이 정한 에이전트별 문서는 [`plugin/`](plugin/)에 둡니다.
+
+| 에이전트 | 문서 |
+|---|---|
+| Claude Code | [Claude Code Plugin](plugin/CLAUDE_CODE.md) |
+| Codex | [Codex Plugin](plugin/CODEX.md) |
+| OpenCode | [OpenCode Plugin](plugin/OPENCODE.md) |
+
 ## Session Log를 파일로 수집하는 경우
 
 에이전트가 Session Log를 파일로 기록하고 Plugin이 그 파일을 읽어 수집할 때는 다음을 따릅니다. 이 내용은 [Plugin Specification](../model/PLUGIN_SPEC.md)의 규칙을 파일에 적용한 것입니다.
