@@ -269,7 +269,7 @@ Query API가 [Intent](../../intent/INTENT-1.0.md#proposed-outcome)의 역추적�
 | Tool Call의 인자와 결과 | 원본 데이터의 Session Log Event(`assistant_message`의 `tool_use` 블록과 `tool_result`) |
 | LLM Call, Loop, Turn, Agent, Session별 Token Usage 합계 | 파생 데이터의 LLM Call |
 
-Visualization은 이 질의를 Query API로만 합니다([Application Architecture](APPLICATION_ARCHITECTURE.md#visualization) 참고).
+Visualization은 이 질의를 Query API로만 합니다([Application Architecture](APPLICATION_ARCHITECTURE.md#visualization) 참고). 질의마다 대응하는 Query API의 연산은 [Main Server API](MAIN_SERVER_API.md#query-api)에서 정의합니다.
 
 ## 삭제와 보관
 

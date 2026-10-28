@@ -37,6 +37,8 @@ Core 모듈은 다음을 정의합니다.
   - **Query API**: Visualization이 기록된 데이터를 조회하기 위한 API입니다.
   - **Repository API**: 데이터 영속화를 위한 API입니다. Core가 정의하고 Persistence가 구현합니다.
 
+  세 API의 연산과 입력, 출력, 오류는 [Main Server API](MAIN_SERVER_API.md)에서 정의합니다.
+
 ### Input Adapter
 
 Main Server의 entrypoint입니다. Client Adapter Daemon이 보낸 Batch를 받아 Session Log Event를 Core의 Ingest API로 전달합니다. 에이전트별 데이터 해석은 Client Adapter Daemon의 Plugin이 맡으므로, Input Adapter는 에이전트 종류를 알 필요가 없습니다.

@@ -94,4 +94,6 @@ Session
 | Query API | Visualization이 기록된 데이터를 조회하기 위한 API입니다. |
 | Repository API | 데이터 영속화를 위한 API입니다. Core가 정의하고 Persistence가 구현합니다. |
 
+세 API의 명세는 [Main Server API](MAIN_SERVER_API.md)를 참고하세요.
+
 시스템 구성과 데이터 흐름은 [System Architecture](SYSTEM_ARCHITECTURE.md)를, Main Server의 모듈 구성과 의존 관계는 [Application Architecture](APPLICATION_ARCHITECTURE.md)를 참고하세요.
