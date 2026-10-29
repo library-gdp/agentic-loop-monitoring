@@ -1,28 +1,54 @@
 # PLUGIN_INTERFACE.md
 
-이 문서는 빌드한 Plugin이 갖추고 Client Adapter Daemon(이하 Daemon)이 불러 쓰는 인터페이스를 정합니다. manifest, Plugin이 구현하는 TypeScript 인터페이스, Plugin API 버전이 있습니다. Plugin의 역할과 규칙은 [Plugin Specification](../model/PLUGIN_SPEC.md)을, Session Log Event의 필드는 [Domain Model](../model/DOMAIN_MODEL.md#session-log-event)을 따르며, 이 문서는 바꾸지 않습니다. Plugin을 빌드하고 Daemon이 불러오는 방식은 [Plugin Guide](PLUGIN_GUIDE.md#plugin을-daemon에-넣는-방식)를 참고하세요. 용어는 [Glossary](../model/GLOSSARY.md)를 따릅니다.
+이 문서는 빌드한 Plugin이 갖추고 Client Adapter Daemon(이하 Daemon)이 불러 쓰는 TypeScript 인터페이스를 정합니다. Plugin 모듈, Plugin이 자신을 등록하는 Collection, Plugin, Plugin API 버전이 있습니다. Plugin의 역할과 규칙은 [Plugin Specification](../model/PLUGIN_SPEC.md)을, Session Log Event의 필드는 [Domain Model](../model/DOMAIN_MODEL.md#session-log-event)을 따르며, 이 문서는 바꾸지 않습니다. Plugin을 빌드하고 Daemon이 불러오는 방식은 [Plugin Guide](PLUGIN_GUIDE.md#plugin을-daemon에-넣는-방식)를 참고하세요. 용어는 [Glossary](../model/GLOSSARY.md)를 따릅니다.
 
 아래 타입과 `PLUGIN_API_VERSION`은 모두 Plugin API 패키지에 둡니다. Daemon과 모든 Plugin은 이 패키지만 참조합니다.
 
-## manifest
+## Plugin 모듈
 
-빌드한 Plugin 디렉터리의 `plugin.json`입니다. UTF-8 JSON 객체입니다.
+빌드한 Plugin은 ES 모듈 파일 하나입니다. 이 모듈은 다음 두 가지를 내보냅니다(named export).
 
-```json
-{
-  "agent": "claude-code",
-  "version": "0.1.0",
-  "api_version": 1,
-  "main": "index.js"
+```ts
+export interface PluginModule {
+  /** 이 모듈을 빌드할 때 쓴 Plugin API의 PLUGIN_API_VERSION입니다. */
+  readonly apiVersion: number;
+  /** Daemon이 부르면 registry에 자신의 Plugin을 등록합니다. */
+  register(registry: PluginRegistry): void;
 }
 ```
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `agent` | string | O | [에이전트 id](../model/PLUGIN_SPEC.md#에이전트-id)입니다. Plugin 디렉터리의 이름과 같습니다. Batch의 `source.agent`에 담깁니다. Session 안의 Agent를 식별하는 Agent ID와 다릅니다. |
-| `version` | string | O | Plugin 패키지의 버전입니다. Batch의 `source.plugin_version`에 담깁니다. |
-| `api_version` | integer | O | Plugin을 빌드할 때 쓴 Plugin API의 [`PLUGIN_API_VERSION`](#plugin-api-버전)입니다. |
-| `main` | string | O | 진입점 모듈의 경로입니다. Plugin 디렉터리 기준 상대 경로이며, 디렉터리 밖을 가리킬 수 없습니다. |
+```ts
+// Plugin 모듈의 소스
+import { PLUGIN_API_VERSION, type Plugin, type PluginRegistry } from "plugin-api";
+
+const plugin: Plugin = { /* ... */ };
+
+export const apiVersion = PLUGIN_API_VERSION;
+
+export function register(registry: PluginRegistry): void {
+  registry.register(plugin);
+}
+```
+
+- 모듈 하나는 Plugin 하나를 등록합니다.
+- `register` 안에서 `registry.register`를 곧바로 부릅니다. `register`가 끝난 뒤에는 등록할 수 없습니다.
+- 모듈을 불러오거나 `register`를 부르는 것만으로는 아무 일도 하지 않습니다. 파일을 읽거나, 감시를 시작하거나, 타이머를 거는 일은 `start`에서 시작합니다. Daemon은 Plugin 디렉터리의 모든 모듈을 불러오고 등록하지만, 그 가운데 설정에서 활성화한 Plugin만 시작하기 때문입니다.
+
+## PluginRegistry
+
+Daemon이 가진 Plugin Collection에 Plugin을 등록하는 창구입니다. Daemon은 모듈마다 `register`에 이 값을 넘깁니다.
+
+```ts
+export interface PluginRegistry {
+  /** Plugin을 Collection에 등록합니다. */
+  register(plugin: Plugin): void;
+}
+```
+
+Daemon은 다음 경우 등록을 거절하고 로그를 남깁니다.
+
+- `agent`가 [에이전트 id](../model/PLUGIN_SPEC.md#에이전트-id) 형식(소문자와 하이픈)이 아니거나, `version`이 빈 문자열이거나, `start`나 `stop`이 함수가 아닌 경우
+- 같은 `agent`의 Plugin이 이미 등록된 경우. 먼저 등록한 Plugin이 남습니다.
 
 ## Plugin API 버전
 
@@ -30,16 +56,20 @@
 export const PLUGIN_API_VERSION = 1;
 ```
 
-- Daemon은 manifest의 `api_version`이 자신이 빌드에 쓴 `PLUGIN_API_VERSION`과 같은 Plugin만 불러옵니다.
-- `PLUGIN_API_VERSION`은 이미 빌드한 Plugin이나 Daemon과 호환되지 않는 변경이 있을 때만 올립니다. `Plugin`, `PluginContext`, `PluginBatch`, manifest에 멤버를 더하거나, 빼거나, 이름이나 의미를 바꾸는 것이 호환되지 않는 변경입니다.
+- Daemon은 모듈의 `apiVersion`이 자신이 빌드에 쓴 `PLUGIN_API_VERSION`과 같을 때만 그 모듈의 `register`를 부릅니다.
+- `PLUGIN_API_VERSION`은 이미 빌드한 Plugin이나 Daemon과 호환되지 않는 변경이 있을 때만 올립니다. `PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginBatch`에 멤버를 더하거나, 빼거나, 이름이나 의미를 바꾸는 것이 호환되지 않는 변경입니다.
 - Session Log Event 종류나 선택 필드를 더할 때는 올리지 않습니다. Daemon은 `events`를 해석하지 않고 그대로 보내기 때문입니다. 이때는 [Agent Logging Protocol의 버전 규칙](../model/AGENT_LOGGING_PROTOCOL.md#버전)을 따릅니다.
 
 ## Plugin
 
-진입점 모듈은 아래 `Plugin`을 구현한 객체를 `plugin`이라는 이름으로 내보냅니다.
+Plugin 모듈이 Collection에 등록하는 값입니다.
 
 ```ts
 export interface Plugin {
+  /** 에이전트 id입니다(예: "claude-code"). Batch의 source.agent에 담깁니다. */
+  readonly agent: string;
+  /** Plugin의 버전입니다. Batch의 source.plugin_version에 담깁니다. */
+  readonly version: string;
   /** Trigger를 설정하고 수집을 시작합니다. */
   start(context: PluginContext): Promise<void>;
   /** Trigger를 해제하고 진행 중인 수집을 멈춥니다. */
@@ -47,17 +77,19 @@ export interface Plugin {
 }
 ```
 
-에이전트 id와 버전은 manifest에 적으며, `Plugin`에는 두지 않습니다. Daemon은 진입점 모듈을 불러오기 전에 manifest만 읽고 그 Plugin을 불러올지 정합니다.
+- `agent`는 [Plugin Specification의 에이전트 id](../model/PLUGIN_SPEC.md#에이전트-id)입니다. Session 안의 Agent를 식별하는 Agent ID와 다릅니다. Daemon은 이 값으로 Collection에서 Plugin을 고릅니다.
+- `version`은 Plugin 패키지의 버전과 같은 값입니다.
 
 ### 시작과 종료
 
 | 시점 | Daemon | Plugin |
 |---|---|---|
-| Daemon 시작 | 설정의 "사용할 Plugin"에 있는 Plugin을 불러오고([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고), Plugin마다 `start`를 한 번 부릅니다. Plugin마다 다른 `PluginContext`를 넘깁니다. | Trigger를 설정한 뒤 `start`를 끝냅니다. 수집은 `start`가 끝난 뒤에도 Trigger에 따라 계속합니다. |
-| 불러오기 또는 `start` 실패 | 로그를 남기고 그 Plugin을 시작하지 않은 것으로 봅니다. 다른 Plugin은 그대로 시작합니다. | |
+| Daemon 시작: 등록 | Plugin 디렉터리의 모듈을 모두 불러오고 `register`를 불러 Collection을 채웁니다([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고). | `registry.register`로 자신을 등록합니다. |
+| Daemon 시작: 시작 | 설정의 "사용할 Plugin"에 있는 에이전트 id마다 Collection에서 그 `agent`의 Plugin을 골라 `start`를 한 번 부릅니다. Plugin마다 다른 `PluginContext`를 넘깁니다. | Trigger를 설정한 뒤 `start`를 끝냅니다. 수집은 `start`가 끝난 뒤에도 Trigger에 따라 계속합니다. |
+| 불러오기, 등록 또는 `start` 실패 | 로그를 남기고 그 Plugin을 시작하지 않은 것으로 봅니다. 다른 Plugin은 그대로 등록하고 시작합니다. | |
 | Daemon 종료 | 시작한 Plugin마다 `stop`을 부릅니다. | Trigger를 해제하고 진행 중인 수집을 멈춘 뒤 `stop`을 끝냅니다. `stop`이 끝난 뒤에는 `submit`을 부르지 않습니다. |
 
-- 설정에서 활성화하지 않은 Plugin은 불러오지 않으므로 Session Log를 수집하지 않습니다.
+- 등록했지만 설정에서 활성화하지 않은 Plugin은 `start`가 불리지 않으므로 Session Log를 수집하지 않습니다.
 - Plugin은 Daemon과 같은 프로세스에서 실행됩니다. `start`가 끝난 뒤 Plugin 안에서 일어난 오류는 Plugin이 처리하며, Plugin은 자신의 오류로 Daemon 프로세스를 끝내지 않습니다.
 
 ## PluginContext

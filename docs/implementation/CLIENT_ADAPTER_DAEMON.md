@@ -15,7 +15,7 @@ Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주�
 | 항목 | 설명 |
 |---|---|
 | 상태 디렉터리 | Daemon 로그 등 Daemon이 쓰는 파일을 두는 디렉터리입니다. |
-| Plugin 디렉터리 | 빌드한 Plugin을 두는 디렉터리입니다. Daemon은 시작할 때 여기서 "사용할 Plugin"을 불러옵니다([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고). |
+| Plugin 디렉터리 | 빌드한 Plugin을 두는 디렉터리입니다. Daemon은 시작할 때 여기 있는 Plugin을 모두 불러와 Plugin Collection에 등록하고, 그 가운데 "사용할 Plugin"을 시작합니다([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고). |
 | Transport | 표준입출력이면 실행할 Main Server 명령입니다. Transport별 주소는 [Transport](TRANSPORT.md#transport-바인딩)를 참고하세요. |
 
 ## 결정되지 않은 사항

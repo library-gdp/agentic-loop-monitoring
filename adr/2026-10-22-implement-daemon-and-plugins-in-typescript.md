@@ -15,7 +15,7 @@ decision-makers: pgd
 Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
 - [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
-- Plugin은 에이전트마다 별도의 모듈로 두고 Daemon과 따로 빌드합니다. Daemon은 빌드한 Plugin의 ES 모듈을 실행 중에 불러옵니다([Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md) 참고).
+- Plugin은 에이전트마다 별도의 모듈로 두고 Daemon과 따로 빌드합니다. Daemon은 시작할 때 빌드한 Plugin의 ES 모듈을 불러오고, Plugin은 Daemon의 Plugin Collection에 자신을 등록합니다([Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md) 참고).
 
 **범위 밖**
 
