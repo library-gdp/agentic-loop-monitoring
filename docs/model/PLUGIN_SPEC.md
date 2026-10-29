@@ -80,11 +80,14 @@ Plugin은 Agent마다 따로 Turn을 나눕니다. Turn은 프롬프트 레코�
 
 | 끝나는 방식 | 판단 기준 | 처리 |
 |---|---|---|
-| 최종 응답 | 도구 실행을 요청하지 않는 모델 응답이 기록됨 | Turn의 Session Log Event를 Daemon에 넘깁니다. |
+| 최종 응답 | 도구 실행을 요청하지 않는 모델 응답이 기록됨. LLM 호출 오류는 최종 응답이 아닙니다. | Turn의 Session Log Event를 Daemon에 넘깁니다. |
+| LLM 호출 오류로 멈춤 | 에이전트가 LLM 호출 오류 뒤 다시 시도하지 않고 Turn을 멈췄다고 기록함 | Turn의 Session Log Event를 Daemon에 넘깁니다. |
+| 요청한 compaction 완료 | 사용자가 compaction만 요청한 프롬프트에서, compaction 결과가 기록됨 | Turn의 Session Log Event를 Daemon에 넘깁니다. |
 | 사용자 중단 | 에이전트가 사용자 중단을 기록함 | Turn 전체를 수집한 것으로 치되 Session Log Event를 만들지 않습니다. |
-| 다음 Turn 시작 | 위 두 가지 없이 다음 사용자 프롬프트 레코드가 나옴 | 오류나 충돌로 끝난 Turn으로 보고, 그때까지의 Session Log Event를 넘깁니다. |
+| 다음 Turn 시작 | 위 네 가지 없이 다음 사용자 프롬프트 레코드가 나옴 | 오류나 충돌로 끝난 Turn으로 보고, 그때까지의 Session Log Event를 넘깁니다. |
 
-- 세 기준을 Session Log에서 어떻게 알아보는지는 에이전트마다 다르므로 [에이전트별 문서](#에이전트별-문서)에 적습니다. 예를 들어 사용자 중단을 나타내는 레코드가 사용자 프롬프트와 같은 종류로 기록되는 에이전트라면, Plugin은 이를 프롬프트로 다루지 않아야 합니다.
+- 이 기준들을 Session Log에서 어떻게 알아보는지는 에이전트마다 다르므로 [에이전트별 문서](#에이전트별-문서)에 적습니다. 예를 들어 사용자 중단을 나타내는 레코드가 사용자 프롬프트와 같은 종류로 기록되는 에이전트라면, Plugin은 이를 프롬프트로 다루지 않아야 합니다.
+- 에이전트가 compaction이나 LLM 호출 오류, 재시도를 처리하면서 사용자 프롬프트와 같은 종류로 기록한 레코드(예: compaction 요약, 작업을 이어 가라는 지시)도 프롬프트로 다루지 않습니다. 이런 레코드는 Turn을 시작하지 않으며, 담긴 내용은 해당하는 Session Log Event(예: `compaction`의 `summary`)로 옮깁니다.
 - 에이전트가 사용자 중단을 기록하지 않으면 Plugin은 중단을 알아볼 수 없습니다. 이때 중단된 Turn은 다음 Turn이 시작될 때 오류로 끝난 Turn으로 보내집니다.
 - 첫 사용자 프롬프트 앞에 있는 레코드(예: Session 메타데이터)는 Turn에 속하지 않습니다. Session Log Event를 만드는 데 필요한 정보(예: 모델 이름)는 Plugin이 따로 기억해 두고, 이 레코드로 Session Log Event를 만들지 않습니다.
 
@@ -124,7 +127,11 @@ Plugin을 구현할 때 에이전트마다 따로 문서를 만들고 다음을 
 - **Session ID와 Agent ID**: Main Agent와 Subagent 각각의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법. [Session ID와 Agent ID](#session-id와-agent-id)의 규칙을 지키는 방법을 포함합니다.
 - **Trigger**: [Trigger](#trigger)에서 Plugin이 정의하는 것
 - **Session Log**: Log 수집 방식. [수집 방식](#수집-방식)에서 Plugin이 정의하는 것을 포함합니다.
-- **변환**: 레코드를 Session Log Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 세 기준을 알아보는 방법
+- **변환**: 레코드를 Session Log Event로 옮기는 방법과, [Turn 단위](#turn-단위)의 기준을 알아보는 방법. 다음을 알아보는 방법을 포함합니다.
+  - 응답이 끝난 이유를 [Domain Model](DOMAIN_MODEL.md#assistant_message)의 `stop_reason` 값으로 옮기는 방법
+  - LLM 호출 오류와 재시도, 그리고 에이전트가 재시도를 그만두었는지
+  - compaction과 그 `trigger`, 요약
+  - 도구 실행이 띄운 Subagent의 Agent ID
 - **Batch 단위**: [Batch 단위](#batch-단위)에서 Plugin이 정의하는 것
 - **input 기록 범위**: LLM Call의 input([Glossary](GLOSSARY.md) 참고) 가운데 그 에이전트가 Session Log에 기록하는 것과 기록하지 않는 것. 기록하지 않는 input은 Plugin이 만들어 내지 않습니다.
 

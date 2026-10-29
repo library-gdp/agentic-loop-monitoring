@@ -7,7 +7,7 @@
 1. **Main Server가 기록의 원본을 가집니다.** Session Log는 에이전트가 소유하므로 에이전트가 언제든 지울 수 있고, Daemon은 Ack를 받은 Batch를 보관하지 않습니다. 그래서 Ack 뒤에 Session Log Event가 남는 곳은 Main Server뿐입니다.
 2. **받은 것을 바꾸지 않습니다.** Session Log Event는 받은 그대로 저장하고, 저장한 뒤에는 고치지 않습니다. 지우는 것은 [Session 단위 삭제](#삭제와-보관)뿐입니다.
 3. **다시 얻을 수 없는 것은 버리지 않습니다.** Main Server가 아직 모르는 Session Log Event 종류, `content` 블록, 필드도 원문에 남깁니다. Core는 이것을 활동 모델을 구성할 때 쓰지 않을 뿐입니다([알 수 없는 값](AGENT_LOGGING_PROTOCOL.md#알-수-없는-값) 참고). 나중에 Main Server가 그 값을 이해하게 되면 다시 수집하지 않고 지난 데이터에도 적용할 수 있습니다.
-4. **활동 모델은 파생 데이터입니다.** Turn, Loop, LLM Call, Tool Call은 원본 데이터로 언제든 다시 만들 수 있으며, 원본 데이터와 어긋나면 원본 데이터가 맞습니다.
+4. **활동 모델은 파생 데이터입니다.** Turn, Loop, LLM Call, Tool Call, Compaction은 원본 데이터로 언제든 다시 만들 수 있으며, 원본 데이터와 어긋나면 원본 데이터가 맞습니다.
 5. **같은 내용을 여러 번 저장하지 않습니다.** LLM Call의 input은 앞선 Session Log Event를 가리켜 나타내고 복사하지 않습니다([LLM Call의 input](#llm-call의-input) 참고).
 
 ## 데이터가 있는 곳
@@ -53,14 +53,16 @@ Main Server의 데이터는 원본 데이터와 파생 데이터로 나뉩니다
 | [Turn](#turn) | 파생 데이터 | `agent`, `id` | Agent의 Turn 하나입니다. |
 | [LLM Call](#llm-call) | 파생 데이터 | `agent`, `id` | Turn 안의 LLM Call 하나입니다. Loop를 겸합니다. |
 | [Tool Call](#tool-call) | 파생 데이터 | `agent`, `llm_call_id`, `ordinal` | LLM Call이 요청한 Tool Call 하나입니다. |
+| [Compaction](#compaction) | 파생 데이터 | `agent`, `id` | Turn 안의 Compaction 하나입니다. |
 
 ```
 Session
 ├── Agent ┄┄ parent_id ┄┄▶ Agent
 │   ├── Session Log Event ──ingest──▶ 수신 기록
 │   └── Turn                        (파생)
-│       └── LLM Call = Loop         (파생)
-│           └── Tool Call           (파생)
+│       ├── LLM Call = Loop         (파생)
+│       │   └── Tool Call ┄┄ subagent_id ┄┄▶ Agent
+│       └── Compaction              (파생)
 └── 수신 기록
 ```
 
@@ -74,8 +76,10 @@ Session
 | Agent | 1 : N | Turn | Turn의 `agent` |
 | Turn | 1 : N | Session Log Event | Session Log Event의 `turn_id` |
 | Turn | 1 : N | LLM Call | LLM Call의 `turn_id` |
+| Turn | 1 : N | Compaction | Compaction의 `turn_id` |
 | LLM Call | 1 : N | Tool Call | Tool Call의 `llm_call_id` |
 | Tool Call | 1 : 0..1 | Session Log Event(`tool_result`) | Tool Call의 `result_event_id` |
+| Tool Call | 1 : 0..1 | Agent(Subagent) | Tool Call의 `subagent_id`. Subagent가 아직 없을 수 있어 참조로 두지 않습니다. |
 
 Loop는 LLM Call 하나와 그 Tool Call들이므로 Entity로 따로 두지 않습니다. Loop의 `id`는 LLM Call의 `id`와 같습니다.
 
@@ -162,7 +166,7 @@ Session을 이루는 Agent 가운데 어느 하나의 Batch가 처음 올 때 �
 - 계산 값(Token Usage 합계, Agent와 Session의 `started_at`, `ended_at` 등)은 질의할 때 계산합니다. 질의가 느려 미리 계산해 두어야 하면 파생 데이터에 필드를 더합니다.
 - 파생 데이터는 자신을 만든 구성 규칙의 버전을 가집니다. 구성 규칙이 바뀌면 원본 데이터로 파생 데이터를 모두 다시 만듭니다.
 
-Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLUGIN_SPEC.md#batch-단위) 참고), Turn과 그 안의 LLM Call, Tool Call은 `turn_id`가 같은 Session Log Event만으로 만들 수 있습니다. 다른 Turn이나 다른 Agent를 읽지 않습니다.
+Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLUGIN_SPEC.md#batch-단위) 참고), Turn과 그 안의 LLM Call, Tool Call, Compaction은 `turn_id`가 같은 Session Log Event만으로 만들 수 있습니다. 다른 Turn이나 다른 Agent를 읽지 않습니다.
 
 #### Turn
 
@@ -181,7 +185,8 @@ Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLU
 |---|---|
 | `prompt` | `user_message`의 `body`의 `text` |
 | `loops` | `turn_id`가 이 Turn의 `id`인 LLM Call |
-| `usage` | 그 LLM Call들의 `usage`를 항목별로 더한 계산 값 |
+| `compactions` | `turn_id`가 이 Turn의 `id`인 Compaction을 `position` 순으로 |
+| `usage` | 그 LLM Call들과 Compaction들의 `usage`를 항목별로 더한 계산 값 |
 
 #### LLM Call
 
@@ -194,6 +199,9 @@ Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLU
 | `turn_id` | string | O | 소속 Turn의 `id`입니다. |
 | `position` | integer | O | `assistant_message`의 Turn 안 위치입니다. Turn 안에서 LLM Call의 순서이며, [input](#llm-call의-input)의 범위를 정할 때 씁니다. |
 | `model` | string | | `assistant_message`의 `model`입니다. |
+| `stop_reason` | string | | `assistant_message`의 `stop_reason`입니다. |
+| `failed` | boolean | O | `assistant_message`에 `error`가 있으면 `true`입니다. 오류로 끝난 LLM Call을 거를 때 씁니다. |
+| `attempt` | integer | | `assistant_message`의 `attempt`입니다. |
 | `started_at` | 시각 | O | `assistant_message`의 `started_at`입니다. 없으면 같은 Turn에서 바로 앞 Session Log Event의 `timestamp`로 추정합니다. |
 | `started_at_estimated` | boolean | O | `started_at`을 추정했으면 `true`입니다. |
 | `ended_at` | 시각 | O | `assistant_message`의 `timestamp`입니다. |
@@ -203,6 +211,7 @@ Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLU
 |---|---|
 | `input` | 원본 데이터의 Session Log Event를 범위로 읽습니다([LLM Call의 input](#llm-call의-input) 참고). |
 | `output` | `assistant_message`의 `body`의 `content` |
+| `error` | `assistant_message`의 `body`의 `error` |
 | Loop의 `tool_calls` | `llm_call_id`가 이 LLM Call의 `id`인 Tool Call을 `ordinal` 순으로 |
 | Loop의 `started_at`, `ended_at` | 이 LLM Call과 그 Tool Call들의 시각으로 계산한 값 |
 
@@ -219,6 +228,7 @@ Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLU
 | `name` | string | O | `tool_use` 블록의 `name`입니다. |
 | `result_event_id` | string | | `tool_result`의 `event_id`입니다. 결과가 기록되지 않았으면 비웁니다. |
 | `is_error` | boolean | | `tool_result`의 `is_error`입니다. 에이전트가 기록하지 않았으면 비웁니다. |
+| `subagent_id` | string | | `tool_result`의 `subagent_id`입니다. 같은 Session의 Agent `id`를 가리키지만, 그 Subagent의 Batch가 아직 오지 않았을 수 있어 참조로 두지 않습니다. |
 | `started_at` | 시각 | O | 요청한 `assistant_message`의 `timestamp`입니다. |
 | `ended_at` | 시각 | | `tool_result`의 `timestamp`입니다. 결과가 기록되지 않았으면 비웁니다. |
 
@@ -228,14 +238,35 @@ Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLU
 |---|---|
 | `input` | 요청한 `assistant_message`의 `body`에서 이 `tool_use` 블록의 `input` |
 | `output` | `result_event_id`의 `tool_result`의 `body`의 `output` |
-| `subagent_id` | 채우지 않습니다([Tool Call](DOMAIN_MODEL.md#tool-call) 참고). |
+
+#### Compaction
+
+`compaction` 하나로 만듭니다.
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `agent` | 참조(Agent) | O | 이 Compaction의 Agent입니다. |
+| `id` | string | O | `compaction`의 `event_id`입니다. |
+| `turn_id` | string | O | 소속 Turn의 `id`입니다. |
+| `position` | integer | O | `compaction`의 Turn 안 위치입니다. [input](#llm-call의-input)의 범위를 정할 때 씁니다. |
+| `trigger` | string | | `compaction`의 `trigger`입니다. |
+| `context_tokens_before` | integer | | `compaction`의 `context_tokens_before`입니다. |
+| `model` | string | | `compaction`의 `model`입니다. |
+| `started_at` | 시각 | | `compaction`의 `started_at`입니다. 추정하지 않습니다. |
+| `ended_at` | 시각 | O | `compaction`의 `timestamp`입니다. |
+| `usage` | [Token Usage](DOMAIN_MODEL.md#token-usage) | | `compaction`의 `usage`입니다. 에이전트가 기록하지 않은 항목은 비워 두며 `0`으로 바꾸지 않습니다. |
+
+| 활동 모델의 필드 | 얻는 곳 |
+|---|---|
+| `summary` | `compaction`의 `body`의 `summary` |
 
 ### LLM Call의 input
 
-LLM Call의 `input`은 같은 Agent에서 그 `assistant_message` 앞에 있는 Session Log Event입니다([LLM Call](DOMAIN_MODEL.md#llm-call) 참고). 이것을 LLM Call마다 복사해 저장하면 Agent의 Session Log Event 수의 제곱만큼 데이터가 늘어납니다. 그래서 input은 저장하지 않고 질의할 때 원본 데이터에서 범위로 읽습니다.
+LLM Call의 `input`은 같은 Agent에서 그 `assistant_message` 앞에 있는 Session Log Event이며, 앞에 Compaction이 있으면 가장 가까운 Compaction부터입니다([LLM Call](DOMAIN_MODEL.md#llm-call) 참고). 이것을 LLM Call마다 복사해 저장하면 Agent의 Session Log Event 수의 제곱만큼 데이터가 늘어납니다. 그래서 input은 저장하지 않고 질의할 때 원본 데이터에서 범위로 읽습니다.
 
 - 범위의 끝은 그 LLM Call의 `assistant_message` 바로 앞입니다. 파생 데이터의 LLM Call이 가진 `turn_id`와 `position`으로 정합니다.
-- 범위의 시작과, 여러 Turn에 걸친 순서는 Core의 규칙으로 정합니다. 두 규칙 모두 아직 정하지 않았습니다([Domain Model](DOMAIN_MODEL.md#결정되지-않은-사항) 참고). 저장 데이터는 이 순서를 굳혀 두지 않고 그 재료(Turn의 `started_at`과, Turn의 `ingest`가 가리키는 수신 기록의 `id`)만 가지므로, 규칙이 정해지거나 바뀌어도 원본 데이터를 고치지 않습니다.
+- 범위의 시작은 범위의 끝보다 앞에 있는 가장 가까운 Compaction입니다. 파생 데이터의 Compaction이 가진 `turn_id`와 `position`으로 정합니다. Compaction이 없으면 Agent의 첫 Session Log Event입니다([LLM Call 구성 규칙](DOMAIN_MODEL.md#llm-call) 참고).
+- 여러 Turn에 걸친 순서는 Core의 규칙으로 정하며, 아직 정하지 않았습니다([Domain Model](DOMAIN_MODEL.md#결정되지-않은-사항) 참고). 가장 가까운 Compaction을 찾을 때도 이 순서를 따릅니다. 저장 데이터는 이 순서를 굳혀 두지 않고 그 재료(Turn의 `started_at`과, Turn의 `ingest`가 가리키는 수신 기록의 `id`)만 가지므로, 규칙이 정해지거나 바뀌어도 원본 데이터를 고치지 않습니다.
 
 ## 쓰기
 
@@ -264,10 +295,12 @@ Query API가 [Intent](../../intent/INTENT-1.0.md#proposed-outcome)의 역추적�
 | Session 목록(시작 시각순, 에이전트 id, `cwd`, `host`로 거르기) | 원본 데이터의 Session, 파생 데이터의 Turn 시각 |
 | Session의 Agent 트리 | 원본 데이터의 Agent(`parent_id`) |
 | Agent의 Turn 목록과 각 Turn의 `status`, Token Usage 합계 | 파생 데이터의 Turn, LLM Call |
-| Turn의 Loop, LLM Call, Tool Call | 파생 데이터 |
+| Turn의 Loop, LLM Call, Tool Call, Compaction | 파생 데이터 |
+| 오류로 끝난 LLM Call과 재시도, Stop Reason별 LLM Call | 파생 데이터의 LLM Call(`failed`, `attempt`, `stop_reason`), 오류 내용은 원본 데이터의 `assistant_message` |
+| Tool Call이 띄운 Subagent | 파생 데이터의 Tool Call(`subagent_id`)과 원본 데이터의 Agent |
 | LLM Call의 input과 output | 원본 데이터의 Session Log Event([범위](#llm-call의-input)와 그 LLM Call의 `assistant_message`) |
 | Tool Call의 인자와 결과 | 원본 데이터의 Session Log Event(`assistant_message`의 `tool_use` 블록과 `tool_result`) |
-| LLM Call, Loop, Turn, Agent, Session별 Token Usage 합계 | 파생 데이터의 LLM Call |
+| LLM Call, Compaction, Loop, Turn, Agent, Session별 Token Usage 합계 | 파생 데이터의 LLM Call, Compaction |
 
 Visualization은 이 질의를 Query API로만 합니다([Application Architecture](APPLICATION_ARCHITECTURE.md#visualization) 참고).
 
