@@ -32,8 +32,8 @@ Transport Unit 하나를 트랜잭션 하나로 처리합니다. [Data Architect
 
 1. `BEGIN IMMEDIATE`로 쓰기 잠금을 잡습니다. 쓰기 잠금 대기 시간 안에 잡지 못하면 `unavailable`로 거절합니다.
 2. `session`, `agent`를 찾거나 추가하고, `ingest`를 추가합니다. `session`과 `agent`의 비어 있는 열은 `NULL`일 때만 채웁니다(예: `UPDATE session SET cwd = ? WHERE pk = ? AND cwd IS NULL`).
-3. `event`를 추가합니다. `turn_id`는 Transport Unit의 `turn.id`, `position`은 `turn.position`에 `events` 안 순서를 더한 값, `ends_turn`은 `turn.last`가 `true`일 때 `events`의 마지막 행만 `1`입니다. 중복은 `INSERT ... ON CONFLICT (session_pk, event_id) DO NOTHING`으로 건너뜁니다.
-4. Transport Unit의 `turn.id`에 해당하는 `turn`, `llm_call`, `tool_call`의 행을 지우고, `event`에서 그 Turn의 행을 `position` 순으로 읽어 다시 만듭니다.
+3. `event`를 추가합니다. `turn_id`는 Transport Unit의 `turn.id`, `position`은 `turn.position`에 `events` 안 순서를 더한 값입니다. 중복은 `INSERT ... ON CONFLICT (session_pk, event_id) DO NOTHING`으로 건너뜁니다.
+4. Transport Unit의 `turn.id`에 해당하는 `turn`, `llm_call`, `tool_call`의 행을 지우고, `event`에서 그 Turn의 행을 `position` 순으로 읽어 다시 만듭니다. 3번에서 새로 추가한 `event` 행이 있으면, 같은 `agent_pk`에서 `status`가 `in_progress`인 다른 `turn` 행의 `status`를 `errored`로 바꿉니다.
 5. `ingest`의 `stored_count`를 채우고 `COMMIT`합니다.
 6. `COMMIT`이 끝난 뒤에 `accepted`를 돌려줍니다.
 

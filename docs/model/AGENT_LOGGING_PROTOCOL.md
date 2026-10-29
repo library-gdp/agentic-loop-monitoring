@@ -8,7 +8,7 @@ Session Log Event는 Client Adapter Daemon과 Main Server가 함께 쓰는 이�
 
 | 메시지 | 방향 | 설명 |
 |---|---|---|
-| Transport Unit | Daemon → Main Server | 한 Session, 한 Agent의 끝난 Turn에 속한 Session Log 레코드 하나에서 나온 Session Log Event입니다. |
+| Transport Unit | Daemon → Main Server | 한 Session, 한 Agent의 Turn에 속한 Session Log 레코드 하나에서 나온 Session Log Event입니다. Plugin은 Turn이 끝나기를 기다리지 않고 레코드가 기록되는 대로 보냅니다. |
 | Ack | Main Server → Daemon | Transport Unit을 처리한 결과입니다. |
 
 Daemon은 Transport Unit 하나를 보내면 그 Ack를 받기 전에 다음 Transport Unit을 보내지 않습니다.
@@ -28,11 +28,10 @@ Daemon은 Transport Unit 하나를 보내면 그 Ack를 받기 전에 다음 Tra
 | `agent.parent_id` | string | Subagent일 때 | 부모 Agent ID입니다. Main Agent이면 비웁니다. |
 | `turn.id` | string | O | `events`가 속한 Turn을 시작한 `user_message`의 `event_id`입니다. Turn을 시작하는 레코드의 Transport Unit에서는 `events`의 첫 Session Log Event의 `event_id`와 같습니다. |
 | `turn.position` | integer | O | `events`의 첫 Session Log Event의 Turn 안 위치입니다. Turn을 시작한 `user_message`가 `0`이며, 그 뒤의 Session Log Event는 Session Log에 기록된 순서대로 하나씩 늘어납니다. |
-| `turn.last` | boolean | O | 이 Transport Unit이 그 Turn의 마지막 Transport Unit이면 `true`입니다. |
 | `events` | array | O | 레코드 하나에서 나온 Session Log Event 목록입니다. 하나 이상이며, 레코드 안에서 나온 순서를 따릅니다. |
 
 - `events`의 Session Log Event의 Turn 안 위치는 `turn.position`부터 하나씩 늘어납니다.
-- Turn 하나는 여러 Transport Unit에 나뉘어 옵니다. 그 Turn의 Transport Unit에서 `turn.position`은 겹치지 않고, `turn.last`가 `true`인 Transport Unit은 하나입니다.
+- Turn 하나는 여러 Transport Unit에 나뉘어 옵니다. 그 Turn의 Transport Unit에서 `turn.position`은 겹치지 않습니다. Turn이 끝났는지는 Transport Unit에 싣지 않으며, Core가 Session Log Event로 판단합니다([Domain Model](DOMAIN_MODEL.md#turn) 참고).
 
 ## Session Log Event
 

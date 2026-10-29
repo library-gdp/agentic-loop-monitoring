@@ -48,10 +48,10 @@ Main Server가 어디서 실행되는지는 정하지 않습니다. Client Adapt
 ## 데이터 흐름
 
 1. 에이전트가 Session Log에 대화 내용과 LLM 호출 정보를 기록합니다.
-2. Plugin은 자신이 정의한 Trigger가 발동하면, 자신이 정의한 방식으로 Session Log를 수집해 끝난 Turn 단위로 Session Log Event로 변환합니다. 사용자가 중단한 Turn은 버리고, 아직 끝나지 않은 Turn은 그 Turn이 끝난 뒤에 수집합니다.
-3. Plugin은 레코드 하나에서 나온 Session Log Event를 Transport Unit 하나로 Daemon에 넘깁니다.
+2. Plugin은 자신이 정의한 Trigger가 발동하면, 자신이 정의한 방식으로 Session Log를 수집해 완결된 레코드를 Session Log Event로 변환합니다. Turn이 끝나기를 기다리지 않습니다.
+3. Plugin은 레코드 하나에서 나온 Session Log Event를 Transport Unit 하나로 곧바로 Daemon에 넘깁니다.
 4. Daemon은 Plugin이 넘긴 Transport Unit을 Main Server에 보내고 Ack를 기다립니다.
-5. Main Server의 Input Adapter는 Transport Unit의 Session Log Event를 Core의 Ingest API로 넘깁니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
+5. Main Server의 Input Adapter는 Transport Unit의 Session Log Event를 Core의 Ingest API로 넘깁니다. Core는 Turn이 끝나기를 기다리지 않고 받는 대로 저장합니다. 저장이 끝나면 성공 Ack를 돌려줍니다.
 
 Daemon은 Transport Unit을 하나씩 보내며, Ack를 받기 전에는 다음 Transport Unit을 보내지 않습니다.
 
@@ -63,9 +63,8 @@ Daemon은 Transport Unit을 하나씩 보내며, Ack를 받기 전에는 다음 
 
 - Main Server가 재시도할 수 없다고 거절한 Transport Unit. 그 Transport Unit이 속한 Turn은 일부만 저장됩니다.
 - Plugin이 해석하지 못하고 건너뛴 Session Log의 레코드
-- Session의 마지막 Turn이 끝나지 않은 채로 Session이 끝난 경우. 예를 들어 에이전트가 충돌로 종료되면 그 Turn은 끝난 것으로 판단할 수 없어 보내지 않습니다.
 
-사용자가 중단한 Turn은 유실이 아니라 의도적으로 기록하지 않는 것입니다.
+끝나지 않은 Turn도 받은 만큼 저장합니다. 사용자가 중단한 Turn은 중단된 것으로, 에이전트가 충돌로 종료되어 끝나지 않은 Turn은 진행 중인 것으로 남습니다([Domain Model](DOMAIN_MODEL.md#turn) 참고).
 
 ## Principles
 

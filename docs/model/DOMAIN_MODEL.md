@@ -37,7 +37,7 @@ Session Log Event는 자신이 속한 Session과 Agent를 필드로 갖지 않�
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `event_id` | string | O | Plugin이 붙인 event id입니다. `source.agent`와 `session.id`가 같은 범위, 곧 한 Session의 모든 Agent에 걸쳐 고유하며, 같은 레코드를 다시 수집해도 바뀌지 않습니다. |
-| `type` | string | O | Session Log Event의 종류입니다. `user_message`, `assistant_message`, `tool_result`가 있습니다. |
+| `type` | string | O | Session Log Event의 종류입니다. `user_message`, `assistant_message`, `tool_result`, `turn_interrupted`가 있습니다. |
 | `timestamp` | 시각 | O | 에이전트가 레코드를 기록한 시각입니다. 시간대를 포함합니다. |
 
 ### `user_message`
@@ -76,6 +76,10 @@ Tool Call의 실행 결과입니다. `timestamp`는 결과가 기록된 시각�
 | `tool_use_id` | string | O | 이 결과를 요청한 `tool_use` 블록의 `tool_use_id`입니다. |
 | `output` | string 또는 object | O | 도구가 돌려준 결과입니다. |
 | `is_error` | boolean | | 도구 실행이 실패했으면 `true`입니다. 에이전트가 기록하지 않으면 뺍니다. |
+
+### `turn_interrupted`
+
+사용자가 Turn을 중단했다는 기록입니다. 에이전트가 사용자 중단을 기록한 레코드로 만들며, 공통 필드 밖의 필드는 없습니다. `timestamp`는 중단이 기록된 시각입니다. 에이전트가 사용자 중단을 기록하지 않으면 만들지 않습니다.
 
 ## Token Usage
 
@@ -140,19 +144,26 @@ Agent가 프롬프트 한 번을 받은 때부터 Stop할 때까지의 구간입
 |---|---|---|---|
 | `id` | string | O | Turn을 시작한 `user_message`의 `event_id`입니다. |
 | `prompt` | string | O | `user_message`의 `text`입니다. |
-| `status` | string | O | `completed`, `errored`, `incomplete` 가운데 하나입니다. 아래 구성 규칙을 참고하세요. |
+| `status` | string | O | `completed`, `interrupted`, `errored`, `in_progress` 가운데 하나입니다. 아래 구성 규칙을 참고하세요. |
 | `loops` | Loop 목록 | O | 이 Turn의 Loop입니다. 모델이 응답하기 전에 끝난 Turn이면 비어 있습니다. |
 | `started_at` | 시각 | O | `user_message`의 `timestamp`입니다. |
-| `ended_at` | 시각 | O | 이 Turn에서 Turn 안 위치가 가장 큰 Session Log Event의 `timestamp`입니다. |
+| `ended_at` | 시각 | O | 이 Turn에서 Turn 안 위치가 가장 큰 Session Log Event의 `timestamp`입니다. `in_progress`이면 지금까지 받은 것 가운데 가장 큰 것입니다. |
 | `usage` | Token Usage | 계산 값 | 이 Turn의 모든 LLM Call의 Token Usage를 항목별로 더한 값입니다. |
 
 구성 규칙:
 
-- Plugin은 끝난 Turn의 레코드만 Transport Unit으로 보내며, 사용자가 중단한 Turn은 걸러내므로 오지 않습니다([Plugin Specification](PLUGIN_SPEC.md#turn-단위) 참고). Turn 하나는 레코드마다 하나씩 여러 Transport Unit에 나뉘어 옵니다.
+- Plugin은 Turn이 끝나기를 기다리지 않고 레코드가 기록되는 대로 Transport Unit으로 보냅니다([Plugin Specification](PLUGIN_SPEC.md#transport-unit) 참고). 그래서 Turn 하나는 레코드마다 하나씩 여러 Transport Unit에 나뉘어 오고, 진행 중인 Turn도 Core에 있습니다.
 - `user_message`가 Turn을 시작합니다.
 - Session Log Event의 소속 Turn과 Turn 안 위치는 그 Session Log Event를 담은 Transport Unit의 `turn.id`와 `turn.position`으로 정합니다. Core는 Transport Unit이 도착한 순서로 정하지 않습니다.
-- `turn.last`가 `true`인 Transport Unit을 받기 전에는 `incomplete`입니다. 그 Turn의 Transport Unit이 아직 오는 중이거나, Daemon이 Turn 도중에 멈추었거나, 일부 Transport Unit이 거절되어 유실된 경우입니다.
-- `turn.last`가 `true`인 Transport Unit을 받은 Turn은, Turn 안 위치가 가장 큰 Session Log Event가 `tool_use` 블록이 없는 `assistant_message`(최종 응답)이면 `completed`입니다. 그렇지 않으면 오류나 충돌로 끝난 Turn이며 `errored`입니다.
+- Turn은 `tool_use` 블록이 없는 `assistant_message`(최종 응답), `turn_interrupted`, 다음 Turn의 시작 가운데 가장 먼저 나오는 것에서 끝납니다.
+- `status`는 다음 가운데 먼저 맞는 것입니다.
+
+| `status` | 조건 | 뜻 |
+|---|---|---|
+| `completed` | Turn 안 위치가 가장 큰 Session Log Event가 최종 응답입니다. | 정상적으로 끝났습니다. |
+| `interrupted` | Turn 안 위치가 가장 큰 Session Log Event가 `turn_interrupted`입니다. | 사용자가 중단했습니다. |
+| `errored` | 같은 Agent에서 이 Turn의 Session Log Event보다 나중에 받은, 다른 Turn의 Session Log Event가 있습니다. | 최종 응답도 중단도 없이 다음 Turn이 시작되었습니다. 오류나 충돌로 끝났거나, 에이전트가 사용자 중단을 기록하지 않은 경우입니다. |
+| `in_progress` | 위 어느 것에도 맞지 않습니다. | 아직 진행 중입니다. 에이전트가 충돌로 종료되어 Session이 이 Turn에서 끝났거나, Turn의 일부 Transport Unit이 유실되었을 수도 있습니다. |
 
 ### Loop
 

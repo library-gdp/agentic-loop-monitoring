@@ -19,7 +19,7 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 - **Trigger**: Plugin마다 언제 읽기를 시작할지 정합니다. Daemon은 Hook Client와 Signal을 두지 않습니다.
 - **읽는 방식**: Plugin마다 Session Log File을 찾고, 어디까지 읽었는지 기록하고, 이어 읽는 방법을 정합니다. Daemon은 Offset과 Offset Store를 두지 않습니다.
 - **Daemon의 역할**: Plugin이 Transport Unit으로 넘긴 Session Log Event를 그대로 Main Server에 보냅니다.
-- **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 끝난 Turn만 넘깁니다.
+- **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 완결된 레코드를 곧바로 넘깁니다.
 
 **범위 밖**
 
@@ -61,5 +61,5 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 ## More Information
 
 - 대체하는 ADR: [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md)
-- 2026-10-29: Plugin이 Daemon에 Session Log Event를 넘기는 단위는 [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)이 정합니다. 레코드 하나마다 Transport Unit 하나입니다. 이 문서의 Decision도 그에 맞게 고쳤습니다.
+- 2026-10-29: Plugin이 Daemon에 Session Log Event를 넘기는 단위는 [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)이 정합니다. 레코드 하나마다 Transport Unit 하나이며, Turn이 끝나기를 기다리지 않고 넘깁니다. 이 문서의 Decision도 그에 맞게 고쳤습니다.
 - 관련 ADR: [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)

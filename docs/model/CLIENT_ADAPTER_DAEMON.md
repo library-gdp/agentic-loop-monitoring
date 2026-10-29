@@ -25,7 +25,7 @@ Daemon은 에이전트가 실행되는 머신에 상주합니다.
 Plugin은 Session Log의 레코드 하나에서 나온 Session Log Event를 Transport Unit 하나로 Daemon에 넘깁니다. Daemon은 넘겨받은 Transport Unit을 그대로 보냅니다.
 
 - Daemon은 Transport Unit을 합치거나 나누지 않습니다.
-- Session ID, Agent ID, 부모 Agent ID, 작업 디렉터리, Turn 정보(`turn.id`, `turn.position`, `turn.last`)와 Session Log Event는 Plugin이 넘긴 값을 그대로 담습니다. `protocol_version`, `transport_unit_id`, `source`는 Daemon이 채웁니다.
+- Session ID, Agent ID, 부모 Agent ID, 작업 디렉터리, Turn 정보(`turn.id`, `turn.position`)와 Session Log Event는 Plugin이 넘긴 값을 그대로 담습니다. `protocol_version`, `transport_unit_id`, `source`는 Daemon이 채웁니다.
 
 ### 보내기
 
@@ -53,7 +53,6 @@ Daemon은 Transport Unit을 하나씩 보냅니다. Transport Unit을 보낸 뒤
 Daemon은 자신의 로그 파일에만 기록하며, 에이전트에는 아무것도 출력하지 않습니다. 다음 경우에는 로그를 남깁니다.
 
 - Plugin이 레코드를 해석하지 못하고 건너뛴 경우
-- 사용자가 중단한 Turn을 버린 경우
 - 재시도 가능한 실패와 재시도를 모두 실패한 경우
 - 재시도할 수 없는 거절로 Transport Unit을 버린 경우
 

@@ -127,14 +127,13 @@ Session을 이루는 Agent 가운데 어느 하나의 Transport Unit이 처음 �
 | `agent` | 참조(Agent) | O | 이 Session Log Event를 담은 Transport Unit의 Agent입니다. |
 | `turn_id` | string | O | 소속 Turn입니다. 이 Session Log Event를 담은 Transport Unit의 `turn.id`이며, Turn을 시작한 `user_message`의 `event_id`입니다. |
 | `position` | integer | O | Turn 안 위치입니다. Transport Unit의 `turn.position`에 `events` 안에서 이 Session Log Event의 순서(첫 Session Log Event가 `0`)를 더한 값입니다. 소속 Turn의 `user_message`가 `0`입니다. |
-| `ends_turn` | boolean | O | Turn의 마지막 Session Log Event이면 `true`입니다. `turn.last`가 `true`인 Transport Unit의 `events`에서 마지막 Session Log Event만 `true`입니다. |
 | `type` | string | O | 원문의 `type`입니다. |
 | `timestamp` | 시각 | O | 원문의 `timestamp`입니다. |
 | `body` | 원문 | O | 받은 Session Log Event입니다. 모르는 종류와 필드도 포함합니다. |
 | `ingest` | 참조(수신 기록) | O | 이 Session Log Event를 처음 저장한 수신 기록입니다. |
 
 - `type`과 `timestamp`는 `body`에서 꺼낸 값입니다. 질의와 정렬에만 쓰며 `body`와 다른 값을 가져서는 안 됩니다.
-- `turn_id`, `position`, `ends_turn`은 Session Log Event 자체가 아니라 Transport Unit에서 얻는 값입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)은 Transport Unit의 `turn`에 기대지만 Transport Unit은 저장하지 않으므로, 원본 데이터만으로 Turn을 다시 만들 수 있도록 이 값들을 저장합니다.
+- `turn_id`와 `position`은 Session Log Event 자체가 아니라 Transport Unit에서 얻는 값입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)은 Transport Unit의 `turn`에 기대지만 Transport Unit은 저장하지 않으므로, 원본 데이터만으로 Turn을 다시 만들 수 있도록 이 두 값을 저장합니다.
 
 #### 수신 기록
 
@@ -163,7 +162,7 @@ Session을 이루는 Agent 가운데 어느 하나의 Transport Unit이 처음 �
 - 계산 값(Token Usage 합계, Agent와 Session의 `started_at`, `ended_at` 등)은 질의할 때 계산합니다. 질의가 느려 미리 계산해 두어야 하면 파생 데이터에 필드를 더합니다.
 - 파생 데이터는 자신을 만든 구성 규칙의 버전을 가집니다. 구성 규칙이 바뀌면 원본 데이터로 파생 데이터를 모두 다시 만듭니다.
 
-Session Log Event마다 소속 Turn(`turn_id`), Turn 안 위치(`position`), Turn의 끝인지(`ends_turn`)가 저장되어 있으므로, Turn과 그 안의 LLM Call, Tool Call은 `turn_id`가 같은 Session Log Event만으로 만들 수 있습니다. 다른 Turn이나 다른 Agent를 읽지 않습니다.
+Session Log Event마다 소속 Turn(`turn_id`)과 Turn 안 위치(`position`)가 저장되어 있으므로, Turn과 그 안의 LLM Call, Tool Call은 `turn_id`가 같은 Session Log Event만으로 만들 수 있습니다. 다른 Agent는 읽지 않습니다. 같은 Agent의 다른 Turn은 Turn의 `status`가 `errored`인지 판단할 때만 봅니다.
 
 #### Turn
 
@@ -173,7 +172,7 @@ Session Log Event마다 소속 Turn(`turn_id`), Turn 안 위치(`position`), Tur
 |---|---|---|---|
 | `agent` | 참조(Agent) | O | 이 Turn의 Agent입니다. |
 | `id` | string | O | Turn을 시작한 `user_message`의 `event_id`입니다. Session Log Event의 `turn_id`와 같습니다. |
-| `status` | string | O | `completed`, `errored`, `incomplete` 가운데 하나입니다. `ends_turn`이 `true`인 Session Log Event가 없으면 `incomplete`입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)을 따릅니다. |
+| `status` | string | O | `completed`, `interrupted`, `errored`, `in_progress` 가운데 하나입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)을 따릅니다. 받은 순서는 Session Log Event의 `ingest`가 가리키는 수신 기록의 `id`로 비교합니다. |
 | `started_at` | 시각 | O | `user_message`의 `timestamp`입니다. |
 | `ended_at` | 시각 | O | 이 Turn에서 `position`이 가장 큰 Session Log Event의 `timestamp`입니다. |
 | `ingest` | 참조(수신 기록) | O | `user_message`를 처음 저장한 수신 기록입니다. |
@@ -240,7 +239,7 @@ LLM Call의 `input`은 같은 Agent에서 그 `assistant_message` 앞에 있는 
 
 ## 쓰기
 
-Core의 Ingest API는 Transport Unit 하나를 다음 순서로 처리합니다.
+Core는 Turn이 끝나기를 기다리지 않고, Transport Unit을 받는 대로 저장합니다. Ingest API는 Transport Unit 하나를 다음 순서로 처리합니다.
 
 1. Input Adapter의 Decoder가 Transport Unit을 해석합니다. 해석할 수 없으면 `invalid_transport_unit`으로 거절하며, 아무것도 저장하지 않습니다.
 2. Session Log Event를 하나씩 검사합니다. 잘못된 Session Log Event는 로그를 남기고 뺍니다([Ack 규칙](AGENT_LOGGING_PROTOCOL.md#규칙) 참고).
@@ -248,10 +247,10 @@ Core의 Ingest API는 Transport Unit 하나를 다음 순서로 처리합니다.
    1. 수신 기록을 추가합니다.
    2. Session과 Agent가 없으면 추가하고, [필드 채우기 규칙](#session과-agent의-필드-채우기)에 따라 비어 있는 필드를 채웁니다.
    3. Session Log Event를 추가합니다. Session과 `event_id`가 같은 Session Log Event가 이미 있으면 내용을 비교하지 않고 건너뜁니다.
-   4. 이 Transport Unit이 속한 Turn(`turn.id`)의 파생 데이터를 다시 만듭니다.
+   4. 이 Transport Unit이 속한 Turn(`turn.id`)의 파생 데이터를 다시 만듭니다. 이 Transport Unit에서 새로 저장한 Session Log Event가 있고 같은 Agent에 `in_progress`인 다른 Turn이 있으면, 그 Turn도 다시 만듭니다. 그 Turn보다 나중에 다른 Turn의 Session Log Event를 받았으므로 `errored`가 됩니다. 이미 저장되어 건너뛴 Session Log Event는 처음 받은 순서를 유지하므로, 앞선 Turn을 다시 보내도 진행 중인 Turn이 `errored`가 되지 않습니다.
 4. 저장이 끝나면 `accepted`를 돌려줍니다. 3번의 어느 단계에서든 실패하면 3번 전체를 되돌리고 `unavailable`로 거절합니다.
 
-- 3번이 원자적이므로, 같은 Transport Unit을 몇 번 다시 받아도 저장 결과는 처음 한 번 받은 것과 같습니다. 일부만 저장된 Transport Unit은 남지 않습니다. 다만 Turn은 여러 Transport Unit에 나뉘어 오므로, 일부 Transport Unit만 저장된 Turn은 남을 수 있으며 그 Turn은 `incomplete`입니다.
+- 3번이 원자적이므로, 같은 Transport Unit을 몇 번 다시 받아도 저장 결과는 처음 한 번 받은 것과 같습니다. 일부만 저장된 Transport Unit은 남지 않습니다. Turn은 여러 Transport Unit에 나뉘어 오므로, 진행 중인 Turn은 받은 만큼만 저장되어 `in_progress`로 보입니다.
 - 파생 데이터를 같은 단계에서 만들므로, `accepted`를 돌려준 Transport Unit은 바로 조회할 수 있습니다. Turn의 파생 데이터는 그 Turn의 Session Log Event만으로 만들므로, 이 비용은 그 Turn의 크기에 비례합니다.
 - 여러 Daemon이 Main Server 하나에 동시에 Transport Unit을 보낼 수 있습니다. 같은 Session, 같은 Agent를 동시에 추가하려 해도 하나만 만들어져야 합니다.
 - 파생 데이터를 모두 다시 만드는 동안 Transport Unit을 받을 수 없으면 `unavailable`로 거절합니다. Daemon이 다시 보냅니다.

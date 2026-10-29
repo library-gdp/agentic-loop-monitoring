@@ -122,14 +122,12 @@ Session Log Event Entity입니다.
 | 4 | `agent_pk` | `INTEGER` | N | FK | Transport Unit의 Agent | `agent` |
 | 5 | `turn_id` | `TEXT` | N | | 소속 Turn. Transport Unit의 `turn.id`이며, Turn을 시작한 `user_message`의 `event_id` | `turn_id` |
 | 6 | `position` | `INTEGER` | N | | Turn 안 위치. `user_message`가 `0`. Transport Unit의 `turn.position`에 `events` 안 순서를 더한 값 | `position` |
-| 7 | `ends_turn` | `INTEGER` | N | | Turn의 마지막 Session Log Event이면 `1`. `turn.last`가 `true`인 Transport Unit의 마지막 `events` | `ends_turn` |
-| 8 | `type` | `TEXT` | N | | `body`의 `type` | `type` |
-| 9 | `timestamp_us` | `INTEGER` | N | | `body`의 `timestamp` | `timestamp` |
-| 10 | `body` | `TEXT` | N | | 받은 Session Log Event의 JSON 원문 | `body` |
-| 11 | `ingest_id` | `INTEGER` | N | FK | 처음 저장한 수신 기록 | `ingest` |
+| 7 | `type` | `TEXT` | N | | `body`의 `type` | `type` |
+| 8 | `timestamp_us` | `INTEGER` | N | | `body`의 `timestamp` | `timestamp` |
+| 9 | `body` | `TEXT` | N | | 받은 Session Log Event의 JSON 원문 | `body` |
+| 10 | `ingest_id` | `INTEGER` | N | FK | 처음 저장한 수신 기록 | `ingest` |
 
 - `CHECK (position >= 0)`
-- `CHECK (ends_turn IN (0, 1))`
 - `CHECK (json_valid(body))`
 - `body`는 모르는 `type`의 Session Log Event와 모르는 필드도 그대로 담습니다. `type`과 `timestamp_us`는 `body`에서 꺼낸 값이며 `body`와 다른 값을 넣지 않습니다.
 - 행을 추가할 때는 `INSERT ... ON CONFLICT (session_pk, event_id) DO NOTHING`을 씁니다. 추가한 뒤에는 고치지 않습니다.
@@ -146,12 +144,12 @@ Turn Entity입니다. `agent_pk`와 `turn_id`가 같은 `event` 행으로 만듭
 |---|---|---|---|---|---|---|
 | 1 | `agent_pk` | `INTEGER` | N | PK, FK | 이 Turn의 Agent | `agent` |
 | 2 | `turn_id` | `TEXT` | N | PK | Turn을 시작한 `user_message`의 `event_id` | `id` |
-| 3 | `status` | `TEXT` | N | | `completed`, `errored`, `incomplete`. 그 Turn에 `ends_turn`이 `1`인 `event`가 없으면 `incomplete` | `status` |
+| 3 | `status` | `TEXT` | N | | `completed`, `interrupted`, `errored`, `in_progress` | `status` |
 | 4 | `started_at_us` | `INTEGER` | N | | `user_message`의 `timestamp` | `started_at` |
 | 5 | `ended_at_us` | `INTEGER` | N | | `position`이 가장 큰 `event`의 `timestamp` | `ended_at` |
 | 6 | `ingest_id` | `INTEGER` | N | FK | `user_message`를 처음 저장한 수신 기록 | `ingest` |
 
-- `CHECK (status IN ('completed', 'errored', 'incomplete'))`
+- `CHECK (status IN ('completed', 'interrupted', 'errored', 'in_progress'))`
 - `CHECK (ended_at_us >= started_at_us)`는 두지 않습니다. 에이전트가 기록한 시각이 거꾸로일 수 있고, 그것도 받은 그대로 보여 줘야 합니다.
 
 ### `llm_call`
@@ -224,6 +222,7 @@ Tool Call Entity입니다. `assistant_message`의 `tool_use` 블록 하나와, �
 | `ingest_by_agent` | `ingest` | `agent_pk` | `agent` 삭제 때 외래 키 검사 |
 | `turn_by_time` | `turn` | `agent_pk`, `started_at_us` | Agent의 Turn 목록, Session 목록의 시작 시각 |
 | `turn_by_ingest` | `turn` | `ingest_id` | `ingest` 삭제 때 외래 키 검사 |
+| `turn_in_progress` | `turn` | `agent_pk` (`status = 'in_progress'`인 행만) | 같은 Agent의 `in_progress` Turn을 찾아 다시 만들기 |
 | `llm_call_by_turn` | `llm_call` | `agent_pk`, `turn_id`, `position` | Turn의 Loop 목록 |
 
 `tool_call`은 기본 키(`agent_pk`, `llm_call_id`, `ordinal`)로 LLM Call의 Tool Call을 순서대로 찾습니다.
@@ -272,7 +271,6 @@ CREATE TABLE event (
   agent_pk     INTEGER NOT NULL REFERENCES agent (pk),
   turn_id      TEXT    NOT NULL,
   position     INTEGER NOT NULL CHECK (position >= 0),
-  ends_turn    INTEGER NOT NULL CHECK (ends_turn IN (0, 1)),
   type         TEXT    NOT NULL,
   timestamp_us INTEGER NOT NULL,
   body         TEXT    NOT NULL CHECK (json_valid(body)),
@@ -285,7 +283,8 @@ CREATE INDEX event_by_ingest ON event (ingest_id);
 CREATE TABLE turn (
   agent_pk      INTEGER NOT NULL REFERENCES agent (pk),
   turn_id       TEXT    NOT NULL,
-  status        TEXT    NOT NULL CHECK (status IN ('completed', 'errored', 'incomplete')),
+  status        TEXT    NOT NULL
+                CHECK (status IN ('completed', 'interrupted', 'errored', 'in_progress')),
   started_at_us INTEGER NOT NULL,
   ended_at_us   INTEGER NOT NULL,
   ingest_id     INTEGER NOT NULL REFERENCES ingest (id),
@@ -293,6 +292,7 @@ CREATE TABLE turn (
 ) STRICT;
 CREATE INDEX turn_by_time   ON turn (agent_pk, started_at_us);
 CREATE INDEX turn_by_ingest ON turn (ingest_id);
+CREATE INDEX turn_in_progress ON turn (agent_pk) WHERE status = 'in_progress';
 
 CREATE TABLE llm_call (
   agent_pk             INTEGER NOT NULL,

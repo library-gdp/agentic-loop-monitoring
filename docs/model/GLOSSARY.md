@@ -71,7 +71,7 @@ Session
 |---|---|
 | Agent Logging Protocol | Client Adapter Daemon과 Main Server가 주고받는 메시지의 형식과, Transport별로 메시지를 실어 나르는 방식입니다. |
 | Session Log Event | 에이전트 종류와 무관한 공통 포맷의 이벤트입니다. 필드는 [Domain Model](DOMAIN_MODEL.md#session-log-event)에서 정의합니다. Plugin이 만들며, Main Server의 Core도 같은 모델을 씁니다. |
-| Transport Unit | Client Adapter Daemon과 Main Server 사이에서 데이터를 주고받는 단위입니다. Session Log의 레코드 하나에서 나온 Session Log Event를 담습니다. 그 레코드는 한 Session, 한 Agent의 끝난 Turn에 속합니다. |
+| Transport Unit | Client Adapter Daemon과 Main Server 사이에서 데이터를 주고받는 단위입니다. Session Log의 레코드 하나에서 나온 Session Log Event를 담습니다. 그 레코드는 한 Session, 한 Agent의 Turn에 속하며, Turn이 끝나기 전에도 보냅니다. |
 | Ack | Main Server가 Transport Unit을 처리한 결과로 돌려주는 응답입니다. |
 | Transport | Client Adapter Daemon과 Main Server 사이에서 메시지를 주고받는 방식입니다. |
 | Decoder | Main Server의 Input Adapter에서 Session Log Event를 deserialization하는 부분입니다. |

@@ -22,7 +22,7 @@ decision-makers: pgd
 
 Main Server의 데이터를 원본 데이터와 파생 데이터로 나눕니다. 자세한 내용은 [Data Architecture](../docs/model/DATA_ARCHITECTURE.md)가 정합니다.
 
-- **원본 데이터**: Session, Agent, Session Log Event, 수신 기록입니다. 추가만 하고 고치지 않습니다. Session Log Event는 모르는 종류와 필드까지 원문 그대로 저장하고, Transport Unit에서만 알 수 있는 소속 Turn, Turn 안 위치, Turn의 끝인지를 함께 저장합니다. 수신 기록은 Transport Unit의 `protocol_version`, `source.plugin_version`을 남깁니다.
+- **원본 데이터**: Session, Agent, Session Log Event, 수신 기록입니다. 추가만 하고 고치지 않습니다. Session Log Event는 모르는 종류와 필드까지 원문 그대로 저장하고, Transport Unit에서만 알 수 있는 소속 Turn과 Turn 안 위치를 함께 저장합니다. 수신 기록은 Transport Unit의 `protocol_version`, `source.plugin_version`을 남깁니다.
 - **파생 데이터**: Turn, LLM Call, Tool Call의 색인입니다. 원본 데이터로 언제든 다시 만들 수 있으며, 큰 내용은 담지 않고 원본 데이터를 가리킵니다. 구성 규칙의 버전을 가지며, 규칙이 바뀌면 모두 다시 만듭니다.
 - **LLM Call의 input**은 저장하지 않고 질의할 때 원본 데이터에서 범위로 읽습니다.
 - Transport Unit 하나의 원본 데이터 추가와, 그 Transport Unit이 속한 Turn의 파생 데이터 재구성을 **한 번에 원자적으로** 처리한 뒤 `accepted`를 돌려줍니다.
@@ -54,7 +54,7 @@ Main Server의 데이터를 원본 데이터와 파생 데이터로 나눕니다
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - 파생 데이터는 원본 데이터만 읽어 만드는 함수 하나로 만듭니다. 쓰기와 재구성이 같은 함수를 씁니다.
-  - Turn의 파생 데이터는 그 Turn의 Session Log Event만 읽어 만듭니다.
+  - Turn의 파생 데이터는 그 Turn의 Session Log Event만 읽어 만듭니다. Turn의 `status`가 `errored`인지 판단할 때만 같은 Agent의 다른 Turn을 봅니다([Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md) 참고).
 - **Patterns to avoid**:
   - 저장한 Session Log Event의 원문을 고치지 않습니다.
   - 파생 데이터에만 있고 원본 데이터로 다시 만들 수 없는 값을 두지 않습니다.

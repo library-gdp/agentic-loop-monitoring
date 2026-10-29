@@ -29,8 +29,7 @@
   },
   "turn": {
     "id": "a0be...:12",
-    "position": 3,
-    "last": false
+    "position": 3
   },
   "events": []
 }
