@@ -6,6 +6,8 @@
 
 Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주합니다. 에이전트는 Session Log를 보통 사용자의 홈 디렉터리 아래에 파일로 기록하므로, Daemon은 그 사용자의 권한으로 실행합니다.
 
+- Daemon은 Main Server와 한 프로세스로 Bun에서 실행됩니다. 실행 파일은 `bun build --compile`로 만든 하나입니다([Tech Stack](TECH_STACK.md#실행-구성) 참고).
+- Plugin은 실행 파일에 들어 있지 않습니다. Daemon은 실행 파일 밖의 Plugin 디렉터리에 있는 ES 모듈을 동적 `import()`로 불러옵니다.
 - 같은 상태 디렉터리를 쓰는 다른 Daemon이 이미 실행 중이면 시작하지 않고 종료합니다.
 
 ## 설정
@@ -16,11 +18,11 @@ Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주�
 |---|---|
 | 상태 디렉터리 | Daemon 로그 등 Daemon이 쓰는 파일을 두는 디렉터리입니다. |
 | Plugin 디렉터리 | 빌드한 Plugin을 두는 디렉터리입니다. Daemon은 시작할 때 여기 있는 Plugin을 모두 불러와 Plugin Collection에 등록하고, 그 가운데 "사용할 Plugin"을 시작합니다([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고). |
-| Transport | 표준입출력이면 실행할 Main Server 명령입니다. Transport별 주소는 [Transport](TRANSPORT.md#transport-바인딩)를 참고하세요. |
+| Transport | 기본값은 [프로세스 내 호출](TRANSPORT.md#프로세스-내-호출)입니다. 표준입출력이면 실행할 Main Server 명령입니다. Transport별 주소는 [Transport](TRANSPORT.md#transport-바인딩)를 참고하세요. |
 
 ## 결정되지 않은 사항
 
-- TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법. 실행 파일 밖에 있는 Plugin의 ES 모듈을 동적 `import()`로 불러올 수 있어야 합니다.
+- `bun build --compile`로 만든 실행 파일에서 실행 파일 밖의 Plugin ES 모듈을 동적 `import()`로 불러오는 방법과 그 제약. 구현을 시작할 때 확인합니다.
 - Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)
 - 상태 디렉터리와 Plugin 디렉터리의 기본 위치
 - Ack 타임아웃, 재시도 횟수의 기본값

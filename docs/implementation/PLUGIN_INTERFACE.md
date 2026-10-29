@@ -57,7 +57,7 @@ export const PLUGIN_API_VERSION = 1;
 ```
 
 - Daemon은 모듈의 `apiVersion`이 자신이 빌드에 쓴 `PLUGIN_API_VERSION`과 같을 때만 그 모듈의 `register`를 부릅니다.
-- `PLUGIN_API_VERSION`은 이미 빌드한 Plugin이나 Daemon과 호환되지 않는 변경이 있을 때만 올립니다. `PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginBatch`에 멤버를 더하거나, 빼거나, 이름이나 의미를 바꾸는 것이 호환되지 않는 변경입니다.
+- `PLUGIN_API_VERSION`은 이미 빌드한 Plugin이나 Daemon과 호환되지 않는 변경이 있을 때만 올립니다. `PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginTransportUnit`에 멤버를 더하거나, 빼거나, 이름이나 의미를 바꾸는 것이 호환되지 않는 변경입니다.
 - Session Log Event 종류나 선택 필드를 더할 때는 올리지 않습니다. Daemon은 `events`를 해석하지 않고 그대로 보내기 때문입니다. 이때는 [Agent Logging Protocol의 버전 규칙](../model/AGENT_LOGGING_PROTOCOL.md#버전)을 따릅니다.
 
 ## Plugin
@@ -66,9 +66,9 @@ Plugin 모듈이 Collection에 등록하는 값입니다.
 
 ```ts
 export interface Plugin {
-  /** 에이전트 id입니다(예: "claude-code"). Batch의 source.agent에 담깁니다. */
+  /** 에이전트 id입니다(예: "claude-code"). Transport Unit의 source.agent에 담깁니다. */
   readonly agent: string;
-  /** Plugin의 버전입니다. Batch의 source.plugin_version에 담깁니다. */
+  /** Plugin의 버전입니다. Transport Unit의 source.plugin_version에 담깁니다. */
   readonly version: string;
   /** Trigger를 설정하고 수집을 시작합니다. */
   start(context: PluginContext): Promise<void>;
@@ -98,8 +98,8 @@ Daemon이 `start`에 넘기는 값입니다. Plugin이 Daemon에 접근하는 �
 
 ```ts
 export interface PluginContext {
-  /** Batch 하나를 Daemon에 넘깁니다. */
-  submit(batch: PluginBatch): void;
+  /** Transport Unit 하나를 Daemon에 넘깁니다. */
+  submit(unit: PluginTransportUnit): void;
   /** Daemon의 로그 파일에 기록합니다. */
   readonly logger: PluginLogger;
 }
@@ -113,11 +113,11 @@ export interface PluginLogger {
 
 ### `submit`
 
-- Plugin은 [Batch 단위](../model/PLUGIN_SPEC.md#batch-단위)로 묶은 Session Log Event를 `submit` 한 번에 하나씩 넘깁니다. Daemon은 넘겨받은 `PluginBatch` 하나를 Batch 하나로 보냅니다.
-- `submit`은 Batch를 Daemon의 전송 대기열에 넣고 바로 돌아옵니다. 전송 결과를 Plugin에 돌려주지 않으며, 재시도는 Daemon이 맡습니다([Client Adapter Daemon](../model/CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
-- Daemon은 여러 Plugin이 넘긴 Batch를 `submit`이 불린 순서대로 보냅니다.
-- Daemon은 `PluginBatch`를 합치거나, 나누거나, Batch 규칙을 다시 확인하지 않습니다. 규칙은 Plugin이 지킵니다.
-- Plugin은 `submit`에 넘긴 객체를 그 뒤에 바꾸지 않습니다.
+- Plugin은 완결된 레코드 하나를 Session Log Event로 변환할 때마다 `submit`을 한 번 부릅니다. Turn이 끝나기를 기다리지 않습니다([Transport Unit](../model/PLUGIN_SPEC.md#transport-unit) 참고). Daemon은 넘겨받은 `PluginTransportUnit` 하나를 Transport Unit 하나로 보냅니다.
+- `submit`은 Transport Unit을 Daemon의 전송 대기열에 넣고 바로 돌아옵니다. 전송 결과를 Plugin에 돌려주지 않으며, 재시도는 Daemon이 맡습니다([Client Adapter Daemon](../model/CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
+- Daemon은 여러 Plugin이 넘긴 Transport Unit을 `submit`이 불린 순서대로 보냅니다.
+- Daemon은 `PluginTransportUnit`을 합치거나, 나누거나, Transport Unit 규칙을 다시 확인하지 않습니다. 규칙은 Plugin이 지킵니다.
+- Plugin은 `submit`에 넘긴 객체를 그 뒤에 바꾸지 않습니다. [프로세스 내 호출](TRANSPORT.md#프로세스-내-호출)에서는 이 객체가 복사되지 않고 Main Server까지 그대로 넘어갑니다.
 
 ### `logger`
 
@@ -126,14 +126,13 @@ Daemon은 자신의 로그 파일에만 기록합니다([Client Adapter Daemon](
 | 경우 | 수준 |
 |---|---|
 | 완결되었지만 해석할 수 없는 레코드를 건너뛴 경우 | `warn` |
-| 사용자가 중단한 Turn을 버린 경우 | `info` |
 
-## PluginBatch
+## PluginTransportUnit
 
-Plugin이 `submit`에 넘기는 Batch입니다. [Agent Logging Protocol의 Batch](../model/AGENT_LOGGING_PROTOCOL.md#batch)에서 Daemon이 채우는 `protocol_version`, `batch_id`, `source`를 뺀 것입니다. 필드 이름은 Batch의 필드 이름을 그대로 쓰므로, Daemon은 이 객체에 세 필드를 더해 그대로 직렬화합니다.
+Plugin이 `submit`에 넘기는 Transport Unit입니다. [Agent Logging Protocol의 Transport Unit](../model/AGENT_LOGGING_PROTOCOL.md#transport-unit)에서 Daemon이 채우는 `protocol_version`, `transport_unit_id`, `source`를 뺀 것입니다. 필드 이름은 Transport Unit의 필드 이름을 그대로 쓰므로, Daemon은 이 객체에 세 필드를 더해 Transport로 넘깁니다. 프로세스 내 호출에서는 직렬화하지 않고, 다른 Transport에서는 그대로 직렬화합니다.
 
 ```ts
-export interface PluginBatch {
+export interface PluginTransportUnit {
   readonly session: {
     /** Session ID입니다. Main Agent와 Subagent가 같은 값을 씁니다. */
     readonly id: string;
@@ -146,8 +145,14 @@ export interface PluginBatch {
     /** 부모 Agent ID입니다. Main Agent이면 뺍니다. */
     readonly parent_id?: string;
   };
-  /** Session Log에 기록된 순서를 따르며, 항상 user_message로 시작합니다. */
-  readonly events: readonly [UserMessageEvent, ...SessionLogEvent[]];
+  readonly turn: {
+    /** events가 속한 Turn을 시작한 user_message의 event_id입니다. */
+    readonly id: string;
+    /** events의 첫 Session Log Event의 Turn 안 위치입니다. user_message가 0입니다. */
+    readonly position: number;
+  };
+  /** 레코드 하나에서 나온 Session Log Event입니다. 레코드 안에서 나온 순서를 따릅니다. */
+  readonly events: readonly [SessionLogEvent, ...SessionLogEvent[]];
 }
 ```
 
@@ -174,7 +179,8 @@ export interface JsonObject {
 export type SessionLogEvent =
   | UserMessageEvent
   | AssistantMessageEvent
-  | ToolResultEvent;
+  | ToolResultEvent
+  | TurnInterruptedEvent;
 
 interface SessionLogEventBase {
   readonly event_id: string;
@@ -220,6 +226,10 @@ export interface ToolResultEvent extends SessionLogEventBase {
   readonly is_error?: boolean;
 }
 
+export interface TurnInterruptedEvent extends SessionLogEventBase {
+  readonly type: "turn_interrupted";
+}
+
 export interface TokenUsage {
   readonly input_tokens?: number;
   readonly output_tokens?: number;
@@ -237,3 +247,4 @@ export interface TokenUsage {
 
 - Plugin이 수집한 위치 같은 자신의 상태를 저장하는 위치와, 그 위치를 `PluginContext`로 넘길지 여부
 - `stop`이 끝나기를 Daemon이 기다리는 최대 시간
+- Daemon의 전송 대기열의 크기 상한과, 상한에 닿았을 때 Plugin의 수집을 늦추는 방법. `submit`은 바로 돌아오므로, Plugin이 쌓인 Session Log를 한꺼번에 수집하면 대기열이 Transport Unit 수만큼 커질 수 있습니다.

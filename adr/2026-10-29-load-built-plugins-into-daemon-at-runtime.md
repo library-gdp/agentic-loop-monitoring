@@ -22,7 +22,7 @@ Plugin을 Daemon과 따로 빌드합니다. Daemon은 시작할 때 빌드한 Pl
 - **고르기와 사용**: Daemon은 설정의 "사용할 Plugin"에 있는 에이전트 id로 Plugin Collection에서 Plugin을 골라 `start`를 부릅니다. 그 뒤 언제, 어떤 Session Log를 수집할지는 Plugin의 Trigger와 수집 방식을 따릅니다.
 - **실패**: 불러오기, 등록, `start` 가운데 어디서 실패하든 Daemon은 로그를 남기고 그 Plugin만 건너뜁니다.
 - **Plugin API 버전**: Plugin API 패키지가 `PLUGIN_API_VERSION`을 내보냅니다. Daemon은 모듈의 `apiVersion`이 자신이 빌드에 쓴 값과 같을 때만 `register`를 부릅니다. 호환되지 않는 변경이 있을 때만 올립니다.
-- **인터페이스**: [Plugin Interface](../docs/implementation/PLUGIN_INTERFACE.md)를 따릅니다. Plugin은 `agent`, `version`, `start(context)`, `stop()`을 갖추고, `context.submit(batch)`로 Batch를 넘기며, `context.logger`로 Daemon의 로그 파일에 기록합니다. `submit`은 전송 결과를 돌려주지 않습니다.
+- **인터페이스**: [Plugin Interface](../docs/implementation/PLUGIN_INTERFACE.md)를 따릅니다. Plugin은 `agent`, `version`, `start(context)`, `stop()`을 갖추고, `context.submit(unit)`으로 Transport Unit을 넘기며, `context.logger`로 Daemon의 로그 파일에 기록합니다. `submit`은 전송 결과를 돌려주지 않습니다.
 
 **범위 밖**
 
@@ -80,4 +80,5 @@ Plugin을 Daemon과 따로 빌드합니다. Daemon은 시작할 때 빌드한 Pl
 
 - 대체하는 ADR: [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md)
 - 고친 ADR: [Implement the Client Adapter Daemon and Plugins in TypeScript](2026-10-22-implement-daemon-and-plugins-in-typescript.md)의 정적 `import` 등록 목록
+- 2026-10-29: 범위 밖으로 남긴 런타임과 실행 파일 빌드 방법은 [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md)에서 Bun과 `bun build --compile`로 정했습니다. Plugin은 그 실행 파일에 들어가지 않고 Plugin 디렉터리에서 불러옵니다. Plugin이 Daemon에 넘기는 단위는 [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)을 따릅니다.
 - 다시 검토할 조건: Plugin의 오류가 Daemon을 멈추는 일이 잦은 경우, 또는 믿을 수 없는 출처의 Plugin을 받아야 하는 경우

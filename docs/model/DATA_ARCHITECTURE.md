@@ -1,10 +1,10 @@
 # DATA_ARCHITECTURE.md
 
-이 문서는 시스템이 다루는 데이터가 어디에 있고 누가 소유하는지, Main Server가 데이터를 어떤 구조로 저장하고 어떻게 쓰고 읽는지를 정합니다. 데이터의 필드는 [Domain Model](DOMAIN_MODEL.md)이, Batch와 Ack의 형식은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)이 정의하며, 이 문서는 그것을 바꾸지 않습니다. 저장 데이터를 다루는 모듈은 [Application Architecture](APPLICATION_ARCHITECTURE.md)의 Core와 Persistence입니다. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
+이 문서는 시스템이 다루는 데이터가 어디에 있고 누가 소유하는지, Main Server가 데이터를 어떤 구조로 저장하고 어떻게 쓰고 읽는지를 정합니다. 데이터의 필드는 [Domain Model](DOMAIN_MODEL.md)이, Transport Unit과 Ack의 형식은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)이 정의하며, 이 문서는 그것을 바꾸지 않습니다. 저장 데이터를 다루는 모듈은 [Application Architecture](APPLICATION_ARCHITECTURE.md)의 Core와 Persistence입니다. 용어는 [Glossary](GLOSSARY.md)를 따릅니다.
 
 ## 원칙
 
-1. **Main Server가 기록의 원본을 가집니다.** Session Log는 에이전트가 소유하므로 에이전트가 언제든 지울 수 있고, Daemon은 Ack를 받은 Batch를 보관하지 않습니다. 그래서 Ack 뒤에 Session Log Event가 남는 곳은 Main Server뿐입니다.
+1. **Main Server가 기록의 원본을 가집니다.** Session Log는 에이전트가 소유하므로 에이전트가 언제든 지울 수 있고, Daemon은 Ack를 받은 Transport Unit을 보관하지 않습니다. 그래서 Ack 뒤에 Session Log Event가 남는 곳은 Main Server뿐입니다.
 2. **받은 것을 바꾸지 않습니다.** Session Log Event는 받은 그대로 저장하고, 저장한 뒤에는 고치지 않습니다. 지우는 것은 [Session 단위 삭제](#삭제와-보관)뿐입니다.
 3. **다시 얻을 수 없는 것은 버리지 않습니다.** Main Server가 아직 모르는 Session Log Event 종류, `content` 블록, 필드도 원문에 남깁니다. Core는 이것을 활동 모델을 구성할 때 쓰지 않을 뿐입니다([알 수 없는 값](AGENT_LOGGING_PROTOCOL.md#알-수-없는-값) 참고). 나중에 Main Server가 그 값을 이해하게 되면 다시 수집하지 않고 지난 데이터에도 적용할 수 있습니다.
 4. **활동 모델은 파생 데이터입니다.** Turn, Loop, LLM Call, Tool Call은 원본 데이터로 언제든 다시 만들 수 있으며, 원본 데이터와 어긋나면 원본 데이터가 맞습니다.
@@ -16,8 +16,8 @@
 ┌──────────────── Agent host ────────────────┐      ┌──────────── Main Server ────────────┐
 │                                            │      │                                     │
 │  Session Log ──▶ Plugin ──▶ Daemon ────────┼─────▶│  원본 데이터 ──derive──▶ 파생 데이터 │
-│  (에이전트 소유)   │          (전송 중인     │Batch │  (기록의 원본)          (다시 만듦)   │
-│                  ▼           Batch)        │      │                                     │
+│  (에이전트 소유)   │     (전송 중인          │      │  (기록의 원본)          (다시 만듦)   │
+│                  ▼     Transport Unit)     │      │                                     │
 │             Plugin 상태                    │      │                                     │
 └────────────────────────────────────────────┘      └─────────────────────────────────────┘
 ```
@@ -26,7 +26,7 @@
 |---|---|---|---|---|
 | Session Log | 에이전트 머신 | 에이전트 | 에이전트가 정합니다. | 아직 수집하지 않은 내용은 유실됩니다. |
 | Plugin 상태(수집한 위치 등) | 에이전트 머신 | Plugin | Plugin이 정합니다. | Plugin이 처음부터 다시 수집합니다. 이미 보낸 Session Log Event는 Main Server가 event id로 걸러냅니다. |
-| 전송 중인 Batch | Daemon | Daemon | Ack를 받거나 버릴 때까지 | [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리)을 따릅니다. |
+| 전송 중인 Transport Unit | Daemon | Daemon | Ack를 받거나 버릴 때까지 | [Client Adapter Daemon](CLIENT_ADAPTER_DAEMON.md#ack-처리)을 따릅니다. |
 | Daemon 로그 | 에이전트 머신 | Daemon | 정하지 않음 | 운영 기록만 잃습니다. |
 | [원본 데이터](#원본-데이터) | Main Server | Core가 규칙을 정하고 Persistence가 저장 | [Session 단위 삭제](#삭제와-보관)까지 | Session Log가 남아 있지 않으면 되살릴 수 없습니다. |
 | [파생 데이터](#파생-데이터) | Main Server | Core가 원본 데이터로 계산 | 원본 데이터와 같음 | 원본 데이터로 다시 만듭니다. |
@@ -39,7 +39,7 @@ Main Server의 데이터는 원본 데이터와 파생 데이터로 나뉩니다
 
 | 구분 | 만드는 것 | 바뀌는가 |
 |---|---|---|
-| 원본 데이터 | Batch | 추가만 합니다. Session과 Agent의 비어 있는 필드는 채울 수 있습니다. |
+| 원본 데이터 | Transport Unit | 추가만 합니다. Session과 Agent의 비어 있는 필드는 채울 수 있습니다. |
 | 파생 데이터 | 원본 데이터 | 언제든 버리고 다시 만들 수 있습니다. |
 
 ### Entity 목록
@@ -49,7 +49,7 @@ Main Server의 데이터는 원본 데이터와 파생 데이터로 나뉩니다
 | [Session](#session) | 원본 데이터 | `agent`, `id` | 에이전트와의 대화 단위입니다. |
 | [Agent](#agent) | 원본 데이터 | `session`, `id` | Session 안의 Main Agent 또는 Subagent입니다. |
 | [Session Log Event](#session-log-event) | 원본 데이터 | `session`, `event_id` | 받은 Session Log Event 하나입니다. |
-| [수신 기록](#수신-기록) | 원본 데이터 | `id` | 받아서 저장한 Batch 하나의 기록입니다. |
+| [수신 기록](#수신-기록) | 원본 데이터 | `id` | 받아서 저장한 Transport Unit 하나의 기록입니다. |
 | [Turn](#turn) | 파생 데이터 | `agent`, `id` | Agent의 Turn 하나입니다. |
 | [LLM Call](#llm-call) | 파생 데이터 | `agent`, `id` | Turn 안의 LLM Call 하나입니다. Loop를 겸합니다. |
 | [Tool Call](#tool-call) | 파생 데이터 | `agent`, `llm_call_id`, `ordinal` | LLM Call이 요청한 Tool Call 하나입니다. |
@@ -84,71 +84,71 @@ Loop는 LLM Call 하나와 그 Tool Call들이므로 Entity로 따로 두지 않
 | 타입 | 뜻 |
 |---|---|
 | 참조 | 다른 Entity를 가리킵니다. 그 Entity의 식별 필드로 찾아갈 수 있어야 합니다. |
-| 원문 | Batch의 `events`에 담겨 온 Session Log Event 하나를 바꾸지 않은 것입니다. |
+| 원문 | Transport Unit의 `events`에 담겨 온 Session Log Event 하나를 바꾸지 않은 것입니다. |
 
 ### 원본 데이터
 
-Batch에서 얻을 수 있고 다른 데이터로 다시 계산할 수 없는 것입니다.
+Transport Unit에서 얻을 수 있고 다른 데이터로 다시 계산할 수 없는 것입니다.
 
 #### Session
 
-Session을 이루는 Agent 가운데 어느 하나의 Batch가 처음 올 때 만듭니다. Main Agent의 Batch가 아직 오지 않은 Session도 있을 수 있습니다.
+Session을 이루는 Agent 가운데 어느 하나의 Transport Unit이 처음 올 때 만듭니다. Main Agent의 Transport Unit이 아직 오지 않은 Session도 있을 수 있습니다.
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `agent` | string | O | 에이전트 id입니다. Batch의 `source.agent`입니다. |
-| `id` | string | O | Session ID입니다. Batch의 `session.id`입니다. |
-| `cwd` | string | | 에이전트의 작업 디렉터리입니다. Batch의 `session.cwd`입니다. |
-| `host` | string | | 에이전트가 실행된 머신의 이름입니다. Batch의 `source.host`입니다. |
+| `agent` | string | O | 에이전트 id입니다. Transport Unit의 `source.agent`입니다. |
+| `id` | string | O | Session ID입니다. Transport Unit의 `session.id`입니다. |
+| `cwd` | string | | 에이전트의 작업 디렉터리입니다. Transport Unit의 `session.cwd`입니다. |
+| `host` | string | | 에이전트가 실행된 머신의 이름입니다. Transport Unit의 `source.host`입니다. |
 
 #### Agent
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `session` | 참조(Session) | O | 이 Agent가 속한 Session입니다. |
-| `id` | string | O | Agent ID입니다. Batch의 `agent.id`입니다. |
-| `parent_id` | string | | 부모 Agent ID입니다. Batch의 `agent.parent_id`입니다. Main Agent이면 비어 있습니다. |
+| `id` | string | O | Agent ID입니다. Transport Unit의 `agent.id`입니다. |
+| `parent_id` | string | | 부모 Agent ID입니다. Transport Unit의 `agent.parent_id`입니다. Main Agent이면 비어 있습니다. |
 
-`parent_id`는 같은 Session의 Agent `id`를 가리키지만 참조로 두지 않습니다. 부모 Agent의 Batch가 아직 오지 않았어도 Agent를 저장해야 하기 때문입니다([Agent 구성 규칙](DOMAIN_MODEL.md#agent) 참고). 원본 데이터는 부모 Agent가 있는지 검사하지 않습니다.
+`parent_id`는 같은 Session의 Agent `id`를 가리키지만 참조로 두지 않습니다. 부모 Agent의 Transport Unit이 아직 오지 않았어도 Agent를 저장해야 하기 때문입니다([Agent 구성 규칙](DOMAIN_MODEL.md#agent) 참고). 원본 데이터는 부모 Agent가 있는지 검사하지 않습니다.
 
 #### Session과 Agent의 필드 채우기
 
-같은 Session과 Agent는 여러 Batch에 걸쳐 옵니다. 식별 필드가 아닌 필드는 다음과 같이 다룹니다.
+같은 Session과 Agent는 여러 Transport Unit에 걸쳐 옵니다. 식별 필드가 아닌 필드는 다음과 같이 다룹니다.
 
-- 비어 있는 필드는 나중에 온 Batch의 값으로 채웁니다.
+- 비어 있는 필드는 나중에 온 Transport Unit의 값으로 채웁니다.
 - 이미 값이 있는 필드는 바꾸지 않습니다. 다른 값이 오면 로그를 남깁니다.
 
 #### Session Log Event
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `session` | 참조(Session) | O | 이 Session Log Event를 담은 Batch의 Session입니다. |
+| `session` | 참조(Session) | O | 이 Session Log Event를 담은 Transport Unit의 Session입니다. |
 | `event_id` | string | O | 원문의 `event_id`입니다. |
-| `agent` | 참조(Agent) | O | 이 Session Log Event를 담은 Batch의 Agent입니다. |
-| `turn_id` | string | O | 소속 Turn입니다. 같은 Batch 안에서 이 Session Log Event 앞에 있는 가장 가까운 `user_message`의 `event_id`이며, `user_message`이면 자기 자신의 `event_id`입니다. |
-| `position` | integer | O | Turn 안 위치입니다. 소속 Turn의 `user_message`를 `0`으로 하여, 같은 Batch 안의 순서대로 셉니다. |
+| `agent` | 참조(Agent) | O | 이 Session Log Event를 담은 Transport Unit의 Agent입니다. |
+| `turn_id` | string | O | 소속 Turn입니다. 이 Session Log Event를 담은 Transport Unit의 `turn.id`이며, Turn을 시작한 `user_message`의 `event_id`입니다. |
+| `position` | integer | O | Turn 안 위치입니다. Transport Unit의 `turn.position`에 `events` 안에서 이 Session Log Event의 순서(첫 Session Log Event가 `0`)를 더한 값입니다. 소속 Turn의 `user_message`가 `0`입니다. |
 | `type` | string | O | 원문의 `type`입니다. |
 | `timestamp` | 시각 | O | 원문의 `timestamp`입니다. |
 | `body` | 원문 | O | 받은 Session Log Event입니다. 모르는 종류와 필드도 포함합니다. |
 | `ingest` | 참조(수신 기록) | O | 이 Session Log Event를 처음 저장한 수신 기록입니다. |
 
 - `type`과 `timestamp`는 `body`에서 꺼낸 값입니다. 질의와 정렬에만 쓰며 `body`와 다른 값을 가져서는 안 됩니다.
-- `turn_id`와 `position`은 Session Log Event 자체가 아니라 Batch에서 얻는 값입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)은 Batch 안의 순서와 Batch의 끝에 기대지만 Batch는 저장하지 않으므로, 원본 데이터만으로 Turn을 다시 만들 수 있도록 이 두 값을 저장합니다.
+- `turn_id`와 `position`은 Session Log Event 자체가 아니라 Transport Unit에서 얻는 값입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)은 Transport Unit의 `turn`에 기대지만 Transport Unit은 저장하지 않으므로, 원본 데이터만으로 Turn을 다시 만들 수 있도록 이 두 값을 저장합니다.
 
 #### 수신 기록
 
-`accepted`로 응답한 Batch마다 하나씩 만듭니다. 거절한 Batch는 로그만 남깁니다. 같은 Batch를 다시 받으면 수신 기록도 다시 만듭니다.
+`accepted`로 응답한 Transport Unit마다 하나씩 만듭니다. 거절한 Transport Unit은 로그만 남깁니다. 같은 Transport Unit을 다시 받으면 수신 기록도 다시 만듭니다.
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `id` | integer | O | Main Server가 Batch를 받은 순서입니다. 나중에 받은 Batch일수록 큽니다. |
-| `batch_id` | string | O | Batch의 `batch_id`입니다. 고유하지 않습니다. |
-| `protocol_version` | integer | O | Batch의 `protocol_version`입니다. |
-| `plugin_version` | string | O | Batch의 `source.plugin_version`입니다. |
-| `session` | 참조(Session) | O | Batch의 Session입니다. |
-| `agent` | 참조(Agent) | O | Batch의 Agent입니다. |
-| `received_at` | 시각 | O | Main Server가 Batch를 받은 시각입니다. |
-| `event_count` | integer | O | Batch의 `events`에 든 Session Log Event의 수입니다. |
+| `id` | integer | O | Main Server가 Transport Unit을 받은 순서입니다. 나중에 받은 Transport Unit일수록 큽니다. |
+| `transport_unit_id` | string | O | Transport Unit의 `transport_unit_id`입니다. 고유하지 않습니다. |
+| `protocol_version` | integer | O | Transport Unit의 `protocol_version`입니다. |
+| `plugin_version` | string | O | Transport Unit의 `source.plugin_version`입니다. |
+| `session` | 참조(Session) | O | Transport Unit의 Session입니다. |
+| `agent` | 참조(Agent) | O | Transport Unit의 Agent입니다. |
+| `received_at` | 시각 | O | Main Server가 Transport Unit을 받은 시각입니다. |
+| `event_count` | integer | O | Transport Unit의 `events`에 든 Session Log Event의 수입니다. |
 | `stored_count` | integer | O | 그 가운데 새로 저장한 수입니다. |
 | `dropped_count` | integer | O | 그 가운데 잘못되어 버린 수입니다. 나머지는 이미 저장되어 있어 건너뛴 것입니다. |
 
@@ -162,7 +162,7 @@ Session을 이루는 Agent 가운데 어느 하나의 Batch가 처음 올 때 �
 - 계산 값(Token Usage 합계, Agent와 Session의 `started_at`, `ended_at` 등)은 질의할 때 계산합니다. 질의가 느려 미리 계산해 두어야 하면 파생 데이터에 필드를 더합니다.
 - 파생 데이터는 자신을 만든 구성 규칙의 버전을 가집니다. 구성 규칙이 바뀌면 원본 데이터로 파생 데이터를 모두 다시 만듭니다.
 
-Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLUGIN_SPEC.md#batch-단위) 참고), Turn과 그 안의 LLM Call, Tool Call은 `turn_id`가 같은 Session Log Event만으로 만들 수 있습니다. 다른 Turn이나 다른 Agent를 읽지 않습니다.
+Session Log Event마다 소속 Turn(`turn_id`)과 Turn 안 위치(`position`)가 저장되어 있으므로, Turn과 그 안의 LLM Call, Tool Call은 `turn_id`가 같은 Session Log Event만으로 만들 수 있습니다. 다른 Agent는 읽지 않습니다. 같은 Agent의 다른 Turn은 Turn의 `status`가 `errored`인지 판단할 때만 봅니다.
 
 #### Turn
 
@@ -172,7 +172,7 @@ Turn 하나는 한 Batch 안에 온전히 들어 있으므로([Batch 단위](PLU
 |---|---|---|---|
 | `agent` | 참조(Agent) | O | 이 Turn의 Agent입니다. |
 | `id` | string | O | Turn을 시작한 `user_message`의 `event_id`입니다. Session Log Event의 `turn_id`와 같습니다. |
-| `status` | string | O | `completed` 또는 `errored`입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)을 따릅니다. |
+| `status` | string | O | `completed`, `interrupted`, `errored`, `in_progress` 가운데 하나입니다. [Turn 구성 규칙](DOMAIN_MODEL.md#turn)을 따릅니다. 받은 순서는 Session Log Event의 `ingest`가 가리키는 수신 기록의 `id`로 비교합니다. |
 | `started_at` | 시각 | O | `user_message`의 `timestamp`입니다. |
 | `ended_at` | 시각 | O | 이 Turn에서 `position`이 가장 큰 Session Log Event의 `timestamp`입니다. |
 | `ingest` | 참조(수신 기록) | O | `user_message`를 처음 저장한 수신 기록입니다. |
@@ -239,21 +239,21 @@ LLM Call의 `input`은 같은 Agent에서 그 `assistant_message` 앞에 있는 
 
 ## 쓰기
 
-Core의 Ingest API는 Batch 하나를 다음 순서로 처리합니다.
+Core는 Turn이 끝나기를 기다리지 않고, Transport Unit을 받는 대로 저장합니다. Ingest API는 Transport Unit 하나를 다음 순서로 처리합니다.
 
-1. Input Adapter의 Decoder가 Batch를 해석합니다. 해석할 수 없으면 `invalid_batch`로 거절하며, 아무것도 저장하지 않습니다.
+1. Input Adapter의 Decoder가 Transport Unit을 해석합니다. 해석할 수 없으면 `invalid_transport_unit`으로 거절하며, 아무것도 저장하지 않습니다.
 2. Session Log Event를 하나씩 검사합니다. 잘못된 Session Log Event는 로그를 남기고 뺍니다([Ack 규칙](AGENT_LOGGING_PROTOCOL.md#규칙) 참고).
 3. 다음을 **한 번에 원자적으로** 저장합니다.
    1. 수신 기록을 추가합니다.
    2. Session과 Agent가 없으면 추가하고, [필드 채우기 규칙](#session과-agent의-필드-채우기)에 따라 비어 있는 필드를 채웁니다.
    3. Session Log Event를 추가합니다. Session과 `event_id`가 같은 Session Log Event가 이미 있으면 내용을 비교하지 않고 건너뜁니다.
-   4. 이 Batch에 들어 있는 Turn의 파생 데이터를 다시 만듭니다.
+   4. 이 Transport Unit이 속한 Turn(`turn.id`)의 파생 데이터를 다시 만듭니다. 이 Transport Unit에서 새로 저장한 Session Log Event가 있고 같은 Agent에 `in_progress`인 다른 Turn이 있으면, 그 Turn도 다시 만듭니다. 그 Turn보다 나중에 다른 Turn의 Session Log Event를 받았으므로 `errored`가 됩니다. 이미 저장되어 건너뛴 Session Log Event는 처음 받은 순서를 유지하므로, 앞선 Turn을 다시 보내도 진행 중인 Turn이 `errored`가 되지 않습니다.
 4. 저장이 끝나면 `accepted`를 돌려줍니다. 3번의 어느 단계에서든 실패하면 3번 전체를 되돌리고 `unavailable`로 거절합니다.
 
-- 3번이 원자적이므로, 같은 Batch를 몇 번 다시 받아도 저장 결과는 처음 한 번 받은 것과 같습니다. 일부만 저장된 Batch는 남지 않습니다.
-- 파생 데이터를 같은 단계에서 만들므로, `accepted`를 돌려준 Batch는 바로 조회할 수 있습니다. Turn의 파생 데이터는 그 Turn의 Session Log Event만으로 만들므로, 이 비용은 Batch의 크기에만 비례합니다.
-- 여러 Daemon이 Main Server 하나에 동시에 Batch를 보낼 수 있습니다. 같은 Session, 같은 Agent를 동시에 추가하려 해도 하나만 만들어져야 합니다.
-- 파생 데이터를 모두 다시 만드는 동안 Batch를 받을 수 없으면 `unavailable`로 거절합니다. Daemon이 다시 보냅니다.
+- 3번이 원자적이므로, 같은 Transport Unit을 몇 번 다시 받아도 저장 결과는 처음 한 번 받은 것과 같습니다. 일부만 저장된 Transport Unit은 남지 않습니다. Turn은 여러 Transport Unit에 나뉘어 오므로, 진행 중인 Turn은 받은 만큼만 저장되어 `in_progress`로 보입니다.
+- 파생 데이터를 같은 단계에서 만들므로, `accepted`를 돌려준 Transport Unit은 바로 조회할 수 있습니다. Turn의 파생 데이터는 그 Turn의 Session Log Event만으로 만들므로, 이 비용은 그 Turn의 크기에 비례합니다.
+- 여러 Daemon이 Main Server 하나에 동시에 Transport Unit을 보낼 수 있습니다. 같은 Session, 같은 Agent를 동시에 추가하려 해도 하나만 만들어져야 합니다.
+- 파생 데이터를 모두 다시 만드는 동안 Transport Unit을 받을 수 없으면 `unavailable`로 거절합니다. Daemon이 다시 보냅니다.
 
 ## 읽기
 
@@ -296,6 +296,6 @@ Visualization은 이 질의를 Query API로만 합니다([Application Architectu
 - 지운 Session을 Daemon이 다시 보냈을 때 다시 저장하지 않게 할지
 - 시스템 프롬프트, 도구 정의처럼 LLM Call마다 되풀이되는 큰 input을 한 번만 저장하는 방법. 이 input을 나타내는 Session Log Event의 형식이 정해질 때 함께 정합니다([Domain Model](DOMAIN_MODEL.md#결정되지-않은-사항) 참고).
 - Plugin 버전이 바뀌어, 이미 저장된 Turn과 같은 `user_message`로 시작하지만 구성이 다른 Turn이 왔을 때의 처리. 지금은 Session Log Event마다 중복을 판단하므로 새 `event_id`의 Session Log Event만 그 Turn에 더해집니다.
-- Turn을 시작하는 `user_message`가 잘못되어 빠진 경우, 그 Turn의 나머지 Session Log Event의 소속 Turn
+- Turn을 시작하는 `user_message`가 잘못되어 버려지거나 그 Transport Unit이 유실된 경우의 처리. 그 Turn의 나머지 Session Log Event는 `turn_id`로 소속 Turn을 알지만, Turn의 `started_at`과 `ingest`를 얻을 수 없습니다.
 - `tool_use_id`가 고유한 범위. 지금은 Turn 안에서만 짝을 맞추므로 Turn 안에서 고유하면 됩니다.
 - 저장한 데이터의 암호화와 접근 제어

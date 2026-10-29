@@ -12,7 +12,7 @@ Daemon은 어떤 Plugin이 있는지 모릅니다. Daemon 소스와 실행 파�
 |---|---|---|
 | Plugin API | [Plugin Interface](PLUGIN_INTERFACE.md)의 타입과 `PLUGIN_API_VERSION` | 없음 |
 | Plugin | 에이전트 하나의 Plugin 구현. 에이전트마다 하나씩 둡니다. | Plugin API |
-| Daemon | Plugin 불러오기와 Plugin Collection, Batch 전송, Transport Client | Plugin API |
+| Daemon | Plugin 불러오기와 Plugin Collection, Transport Unit 전송, Transport Client | Plugin API |
 
 - Daemon과 Plugin은 Plugin API에만 의존합니다. Daemon은 Plugin 패키지에, Plugin은 Daemon 패키지나 다른 Plugin 패키지에 의존하지 않습니다.
 - Plugin API에서 실행 중에 쓰는 값은 `PLUGIN_API_VERSION` 하나뿐이며, Plugin을 빌드할 때 Plugin 안에 함께 들어갑니다. 그래서 Daemon은 Plugin에 모듈을 제공하지 않습니다.
@@ -34,7 +34,7 @@ Daemon은 시작할 때 다음을 수행합니다.
 
 1. **불러오기**: Plugin 디렉터리 바로 아래의 `.js` 파일을 파일 이름 순서대로 동적 `import()`로 불러옵니다.
 2. **등록**: 불러온 모듈마다 `apiVersion`이 Daemon이 빌드에 쓴 `PLUGIN_API_VERSION`과 같은지 확인하고, 같으면 `register`를 불러 [`PluginRegistry`](PLUGIN_INTERFACE.md#pluginregistry)를 넘깁니다. Plugin은 이때 자신을 Plugin Collection에 등록합니다. 모든 모듈을 처리하면 등록을 닫습니다.
-3. **고르기와 시작**: 설정의 "사용할 Plugin"에 있는 에이전트 id마다 Plugin Collection에서 그 `agent`의 Plugin을 골라 `start`를 부릅니다. 이 Plugin이 넘긴 Batch의 `source.agent`와 `source.plugin_version`은 Plugin의 `agent`와 `version`으로 채웁니다.
+3. **고르기와 시작**: 설정의 "사용할 Plugin"에 있는 에이전트 id마다 Plugin Collection에서 그 `agent`의 Plugin을 골라 `start`를 부릅니다. 이 Plugin이 넘긴 Transport Unit의 `source.agent`와 `source.plugin_version`은 Plugin의 `agent`와 `version`으로 채웁니다.
 
 - 어느 단계에서든 실패하면 Daemon은 로그를 남기고 그 모듈이나 Plugin을 건너뜁니다. 다른 Plugin은 그대로 등록하고 시작하며, Daemon은 계속 실행합니다.
 - "사용할 Plugin"에 있는 에이전트 id의 Plugin이 Collection에 없으면 로그를 남깁니다.
@@ -70,6 +70,7 @@ Daemon은 시작할 때 다음을 수행합니다.
 - **수집 방식**: 에이전트별 문서에 파일의 위치와, 그 파일이 어느 Session의 것인지 알아내는 방법을 적습니다. 파일이 다른 파일로 교체되거나, 잘리거나, 삭제되었을 때의 처리도 정합니다. 에이전트가 계속 쓰는 동안 파일 끝을 끝없이 따라가지 않도록 한 번에 읽는 범위를 정합니다.
 - **완결되지 않은 레코드**: 레코드가 아직 다 기록되지 않았는지는 형식에 맞춰 판단합니다. 예를 들어 줄 단위 형식에서 마지막 줄이 줄바꿈으로 끝나지 않으면 그 레코드는 아직 기록 중입니다.
 - **event id**: 에이전트가 레코드마다 고유 id를 기록하지 않으면, 파일 안에서 레코드의 위치로 event id를 만듭니다.
+- **메모리**: 레코드를 하나씩 읽어 변환하고 곧바로 Transport Unit으로 넘깁니다. Turn의 레코드나 Session Log Event를 메모리에 모아 두지 않으며, 진행 중인 Turn에 대해서는 `turn.id`와 다음 Turn 안 위치만 기억합니다. 이 두 값은 수집한 위치와 함께 저장해, 다시 시작해도 Turn의 시작부터 다시 읽지 않고 이어 수집합니다.
 
 ## 결정되지 않은 사항
 
