@@ -22,7 +22,7 @@
 |---|---|---|---|
 | [`session`](#session) | Session | 원본 데이터 | 에이전트와의 대화 단위 |
 | [`agent`](#agent) | Agent | 원본 데이터 | Session 안의 Main Agent 또는 Subagent |
-| [`ingest`](#ingest) | 수신 기록 | 원본 데이터 | 받아서 저장한 Batch 하나의 기록 |
+| [`ingest`](#ingest) | 수신 기록 | 원본 데이터 | 받아서 저장한 Transport Unit 하나의 기록 |
 | [`event`](#event) | Session Log Event | 원본 데이터 | 받은 Session Log Event 하나 |
 | [`turn`](#turn) | Turn | 파생 데이터 | Agent의 Turn 하나 |
 | [`llm_call`](#llm_call) | LLM Call | 파생 데이터 | Turn 안의 LLM Call 하나. Loop를 겸합니다. |
@@ -60,24 +60,25 @@ session ─┬─< agent ─┬─< event >── ingest
 
 | 테이블 | 열 | 가리키는 것 | 외래 키로 두지 않는 이유 |
 |---|---|---|---|
-| `agent` | `parent_agent_id` | 같은 Session의 `agent.agent_id` | 부모 Agent의 Batch가 아직 오지 않았어도 Agent를 저장해야 합니다. |
+| `agent` | `parent_agent_id` | 같은 Session의 `agent.agent_id` | 부모 Agent의 Transport Unit이 아직 오지 않았어도 Agent를 저장해야 합니다. |
 | `event` | `turn_id` | 같은 Agent의 `turn.turn_id` | `event`는 원본 데이터이고 `turn`은 파생 데이터입니다. 파생 데이터를 지우고 다시 만들어도 원본 데이터에 영향이 없어야 합니다. |
 | `tool_call` | `result_event_id` | 같은 Session의 `event.event_id` | 파생 데이터에서 원본 데이터를 가리키는 값입니다. 결과가 기록되지 않았으면 `NULL`입니다. |
-| `tool_call` | `subagent_id` | 같은 Session의 `agent.agent_id` | Subagent의 Batch가 아직 오지 않았어도 Tool Call을 만들어야 합니다. |
+| `tool_call` | `subagent_id` | 같은 Session의 `agent.agent_id` | Subagent의 Transport Unit이 아직 오지 않았어도 Tool Call을 만들어야 합니다. |
+| `compaction` | `summary_event_id` | 같은 Session의 `event.event_id` | 파생 데이터에서 원본 데이터를 가리키는 값입니다. 요약이 아직 기록되지 않았으면 `NULL`입니다. |
 
 ## 원본 데이터
 
 ### `session`
 
-Session Entity입니다. Session의 Agent 가운데 어느 하나의 Batch가 처음 올 때 행을 추가합니다.
+Session Entity입니다. Session의 Agent 가운데 어느 하나의 Transport Unit이 처음 올 때 행을 추가합니다.
 
 | # | 열 | 타입 | NULL | 키 | 설명 | Entity 필드 |
 |---|---|---|---|---|---|---|
 | 1 | `pk` | `INTEGER` | N | PK | 대리 키 | |
-| 2 | `agent_kind` | `TEXT` | N | UK1 | 에이전트 id. Batch의 `source.agent` | `agent` |
-| 3 | `session_id` | `TEXT` | N | UK1 | Session ID. Batch의 `session.id` | `id` |
-| 4 | `cwd` | `TEXT` | Y | | 에이전트의 작업 디렉터리. Batch의 `session.cwd` | `cwd` |
-| 5 | `host` | `TEXT` | Y | | 에이전트가 실행된 머신의 이름. Batch의 `source.host` | `host` |
+| 2 | `agent_kind` | `TEXT` | N | UK1 | 에이전트 id. Transport Unit의 `source.agent` | `agent` |
+| 3 | `session_id` | `TEXT` | N | UK1 | Session ID. Transport Unit의 `session.id` | `id` |
+| 4 | `cwd` | `TEXT` | Y | | 에이전트의 작업 디렉터리. Transport Unit의 `session.cwd` | `cwd` |
+| 5 | `host` | `TEXT` | Y | | 에이전트가 실행된 머신의 이름. Transport Unit의 `source.host` | `host` |
 
 - `cwd`, `host`는 `NULL`일 때만 채웁니다([필드 채우기](../model/DATA_ARCHITECTURE.md#session과-agent의-필드-채우기)).
 
@@ -89,25 +90,25 @@ Agent Entity입니다.
 |---|---|---|---|---|---|---|
 | 1 | `pk` | `INTEGER` | N | PK | 대리 키 | |
 | 2 | `session_pk` | `INTEGER` | N | UK1, FK | 속한 Session | `session` |
-| 3 | `agent_id` | `TEXT` | N | UK1 | Agent ID. Batch의 `agent.id` | `id` |
-| 4 | `parent_agent_id` | `TEXT` | Y | | 부모 Agent ID. Batch의 `agent.parent_id`. Main Agent이면 `NULL` | `parent_id` |
+| 3 | `agent_id` | `TEXT` | N | UK1 | Agent ID. Transport Unit의 `agent.id` | `id` |
+| 4 | `parent_agent_id` | `TEXT` | Y | | 부모 Agent ID. Transport Unit의 `agent.parent_id`. Main Agent이면 `NULL` | `parent_id` |
 
 - `parent_agent_id`는 `NULL`일 때만 채웁니다.
 
 ### `ingest`
 
-수신 기록 Entity입니다. `accepted`로 응답한 Batch마다 행을 하나 추가합니다.
+수신 기록 Entity입니다. `accepted`로 응답한 Transport Unit마다 행을 하나 추가합니다.
 
 | # | 열 | 타입 | NULL | 키 | 설명 | Entity 필드 |
 |---|---|---|---|---|---|---|
 | 1 | `id` | `INTEGER` | N | PK | 받은 순서. `AUTOINCREMENT`로 지운 값을 다시 쓰지 않습니다. | `id` |
-| 2 | `batch_id` | `TEXT` | N | | Batch의 `batch_id`. 같은 Batch를 다시 받으면 같은 값이 또 들어옵니다. | `batch_id` |
-| 3 | `protocol_version` | `INTEGER` | N | | Batch의 `protocol_version` | `protocol_version` |
-| 4 | `plugin_version` | `TEXT` | N | | Batch의 `source.plugin_version` | `plugin_version` |
-| 5 | `session_pk` | `INTEGER` | N | FK | Batch의 Session | `session` |
-| 6 | `agent_pk` | `INTEGER` | N | FK | Batch의 Agent | `agent` |
-| 7 | `received_at_us` | `INTEGER` | N | | Main Server가 Batch를 받은 시각 | `received_at` |
-| 8 | `event_count` | `INTEGER` | N | | Batch의 `events` 수 | `event_count` |
+| 2 | `transport_unit_id` | `TEXT` | N | | Transport Unit의 `transport_unit_id`. 같은 Transport Unit을 다시 받으면 같은 값이 또 들어옵니다. | `transport_unit_id` |
+| 3 | `protocol_version` | `INTEGER` | N | | Transport Unit의 `protocol_version` | `protocol_version` |
+| 4 | `plugin_version` | `TEXT` | N | | Transport Unit의 `source.plugin_version` | `plugin_version` |
+| 5 | `session_pk` | `INTEGER` | N | FK | Transport Unit의 Session | `session` |
+| 6 | `agent_pk` | `INTEGER` | N | FK | Transport Unit의 Agent | `agent` |
+| 7 | `received_at_us` | `INTEGER` | N | | Main Server가 Transport Unit을 받은 시각 | `received_at` |
+| 8 | `event_count` | `INTEGER` | N | | Transport Unit의 `events` 수 | `event_count` |
 | 9 | `stored_count` | `INTEGER` | N | | 새로 저장한 수 | `stored_count` |
 | 10 | `dropped_count` | `INTEGER` | N | | 잘못되어 버린 수 | `dropped_count` |
 
@@ -121,11 +122,11 @@ Session Log Event Entity입니다.
 | # | 열 | 타입 | NULL | 키 | 설명 | Entity 필드 |
 |---|---|---|---|---|---|---|
 | 1 | `pk` | `INTEGER` | N | PK | 대리 키 | |
-| 2 | `session_pk` | `INTEGER` | N | UK1, FK | Batch의 Session | `session` |
+| 2 | `session_pk` | `INTEGER` | N | UK1, FK | Transport Unit의 Session | `session` |
 | 3 | `event_id` | `TEXT` | N | UK1 | `body`의 `event_id` | `event_id` |
-| 4 | `agent_pk` | `INTEGER` | N | FK | Batch의 Agent | `agent` |
-| 5 | `turn_id` | `TEXT` | N | | 소속 Turn. Turn을 시작한 `user_message`의 `event_id` | `turn_id` |
-| 6 | `position` | `INTEGER` | N | | Turn 안 위치. `user_message`가 `0` | `position` |
+| 4 | `agent_pk` | `INTEGER` | N | FK | Transport Unit의 Agent | `agent` |
+| 5 | `turn_id` | `TEXT` | N | | 소속 Turn. Transport Unit의 `turn.id`이며, Turn을 시작한 `user_message`의 `event_id` | `turn_id` |
+| 6 | `position` | `INTEGER` | N | | Turn 안 위치. `user_message`가 `0`. Transport Unit의 `turn.position`에 `events` 안 순서를 더한 값 | `position` |
 | 7 | `type` | `TEXT` | N | | `body`의 `type` | `type` |
 | 8 | `timestamp_us` | `INTEGER` | N | | `body`의 `timestamp` | `timestamp` |
 | 9 | `body` | `TEXT` | N | | 받은 Session Log Event의 JSON 원문 | `body` |
@@ -148,12 +149,12 @@ Turn Entity입니다. `agent_pk`와 `turn_id`가 같은 `event` 행으로 만듭
 |---|---|---|---|---|---|---|
 | 1 | `agent_pk` | `INTEGER` | N | PK, FK | 이 Turn의 Agent | `agent` |
 | 2 | `turn_id` | `TEXT` | N | PK | Turn을 시작한 `user_message`의 `event_id` | `id` |
-| 3 | `status` | `TEXT` | N | | `completed` 또는 `errored` | `status` |
+| 3 | `status` | `TEXT` | N | | `completed`, `interrupted`, `errored`, `in_progress` | `status` |
 | 4 | `started_at_us` | `INTEGER` | N | | `user_message`의 `timestamp` | `started_at` |
 | 5 | `ended_at_us` | `INTEGER` | N | | `position`이 가장 큰 `event`의 `timestamp` | `ended_at` |
 | 6 | `ingest_id` | `INTEGER` | N | FK | `user_message`를 처음 저장한 수신 기록 | `ingest` |
 
-- `CHECK (status IN ('completed', 'errored'))`
+- `CHECK (status IN ('completed', 'interrupted', 'errored', 'in_progress'))`
 - `CHECK (ended_at_us >= started_at_us)`는 두지 않습니다. 에이전트가 기록한 시각이 거꾸로일 수 있고, 그것도 받은 그대로 보여 줘야 합니다.
 
 ### `llm_call`
@@ -211,7 +212,7 @@ Tool Call Entity입니다. `assistant_message`의 `tool_use` 블록 하나와, �
 
 ### `compaction`
 
-Compaction Entity입니다. `type`이 `compaction`인 `event` 행 하나로 만듭니다.
+Compaction Entity입니다. `type`이 `compaction`인 `event` 행 하나와, 같은 Turn에서 그 뒤에 처음 나오는 `compaction_summary`로 만듭니다.
 
 | # | 열 | 타입 | NULL | 키 | 설명 | Entity 필드 |
 |---|---|---|---|---|---|---|
@@ -219,22 +220,24 @@ Compaction Entity입니다. `type`이 `compaction`인 `event` 행 하나로 만�
 | 2 | `compaction_id` | `TEXT` | N | PK | `compaction`의 `event_id` | `id` |
 | 3 | `turn_id` | `TEXT` | N | FK | 소속 Turn | `turn_id` |
 | 4 | `position` | `INTEGER` | N | | `compaction`의 Turn 안 위치 | `position` |
-| 5 | `trigger` | `TEXT` | Y | | `compaction`의 `trigger` | `trigger` |
-| 6 | `context_tokens_before` | `INTEGER` | Y | | `compaction`의 `context_tokens_before` | `context_tokens_before` |
-| 7 | `model` | `TEXT` | Y | | `compaction`의 `model` | `model` |
-| 8 | `started_at_us` | `INTEGER` | Y | | `compaction`의 `started_at`. 기록되지 않았으면 `NULL` | `started_at` |
-| 9 | `ended_at_us` | `INTEGER` | N | | `compaction`의 `timestamp` | `ended_at` |
-| 10 | `input_tokens` | `INTEGER` | Y | | Input Token | `usage.input_tokens` |
-| 11 | `output_tokens` | `INTEGER` | Y | | Output Token | `usage.output_tokens` |
-| 12 | `cache_read_tokens` | `INTEGER` | Y | | Cache Read Token | `usage.cache_read_tokens` |
-| 13 | `cache_write_tokens` | `INTEGER` | Y | | Cache Write Token | `usage.cache_write_tokens` |
-| 14 | `reasoning_tokens` | `INTEGER` | Y | | Reasoning Token | `usage.reasoning_tokens` |
+| 5 | `summary_event_id` | `TEXT` | Y | | `compaction_summary`의 `event_id`. 요약이 기록되지 않았으면 `NULL` | `summary_event_id` |
+| 6 | `trigger` | `TEXT` | Y | | `compaction`의 `trigger` | `trigger` |
+| 7 | `context_tokens_before` | `INTEGER` | Y | | `compaction`의 `context_tokens_before` | `context_tokens_before` |
+| 8 | `model` | `TEXT` | Y | | `compaction_summary`의 `model` | `model` |
+| 9 | `started_at_us` | `INTEGER` | N | | `compaction`의 `timestamp` | `started_at` |
+| 10 | `ended_at_us` | `INTEGER` | Y | | `compaction_summary`의 `timestamp`. 요약이 기록되지 않았으면 `NULL` | `ended_at` |
+| 11 | `input_tokens` | `INTEGER` | Y | | Input Token | `usage.input_tokens` |
+| 12 | `output_tokens` | `INTEGER` | Y | | Output Token | `usage.output_tokens` |
+| 13 | `cache_read_tokens` | `INTEGER` | Y | | Cache Read Token | `usage.cache_read_tokens` |
+| 14 | `cache_write_tokens` | `INTEGER` | Y | | Cache Write Token | `usage.cache_write_tokens` |
+| 15 | `reasoning_tokens` | `INTEGER` | Y | | Reasoning Token | `usage.reasoning_tokens` |
 
 - `CHECK (position > 0)`: 위치 `0`은 `user_message`입니다.
 - `CHECK (trigger IS NULL OR trigger IN ('auto', 'manual'))`
 - `CHECK (context_tokens_before IS NULL OR context_tokens_before >= 0)`
+- `CHECK ((summary_event_id IS NULL) = (ended_at_us IS NULL))`: 요약이 있을 때만 끝난 시각이 있습니다.
 - 토큰 열마다 `CHECK (<열> IS NULL OR <열> >= 0)`
-- 요약(`summary`)은 담지 않으며 `event.body`에서 읽습니다.
+- 요약 원문은 담지 않으며 `summary_event_id`의 `event.body`에서 읽습니다.
 
 ### `derivation`
 
@@ -251,8 +254,8 @@ Compaction Entity입니다. `type`이 `compaction`인 `event` 행 하나로 만�
 
 | 인덱스 | 테이블 | 열 | 쓰는 곳 |
 |---|---|---|---|
-| (UK1) | `session` | `agent_kind`, `session_id` | Batch의 Session 찾기 |
-| (UK1) | `agent` | `session_pk`, `agent_id` | Batch의 Agent 찾기, Session의 Agent 트리 |
+| (UK1) | `session` | `agent_kind`, `session_id` | Transport Unit의 Session 찾기 |
+| (UK1) | `agent` | `session_pk`, `agent_id` | Transport Unit의 Agent 찾기, Session의 Agent 트리 |
 | (UK1) | `event` | `session_pk`, `event_id` | 중복 판단, `result_event_id`로 결과 찾기, Session 삭제 |
 | `event_by_turn` | `event` | `agent_pk`, `turn_id`, `position` | Turn의 파생 데이터 만들기, LLM Call의 input 범위 |
 | `event_by_ingest` | `event` | `ingest_id` | Plugin 버전별 Session Log Event 찾기, `ingest` 삭제 때 외래 키 검사 |
@@ -260,6 +263,7 @@ Compaction Entity입니다. `type`이 `compaction`인 `event` 행 하나로 만�
 | `ingest_by_agent` | `ingest` | `agent_pk` | `agent` 삭제 때 외래 키 검사 |
 | `turn_by_time` | `turn` | `agent_pk`, `started_at_us` | Agent의 Turn 목록, Session 목록의 시작 시각 |
 | `turn_by_ingest` | `turn` | `ingest_id` | `ingest` 삭제 때 외래 키 검사 |
+| `turn_in_progress` | `turn` | `agent_pk` (`status = 'in_progress'`인 행만) | 같은 Agent의 `in_progress` Turn을 찾아 다시 만들기 |
 | `llm_call_by_turn` | `llm_call` | `agent_pk`, `turn_id`, `position` | Turn의 Loop 목록 |
 | `compaction_by_turn` | `compaction` | `agent_pk`, `turn_id`, `position` | Turn의 Compaction 목록, LLM Call의 input 범위의 시작 |
 
@@ -286,16 +290,16 @@ CREATE TABLE agent (
 ) STRICT;
 
 CREATE TABLE ingest (
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  batch_id         TEXT    NOT NULL,
-  protocol_version INTEGER NOT NULL,
-  plugin_version   TEXT    NOT NULL,
-  session_pk       INTEGER NOT NULL REFERENCES session (pk),
-  agent_pk         INTEGER NOT NULL REFERENCES agent (pk),
-  received_at_us   INTEGER NOT NULL,
-  event_count      INTEGER NOT NULL,
-  stored_count     INTEGER NOT NULL,
-  dropped_count    INTEGER NOT NULL,
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  transport_unit_id TEXT    NOT NULL,
+  protocol_version  INTEGER NOT NULL,
+  plugin_version    TEXT    NOT NULL,
+  session_pk        INTEGER NOT NULL REFERENCES session (pk),
+  agent_pk          INTEGER NOT NULL REFERENCES agent (pk),
+  received_at_us    INTEGER NOT NULL,
+  event_count       INTEGER NOT NULL,
+  stored_count      INTEGER NOT NULL,
+  dropped_count     INTEGER NOT NULL,
   CHECK (stored_count >= 0 AND dropped_count >= 0
          AND stored_count + dropped_count <= event_count)
 ) STRICT;
@@ -321,7 +325,8 @@ CREATE INDEX event_by_ingest ON event (ingest_id);
 CREATE TABLE turn (
   agent_pk      INTEGER NOT NULL REFERENCES agent (pk),
   turn_id       TEXT    NOT NULL,
-  status        TEXT    NOT NULL CHECK (status IN ('completed', 'errored')),
+  status        TEXT    NOT NULL
+                CHECK (status IN ('completed', 'interrupted', 'errored', 'in_progress')),
   started_at_us INTEGER NOT NULL,
   ended_at_us   INTEGER NOT NULL,
   ingest_id     INTEGER NOT NULL REFERENCES ingest (id),
@@ -329,6 +334,7 @@ CREATE TABLE turn (
 ) STRICT;
 CREATE INDEX turn_by_time   ON turn (agent_pk, started_at_us);
 CREATE INDEX turn_by_ingest ON turn (ingest_id);
+CREATE INDEX turn_in_progress ON turn (agent_pk) WHERE status = 'in_progress';
 
 CREATE TABLE llm_call (
   agent_pk             INTEGER NOT NULL,
@@ -374,18 +380,20 @@ CREATE TABLE compaction (
   compaction_id         TEXT    NOT NULL,
   turn_id               TEXT    NOT NULL,
   position              INTEGER NOT NULL CHECK (position > 0),
+  summary_event_id      TEXT,
   trigger               TEXT    CHECK (trigger IS NULL OR trigger IN ('auto', 'manual')),
   context_tokens_before INTEGER CHECK (context_tokens_before IS NULL OR context_tokens_before >= 0),
   model                 TEXT,
-  started_at_us         INTEGER,
-  ended_at_us           INTEGER NOT NULL,
+  started_at_us         INTEGER NOT NULL,
+  ended_at_us           INTEGER,
   input_tokens          INTEGER CHECK (input_tokens       IS NULL OR input_tokens       >= 0),
   output_tokens         INTEGER CHECK (output_tokens      IS NULL OR output_tokens      >= 0),
   cache_read_tokens     INTEGER CHECK (cache_read_tokens  IS NULL OR cache_read_tokens  >= 0),
   cache_write_tokens    INTEGER CHECK (cache_write_tokens IS NULL OR cache_write_tokens >= 0),
   reasoning_tokens      INTEGER CHECK (reasoning_tokens   IS NULL OR reasoning_tokens   >= 0),
   PRIMARY KEY (agent_pk, compaction_id),
-  FOREIGN KEY (agent_pk, turn_id) REFERENCES turn (agent_pk, turn_id)
+  FOREIGN KEY (agent_pk, turn_id) REFERENCES turn (agent_pk, turn_id),
+  CHECK ((summary_event_id IS NULL) = (ended_at_us IS NULL))
 ) STRICT;
 CREATE INDEX compaction_by_turn ON compaction (agent_pk, turn_id, position);
 
