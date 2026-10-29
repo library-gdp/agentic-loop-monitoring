@@ -15,7 +15,7 @@ decision-makers: pgd
 Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
 - [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
-- Plugin은 에이전트마다 별도의 모듈로 두고, Daemon은 이 모듈들을 정적 `import`로 모은 등록 목록 하나에서 에이전트 id로 Plugin을 찾습니다.
+- Plugin은 에이전트마다 별도의 모듈로 두고 Daemon과 따로 빌드합니다. Daemon은 시작할 때 빌드한 Plugin의 ES 모듈을 불러오고, Plugin은 Daemon의 Plugin Collection에 자신을 등록합니다([Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md) 참고).
 
 **범위 밖**
 
@@ -41,13 +41,13 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 - **Patterns to follow**:
   - Plugin 인터페이스 타입은 한 곳에 두고, Daemon과 모든 Plugin이 그 타입만 참조합니다.
 - **Patterns to avoid**:
-  - 동적 `import()`나 경로를 문자열로 조립한 `require`로 Plugin을 불러오지 않습니다.
+  - Daemon 소스에서 특정 Plugin 모듈을 `import`하지 않습니다.
   - Plugin 인터페이스 타입에 `any`를 쓰지 않습니다.
 
 ### Verification
 
 - [ ] 모든 Plugin 모듈이 공통 Plugin 인터페이스 타입을 구현하며, 타입 검사를 통과합니다.
-- [ ] Daemon 소스에 Plugin을 불러오는 동적 `import()`나 `require`가 없습니다.
+- [ ] Daemon 소스에 특정 Plugin 모듈을 `import`하는 코드가 없습니다.
 
 ## Alternatives Considered
 
@@ -58,3 +58,4 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 - 관련 ADR: [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md)
 - 다시 검토할 조건: 상주하는 Daemon의 메모리 사용량이 에이전트 머신에서 문제가 되는 경우
 - 2026-10-24: 범위 밖으로 남긴 Main Server의 구현 언어는 [Implement the Main Server in Kotlin](2026-10-24-implement-main-server-in-kotlin.md)에서 정했습니다.
+- 2026-10-29: Daemon이 정적 `import`로 모은 등록 목록에서 Plugin을 찾는다는 부분은 [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md)로 대체되었습니다. 이 문서의 Decision, Patterns to avoid, Verification도 그에 맞게 고쳤습니다.

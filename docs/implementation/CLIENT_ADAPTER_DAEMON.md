@@ -15,11 +15,12 @@ Daemon은 에이전트를 실행하는 사용자 계정마다 하나씩 상주�
 | 항목 | 설명 |
 |---|---|
 | 상태 디렉터리 | Daemon 로그 등 Daemon이 쓰는 파일을 두는 디렉터리입니다. |
+| Plugin 디렉터리 | 빌드한 Plugin을 두는 디렉터리입니다. Daemon은 시작할 때 여기 있는 Plugin을 모두 불러와 Plugin Collection에 등록하고, 그 가운데 "사용할 Plugin"을 시작합니다([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고). |
 | Transport | 표준입출력이면 실행할 Main Server 명령입니다. Transport별 주소는 [Transport](TRANSPORT.md#transport-바인딩)를 참고하세요. |
 
 ## 결정되지 않은 사항
 
-- TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법
+- TypeScript를 실행할 런타임과 Daemon을 실행 파일 하나로 빌드하는 방법. 실행 파일 밖에 있는 Plugin의 ES 모듈을 동적 `import()`로 불러올 수 있어야 합니다.
 - Daemon을 시작하고 상주시키는 방식(예: systemd user service, launchd)
-- 상태 디렉터리의 기본 위치
+- 상태 디렉터리와 Plugin 디렉터리의 기본 위치
 - Ack 타임아웃, 재시도 횟수의 기본값
