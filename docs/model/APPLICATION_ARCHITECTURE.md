@@ -39,14 +39,14 @@ Core 모듈은 다음을 정의합니다.
 
 ### Input Adapter
 
-Main Server의 entrypoint입니다. Client Adapter Daemon이 보낸 Batch를 받아 Session Log Event를 Core의 Ingest API로 전달합니다. 에이전트별 데이터 해석은 Client Adapter Daemon의 Plugin이 맡으므로, Input Adapter는 에이전트 종류를 알 필요가 없습니다.
+Main Server의 entrypoint입니다. Client Adapter Daemon이 보낸 Transport Unit을 받아 Session Log Event를 Core의 Ingest API로 전달합니다. 에이전트별 데이터 해석은 Client Adapter Daemon의 Plugin이 맡으므로, Input Adapter는 에이전트 종류를 알 필요가 없습니다.
 
 Input Adapter는 두 가지 관심사로 나뉩니다.
 
-- **Transport**: Batch를 받고 Ack를 돌려주는 방식을 다룹니다. Transport가 지켜야 하는 규칙은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md#transport)에서 정의합니다.
+- **Transport**: Transport Unit을 받고 Ack를 돌려주는 방식을 다룹니다. Transport가 지켜야 하는 규칙은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md#transport)에서 정의합니다.
 - **Decoder**: Session Log Event를 deserialization합니다. Agent Logging Protocol의 버전마다 하나의 Decoder를 둡니다.
 
-Input Adapter는 Batch의 Session Log Event가 모두 Ingest API로 처리된 뒤에 성공 Ack를 돌려줍니다. Client Adapter Daemon은 이 Ack로 전송에 성공했다고 판단하므로, 저장이 끝나기 전에 성공 Ack를 보내서는 안 됩니다. Ack 규칙은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)을 참고하세요.
+Input Adapter는 Transport Unit의 Session Log Event가 모두 Ingest API로 처리된 뒤에 성공 Ack를 돌려줍니다. Client Adapter Daemon은 이 Ack로 전송에 성공했다고 판단하므로, 저장이 끝나기 전에 성공 Ack를 보내서는 안 됩니다. Ack 규칙은 [Agent Logging Protocol](AGENT_LOGGING_PROTOCOL.md)을 참고하세요.
 
 ### Persistence
 

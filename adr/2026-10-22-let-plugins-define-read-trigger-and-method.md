@@ -18,20 +18,20 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 
 - **Trigger**: Plugin마다 언제 읽기를 시작할지 정합니다. Daemon은 Hook Client와 Signal을 두지 않습니다.
 - **읽는 방식**: Plugin마다 Session Log File을 찾고, 어디까지 읽었는지 기록하고, 이어 읽는 방법을 정합니다. Daemon은 Offset과 Offset Store를 두지 않습니다.
-- **Daemon의 역할**: Plugin이 Batch 단위로 묶어 넘긴 Session Log Event를 그대로 Batch로 Main Server에 보냅니다.
+- **Daemon의 역할**: Plugin이 Transport Unit으로 넘긴 Session Log Event를 그대로 Main Server에 보냅니다.
 - **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 끝난 Turn만 넘깁니다.
 
 **범위 밖**
 
 - Plugin과 Daemon 사이의 TypeScript 인터페이스
 - Plugin이 자신의 상태를 저장하는 위치
-- 재시도를 모두 실패한 Batch를 나중에 다시 보내는 방법
+- 재시도를 모두 실패한 Transport Unit을 나중에 다시 보내는 방법
 - 각 에이전트의 구체적인 Trigger와 읽는 방식. 에이전트별 문서에서 정합니다.
 
 ## Consequences
 
 - Good, because 에이전트가 제공하는 기능과 Session Log File의 구성에 맞춰 Plugin마다 가장 알맞은 Trigger와 읽는 방식을 고를 수 있습니다.
-- Good, because Daemon은 Batch 전송과 Ack 처리만 맡으므로 단순해지고, 에이전트별 차이가 Plugin 안에 갇힙니다.
+- Good, because Daemon은 Transport Unit 전송과 Ack 처리만 맡으므로 단순해지고, 에이전트별 차이가 Plugin 안에 갇힙니다.
 - Bad, because 읽은 위치를 기록하고 이어 읽는 코드를 Plugin마다 따로 구현해야 합니다.
 - Bad, because 유실되는 경우와 전달 보장의 세부가 Plugin마다 달라집니다. 에이전트별 문서에 적어 차이를 드러내야 합니다.
 
@@ -39,7 +39,7 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
   - [`docs/model/PLUGIN_SPEC.md`](../docs/model/PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 읽는 방식, 지켜야 하는 규칙
-  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): Batch 전송
+  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송
   - [`docs/model/SYSTEM_ARCHITECTURE.md`](../docs/model/SYSTEM_ARCHITECTURE.md): 구성, 데이터 흐름, 전달 보장
   - [`docs/model/GLOSSARY.md`](../docs/model/GLOSSARY.md): Hook, Signal, Offset 관련 용어 삭제와 Trigger 추가
 - **Dependencies**: 없음
@@ -61,5 +61,5 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 ## More Information
 
 - 대체하는 ADR: [Read Session Log Files incrementally from an Ack-confirmed offset](2026-10-19-read-session-log-files-incrementally-from-acked-offset.md)
-- 2026-10-28: Daemon이 Plugin이 넘긴 Session Log Event를 Batch로 묶는다는 부분은 [Let each Plugin define the Batch unit](2026-10-28-let-plugins-define-batch-unit.md)로 대체되었습니다. Batch 단위는 Plugin마다 정의합니다. 이 문서의 Decision도 그에 맞게 고쳤습니다.
+- 2026-10-29: Plugin이 Daemon에 Session Log Event를 넘기는 단위는 [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)이 정합니다. 레코드 하나마다 Transport Unit 하나입니다. 이 문서의 Decision도 그에 맞게 고쳤습니다.
 - 관련 ADR: [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)

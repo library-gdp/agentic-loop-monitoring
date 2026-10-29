@@ -40,7 +40,7 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
 - Good, because 에이전트별 차이가 Plugin 안에 갇힙니다. Main Server는 Agent Logging Protocol 하나만 이해하면 되고, 에이전트 형식이 바뀌어도 Main Server를 다시 배포하지 않습니다.
 - Good, because 여러 머신의 Daemon이 Main Server 하나로 데이터를 보낼 수 있습니다(표준입출력 제외).
 - Bad, because 프로세스 사이의 계약인 [Agent Logging Protocol](../docs/model/AGENT_LOGGING_PROTOCOL.md)을 따로 정의하고 버전을 관리해야 합니다.
-- Bad, because Plugin을 고치면 각 에이전트 머신의 Daemon을 갱신해야 합니다. Plugin 버전이 머신마다 다를 수 있으므로 Batch에 `plugin_version`을 싣습니다.
+- Bad, because Plugin을 고치면 각 에이전트 머신의 Daemon을 갱신해야 합니다. Plugin 버전이 머신마다 다를 수 있으므로 Transport Unit에 `plugin_version`을 싣습니다.
 - Bad, because Main Server가 원격에 있으면 마스킹하지 않은 프롬프트와 Tool Call 결과가 네트워크로 나갑니다. 원격 Transport의 인증과 암호화를 후속 결정으로 남깁니다.
 
 ## Implementation Plan
@@ -54,7 +54,7 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
   - 코드 디렉터리 구성은 구현 언어를 정하는 ADR에서 정합니다.
 - **Dependencies**: 없음
 - **Patterns to follow**:
-  - Daemon과 Main Server는 별도로 빌드하고 배포할 수 있는 실행 단위로 둡니다.
+  - Daemon과 Main Server는 모듈 경계를 지키며, Daemon은 Main Server를 Transport로만 부릅니다.
   - 에이전트별 형식 해석은 모두 [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 `resolve`와 `read` 안에서 합니다.
   - Main Server의 Input Adapter는 Agent Logging Protocol 버전마다 Decoder를 하나씩 둡니다.
 - **Patterns to avoid**:
@@ -64,7 +64,7 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
 ### Verification
 
 - [ ] Main Server의 소스에 에이전트별 Session Log File 형식을 해석하는 코드가 없습니다.
-- [ ] Main Server가 Client Adapter Daemon과 다른 머신에서 REST API, Streamable HTTP, WebSocket 중 하나로 Batch를 받아 저장합니다.
+- [ ] Main Server가 Client Adapter Daemon과 다른 머신에서 REST API, Streamable HTTP, WebSocket 중 하나로 Transport Unit을 받아 저장합니다.
 - [ ] 새 에이전트용 Plugin을 추가할 때 Main Server의 코드를 바꾸지 않아도 그 에이전트의 Session Log Event가 저장됩니다.
 
 ## Alternatives Considered
@@ -78,4 +78,5 @@ Main Server의 실행 위치는 정하지 않습니다. 같은 머신일 수도 
 - Daemon이 Stop Hook과 Signal로 읽기를 시작한다는 부분은 [Let each Plugin define its read trigger and reading method](2026-10-22-let-plugins-define-read-trigger-and-method.md)로 대체되었습니다. Session Log File을 언제, 어떻게 읽을지는 Plugin마다 정의합니다.
 - 2026-10-24: 전송 형식(Wire Event)과 Core의 이벤트 모델(Canonical Event)을 서로 다른 모델로 둔다는 부분은 [Merge Wire Event and Canonical Event into Session Log Event](2026-10-24-merge-wire-event-and-canonical-event-into-session-log-event.md)로 대체되었습니다. 이 문서의 Decision, Patterns to avoid, Verification도 그에 맞게 고쳤습니다.
 - 용어: [Glossary](../docs/model/GLOSSARY.md)
+- 2026-10-29: Daemon과 Main Server를 별도로 빌드하고 배포할 수 있는 실행 단위로 둔다는 부분은 [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md)로 바뀌었습니다. Daemon과 Main Server를 한 실행 파일, 한 프로세스로 구동하며, 둘 사이의 모듈 경계와 Transport는 그대로 둡니다. 이 문서의 Patterns to follow도 그에 맞게 고쳤습니다.
 - 다시 검토할 조건: 에이전트가 Session Log File 없이 원격 API로만 기록을 제공하게 되는 경우

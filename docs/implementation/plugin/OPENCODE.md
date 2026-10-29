@@ -15,7 +15,7 @@ OpenCode는 Subagent를 띄울 때 Subagent만의 session(child session)을 새�
 
 ### Session ID
 
-`parentID`가 없는 session이 Main Agent의 session이며, 그 session id가 Session ID입니다. Subagent의 session에서는 `parentID`를 따라 `parentID`가 없는 session까지 올라가 Session ID를 찾습니다. Subagent의 session id는 Session ID가 아니므로 Batch의 `session.id`에 넣지 않습니다([Plugin Specification](../../model/PLUGIN_SPEC.md#session-id와-agent-id) 참고).
+`parentID`가 없는 session이 Main Agent의 session이며, 그 session id가 Session ID입니다. Subagent의 session에서는 `parentID`를 따라 `parentID`가 없는 session까지 올라가 Session ID를 찾습니다. Subagent의 session id는 Session ID가 아니므로 Transport Unit의 `session.id`에 넣지 않습니다([Plugin Specification](../../model/PLUGIN_SPEC.md#session-id와-agent-id) 참고).
 
 ### Agent ID
 

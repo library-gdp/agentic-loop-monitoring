@@ -17,22 +17,22 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 |---|---|---|
 | [System Architecture](docs/model/SYSTEM_ARCHITECTURE.md) | 시스템 구성(Client Adapter Daemon, Main Server), 데이터 흐름, 전달 보장, 원칙(Observe-only, Fail-open, Masking) | 프로세스 간 역할 분담이나 데이터 흐름을 확인할 때 |
 | [Application Architecture](docs/model/APPLICATION_ARCHITECTURE.md) | Main Server의 모듈 구성(Core, Input Adapter, Persistence, Visualization)과 모듈 간 의존 관계 | Main Server의 모듈을 추가하거나 바꿀 때, 모듈 간 의존 관계를 확인할 때 |
-| [Client Adapter Daemon](docs/model/CLIENT_ADAPTER_DAEMON.md) | Daemon의 구성 요소, Batch 전송, Ack 처리, 설정 | Daemon을 구현하거나 바꿀 때 |
-| [Plugin Specification](docs/model/PLUGIN_SPEC.md) | Plugin이 정의하는 Trigger, 수집 방식, Batch 단위와 지켜야 하는 규칙, Session ID와 Agent ID 규칙, Turn 단위, 에이전트 id, event id 규칙, 에이전트별 문서에 적을 내용 | 새 에이전트를 지원하거나 Plugin을 구현할 때, 에이전트별 Plugin 문서를 쓸 때 |
-| [Agent Logging Protocol](docs/model/AGENT_LOGGING_PROTOCOL.md) | Batch, Ack의 형식, 버전 규칙, Transport가 지켜야 하는 규칙 | Daemon과 Main Server 사이의 통신을 설계하거나 구현할 때 |
+| [Client Adapter Daemon](docs/model/CLIENT_ADAPTER_DAEMON.md) | Daemon의 구성 요소, Transport Unit 전송, Ack 처리, 설정 | Daemon을 구현하거나 바꿀 때 |
+| [Plugin Specification](docs/model/PLUGIN_SPEC.md) | Plugin이 정의하는 Trigger, 수집 방식과 지켜야 하는 규칙, Session ID와 Agent ID 규칙, Turn 단위, 레코드 하나마다 넘기는 Transport Unit의 규칙, 에이전트 id, event id 규칙, 에이전트별 문서에 적을 내용 | 새 에이전트를 지원하거나 Plugin을 구현할 때, 에이전트별 Plugin 문서를 쓸 때 |
+| [Agent Logging Protocol](docs/model/AGENT_LOGGING_PROTOCOL.md) | Transport Unit, Ack의 형식, 버전 규칙, Transport가 지켜야 하는 규칙 | Daemon과 Main Server 사이의 통신을 설계하거나 구현할 때 |
 | [Domain Model](docs/model/DOMAIN_MODEL.md) | Session Log Event, Token Usage와 Core가 구성하는 Session, Agent(Main Agent, Subagent), Turn, Loop, LLM Call, Tool Call의 필드, Agent와 Turn 구성 규칙 | Session Log Event를 만들거나 바꿀 때, Core의 엔티티나 저장 구조를 설계할 때 |
 | [Data Architecture](docs/model/DATA_ARCHITECTURE.md) | 데이터가 있는 곳과 소유자, Main Server가 저장하는 Entity(원본 데이터: Session, Agent, Session Log Event, 수신 기록 / 파생 데이터: Turn, LLM Call, Tool Call)의 목록과 필드, 관계, 원자적 쓰기, 질의, Session 단위 삭제, 형식 변경 처리 | Persistence나 Ingest API, Query API를 설계하거나 구현할 때, 무엇을 저장하고 무엇을 계산할지 정할 때 |
 | [Glossary](docs/model/GLOSSARY.md) | 도메인 용어(Session, Main Agent, Subagent, Turn, Loop, LLM Call, Tool Call 등), Session ID와 Agent ID 같은 식별자, 시스템 구성, 수집, 전송, 데이터(원본 데이터, 파생 데이터, 수신 기록) 관련 용어의 정의 | 도메인 모델이나 Session Log Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
-| [Tech Stack](docs/implementation/TECH_STACK.md) | 구성 요소별 구현 언어(Client Adapter Daemon과 Plugin은 TypeScript, Main Server는 Kotlin)와 저장소(SQLite), 그 이유 | 코드를 작성하기 전에 구현 언어를 확인할 때 |
+| [Tech Stack](docs/implementation/TECH_STACK.md) | 구현 언어(모두 TypeScript), 런타임(Bun), 프레임워크(Hono), Daemon과 Main Server를 한 프로세스로 구동하는 실행 구성, 저장소(SQLite), 그 이유 | 코드를 작성하기 전에 구현 언어와 런타임, 실행 구성을 확인할 때 |
 | [Client Adapter Daemon 구현](docs/implementation/CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상태 디렉터리 등 구현 설정 | Daemon 코드를 작성, 빌드, 배포할 때 |
 | [Plugin Guide](docs/implementation/PLUGIN_GUIDE.md) | Plugin을 Daemon 실행 파일에 함께 빌드하는 방식, Session Log를 파일로 수집하는 경우의 지침, Plugin 구현에 관한 결정되지 않은 사항 | Plugin 코드를 작성하거나 Daemon에 추가할 때 |
 | [Claude Code Plugin](docs/implementation/plugin/CLAUDE_CODE.md) | Claude Code Plugin 구현 방안. Main Agent와 Subagent의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법 | Claude Code Plugin을 구현하거나 바꿀 때 |
 | [Codex Plugin](docs/implementation/plugin/CODEX.md) | Codex Plugin 구현 방안. thread_id로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | Codex Plugin을 구현하거나 바꿀 때 |
 | [OpenCode Plugin](docs/implementation/plugin/OPENCODE.md) | OpenCode Plugin 구현 방안. session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | OpenCode Plugin을 구현하거나 바꿀 때 |
-| [Message Convention](docs/implementation/MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Batch, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
-| [Data Storage](docs/implementation/DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정, Batch 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
+| [Message Convention](docs/implementation/MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Transport Unit, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
+| [Data Storage](docs/implementation/DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정과 라이브러리(`bun:sqlite`), Transport Unit 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
 | [Table Definition](docs/implementation/TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
-| [Transport](docs/implementation/TRANSPORT.md) | Transport(표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
+| [Transport](docs/implementation/TRANSPORT.md) | Transport(프로세스 내 호출, 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 

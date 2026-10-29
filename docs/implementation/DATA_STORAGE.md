@@ -6,12 +6,14 @@
 
 Main Server의 데이터를 SQLite 데이터베이스 파일 하나에 저장합니다. 결정 배경은 [Store Main Server data in SQLite](../../adr/2026-10-28-store-main-server-data-in-sqlite.md)를 참고하세요.
 
+SQLite에는 Bun에 내장된 `bun:sqlite`로 접근합니다. 동기 API이므로 쓰기 트랜잭션과 질의가 도는 동안 같은 프로세스의 Daemon과 Visualization이 기다립니다. 트랜잭션은 Transport Unit 하나로 짧게 유지합니다([Run the Client Adapter Daemon and the Main Server in one Bun process](../../adr/2026-10-29-run-daemon-and-main-server-in-one-bun-process.md) 참고).
+
 | 설정 | 값 | 이유 |
 |---|---|---|
-| `journal_mode` | `WAL` | Batch를 쓰는 동안에도 Visualization의 질의가 읽을 수 있게 합니다. |
-| `synchronous` | `FULL` | `accepted`를 보낸 Batch가 전원이 꺼져도 남게 합니다. |
+| `journal_mode` | `WAL` | Transport Unit을 쓰는 동안에도 Visualization의 질의가 읽을 수 있게 합니다. |
+| `synchronous` | `FULL` | `accepted`를 보낸 Transport Unit이 전원이 꺼져도 남게 합니다. |
 | `foreign_keys` | `ON` | |
-| `busy_timeout` | 설정 값 | 쓰기 잠금을 기다리는 최대 시간입니다. 넘으면 Batch를 `unavailable`로 거절합니다. |
+| `busy_timeout` | 설정 값 | 쓰기 잠금을 기다리는 최대 시간입니다. 넘으면 Transport Unit을 `unavailable`로 거절합니다. |
 
 ### 설정
 
@@ -26,12 +28,12 @@ Main Server의 데이터를 SQLite 데이터베이스 파일 하나에 저장합
 
 ## 쓰기
 
-Batch 하나를 트랜잭션 하나로 처리합니다. [Data Architecture의 쓰기](../model/DATA_ARCHITECTURE.md#쓰기) 3번이 이 트랜잭션입니다.
+Transport Unit 하나를 트랜잭션 하나로 처리합니다. [Data Architecture의 쓰기](../model/DATA_ARCHITECTURE.md#쓰기) 3번이 이 트랜잭션입니다.
 
 1. `BEGIN IMMEDIATE`로 쓰기 잠금을 잡습니다. 쓰기 잠금 대기 시간 안에 잡지 못하면 `unavailable`로 거절합니다.
 2. `session`, `agent`를 찾거나 추가하고, `ingest`를 추가합니다. `session`과 `agent`의 비어 있는 열은 `NULL`일 때만 채웁니다(예: `UPDATE session SET cwd = ? WHERE pk = ? AND cwd IS NULL`).
-3. `event`를 추가합니다. 중복은 `INSERT ... ON CONFLICT (session_pk, event_id) DO NOTHING`으로 건너뜁니다.
-4. Batch에 들어 있는 `turn_id`마다 `turn`, `llm_call`, `tool_call`의 행을 지우고, `event`에서 그 Turn의 행을 `position` 순으로 읽어 다시 만듭니다.
+3. `event`를 추가합니다. `turn_id`는 Transport Unit의 `turn.id`, `position`은 `turn.position`에 `events` 안 순서를 더한 값, `ends_turn`은 `turn.last`가 `true`일 때 `events`의 마지막 행만 `1`입니다. 중복은 `INSERT ... ON CONFLICT (session_pk, event_id) DO NOTHING`으로 건너뜁니다.
+4. Transport Unit의 `turn.id`에 해당하는 `turn`, `llm_call`, `tool_call`의 행을 지우고, `event`에서 그 Turn의 행을 `position` 순으로 읽어 다시 만듭니다.
 5. `ingest`의 `stored_count`를 채우고 `COMMIT`합니다.
 6. `COMMIT`이 끝난 뒤에 `accepted`를 돌려줍니다.
 
@@ -56,10 +58,10 @@ Session 목록의 시작 시각은 그 Session의 `agent`에 속한 `turn.starte
 
 ## 스키마 버전
 
-- 스키마 버전은 `PRAGMA user_version`에 둡니다. Main Server는 시작할 때 버전을 확인하고, 낮으면 순서대로 마이그레이션한 뒤 Batch를 받습니다.
+- 스키마 버전은 `PRAGMA user_version`에 둡니다. Main Server는 시작할 때 버전을 확인하고, 낮으면 순서대로 마이그레이션한 뒤 Transport Unit을 받습니다.
 - 원본 데이터의 테이블은 내용을 잃지 않게 마이그레이션합니다.
 - 파생 데이터의 테이블은 마이그레이션하지 않고 지운 뒤 다시 만들어도 됩니다.
-- `derivation.version`이 Main Server가 가진 구성 규칙의 버전과 다르면, Main Server는 파생 데이터를 모두 지우고 `event`로 다시 만듭니다. 다시 만드는 동안 받은 Batch는 `unavailable`로 거절합니다.
+- `derivation.version`이 Main Server가 가진 구성 규칙의 버전과 다르면, Main Server는 파생 데이터를 모두 지우고 `event`로 다시 만듭니다. 다시 만드는 동안 받은 Transport Unit은 `unavailable`로 거절합니다.
 
 ## Session 삭제
 
@@ -67,7 +69,6 @@ Session 하나를 트랜잭션 하나로 지웁니다. 그 Session의 `tool_call
 
 ## 결정되지 않은 사항
 
-- SQLite에 접근하는 라이브러리. Kotlin의 컴파일 대상과 함께 정합니다([Implement the Main Server in Kotlin](../../adr/2026-10-24-implement-main-server-in-kotlin.md)의 범위 밖 참고).
 - 데이터 파일의 기본 위치
 - 쓰기 잠금 대기 시간의 기본값
 - 큰 `event.body`를 압축하거나 따로 저장할지

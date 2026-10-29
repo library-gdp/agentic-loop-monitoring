@@ -6,12 +6,14 @@
 
 모든 메시지는 UTF-8 JSON 객체입니다. 필드 이름은 [Agent Logging Protocol](../model/AGENT_LOGGING_PROTOCOL.md)과 [Domain Model](../model/DOMAIN_MODEL.md#session-log-event)의 필드 이름을 그대로 씁니다. 시각은 RFC 3339 형식의 string으로 쓰며 시간대를 포함합니다.
 
-### Batch
+이 규약은 Daemon과 Main Server가 다른 프로세스일 때 씁니다. [프로세스 내 호출](TRANSPORT.md#프로세스-내-호출)에서는 같은 필드를 가진 객체를 직렬화하지 않고 넘깁니다.
+
+### Transport Unit
 
 ```json
 {
   "protocol_version": 1,
-  "batch_id": "0f7c2d3e-5a41-4b8e-9d0a-2c6f1e7b9a10",
+  "transport_unit_id": "0f7c2d3e-5a41-4b8e-9d0a-2c6f1e7b9a10",
   "source": {
     "agent": "claude-code",
     "plugin_version": "0.1.0",
@@ -25,11 +27,16 @@
     "id": "a0be...",
     "parent_id": "9b2e..."
   },
+  "turn": {
+    "id": "a0be...:12",
+    "position": 3,
+    "last": false
+  },
   "events": []
 }
 ```
 
-위 예시는 Subagent의 Batch입니다. Main Agent의 Batch에서는 `agent.parent_id`를 뺍니다.
+위 예시는 Subagent의 Transport Unit입니다. Main Agent의 Transport Unit에서는 `agent.parent_id`를 뺍니다. `events`에는 레코드 하나에서 나온 Session Log Event가 들어갑니다.
 
 ### Ack
 
@@ -38,7 +45,7 @@
 ```json
 {
   "protocol_version": 1,
-  "batch_id": "0f7c2d3e-5a41-4b8e-9d0a-2c6f1e7b9a10",
+  "transport_unit_id": "0f7c2d3e-5a41-4b8e-9d0a-2c6f1e7b9a10",
   "status": "accepted"
 }
 ```
@@ -48,11 +55,11 @@
 ```json
 {
   "protocol_version": 1,
-  "batch_id": "0f7c2d3e-5a41-4b8e-9d0a-2c6f1e7b9a10",
+  "transport_unit_id": "0f7c2d3e-5a41-4b8e-9d0a-2c6f1e7b9a10",
   "status": "rejected",
   "retryable": true,
   "error": { "code": "unavailable", "message": "storage is not ready" }
 }
 ```
 
-JSON으로 해석할 수 없는 Batch는 `invalid_batch`로 거절합니다.
+JSON으로 해석할 수 없는 Transport Unit은 `invalid_transport_unit`으로 거절합니다.
