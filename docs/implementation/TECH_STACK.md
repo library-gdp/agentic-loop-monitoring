@@ -22,7 +22,7 @@
 
 ## 실행 구성
 
-Daemon과 Main Server를 하나의 프로세스로 구동합니다. 실행 파일은 하나이며, Daemon, Plugin, Main Server가 모두 들어 있습니다.
+Daemon과 Main Server를 하나의 프로세스로 구동합니다. 실행 파일은 하나이며, Daemon과 Main Server가 들어 있습니다. Plugin은 따로 빌드해 Plugin 디렉터리에 두고, Daemon이 시작할 때 같은 프로세스로 불러옵니다([Plugin Guide](PLUGIN_GUIDE.md#plugin을-daemon에-넣는-방식) 참고).
 
 - Daemon과 Main Server 사이의 Transport는 [프로세스 내 호출](TRANSPORT.md#프로세스-내-호출)입니다. Transport Unit을 직렬화하지 않고 객체 그대로 넘깁니다.
 - Daemon은 Main Server를 Transport로만 부르며, Main Server의 Core나 Persistence를 직접 부르지 않습니다.

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-22
 decision-makers: pgd
 ---
@@ -58,4 +58,5 @@ Plugin 코드를 Daemon 실행 파일에 함께 빌드합니다.
 ## More Information
 
 - 관련 ADR: [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)
+- 대체한 ADR: [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md). Plugin을 Daemon과 따로 빌드하고, Daemon이 시작할 때 불러오며 Plugin이 Plugin Collection에 자신을 등록합니다.
 - 다시 검토할 조건: Daemon 소스를 빌드하지 않는 사람이 Plugin을 추가해야 하는 경우(예: 오픈소스로 공개해 외부 기여를 받는 경우)

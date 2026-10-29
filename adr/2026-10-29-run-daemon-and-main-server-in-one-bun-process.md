@@ -25,7 +25,7 @@ decision-makers: pgd
 - **HTTP 프레임워크는 Hono입니다.** Visualization과 원격 Transport(REST API, Streamable HTTP, WebSocket)의 HTTP 처리를 Hono로 구현하고 `Bun.serve`로 띄웁니다.
 - **Daemon과 Main Server를 하나의 프로세스로 구동합니다.** 둘 사이의 Transport는 같은 프로세스 안의 함수 호출입니다([Transport](../docs/implementation/TRANSPORT.md#프로세스-내-호출)). Transport Unit을 직렬화하지 않고 객체 그대로 넘깁니다.
 - **SQLite는 Bun에 내장된 `bun:sqlite`로 접근합니다.**
-- 실행 파일은 `bun build --compile`로 하나만 만듭니다. Daemon, Plugin, Main Server가 모두 이 실행 파일에 들어 있습니다.
+- 실행 파일은 `bun build --compile`로 하나만 만듭니다. Daemon과 Main Server가 이 실행 파일에 들어 있습니다. Plugin은 [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md)에 따라 따로 빌드하고, Daemon이 시작할 때 Plugin 디렉터리에서 같은 프로세스로 불러옵니다.
 
 Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Server를 Transport로만 부르고, Main Server의 내부 모듈을 직접 부르지 않습니다.
 
@@ -43,6 +43,7 @@ Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Se
 - Good, because `bun:sqlite`는 Bun에 들어 있으므로 플랫폼마다 네이티브 애드온을 빌드하거나 배포하지 않습니다.
 - Bad, because Daemon과 Main Server가 메모리 상한과 이벤트 루프를 함께 씁니다. Visualization의 무거운 질의와 큰 Session Log Event의 수집이 겹치면 메모리가 함께 오르고, 메모리가 부족해 프로세스가 끝나면 수집과 시각화가 함께 멈춥니다. 에이전트는 영향을 받지 않습니다([Fail-open](../docs/model/SYSTEM_ARCHITECTURE.md#fail-open)).
 - Bad, because `bun:sqlite`는 동기 API입니다. 큰 트랜잭션이나 무거운 질의가 도는 동안 Daemon의 수집과 Visualization의 응답이 멈춥니다.
+- Bad, because Plugin은 따로 번들하므로, 여러 Plugin이 같은 라이브러리를 쓰면 그 라이브러리가 Plugin마다 메모리에 따로 올라갑니다.
 - Bad, because Daemon이 사용자 계정마다 상주하므로 Main Server와 그 데이터 파일도 사용자 계정마다 하나씩 생깁니다.
 - Neutral, because 원격 Transport 바인딩은 그대로 둡니다. Main Server를 원격에 두는 구성이 필요해지면 Main Server만 구동하는 실행 방식을 정합니다.
 
@@ -65,7 +66,7 @@ Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Se
 
 ### Verification
 
-- [ ] 실행 파일 하나를 실행하면 Daemon과 Main Server가 한 프로세스에서 동작하고, Session Log Event가 저장되어 Visualization에 보입니다.
+- [ ] 실행 파일 하나를 실행하면 Daemon과 Main Server가 한 프로세스에서 동작하고, Plugin 디렉터리의 Plugin을 불러와 수집한 Session Log Event가 저장되어 Visualization에 보입니다.
 - [ ] Daemon과 Plugin 소스에 Main Server의 Core나 Persistence를 직접 부르는 코드가 없습니다.
 - [ ] 대기 상태의 RSS를 측정해 기록합니다.
 

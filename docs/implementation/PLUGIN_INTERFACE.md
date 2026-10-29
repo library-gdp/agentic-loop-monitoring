@@ -1,0 +1,250 @@
+# PLUGIN_INTERFACE.md
+
+이 문서는 빌드한 Plugin이 갖추고 Client Adapter Daemon(이하 Daemon)이 불러 쓰는 TypeScript 인터페이스를 정합니다. Plugin 모듈, Plugin이 자신을 등록하는 Collection, Plugin, Plugin API 버전이 있습니다. Plugin의 역할과 규칙은 [Plugin Specification](../model/PLUGIN_SPEC.md)을, Session Log Event의 필드는 [Domain Model](../model/DOMAIN_MODEL.md#session-log-event)을 따르며, 이 문서는 바꾸지 않습니다. Plugin을 빌드하고 Daemon이 불러오는 방식은 [Plugin Guide](PLUGIN_GUIDE.md#plugin을-daemon에-넣는-방식)를 참고하세요. 용어는 [Glossary](../model/GLOSSARY.md)를 따릅니다.
+
+아래 타입과 `PLUGIN_API_VERSION`은 모두 Plugin API 패키지에 둡니다. Daemon과 모든 Plugin은 이 패키지만 참조합니다.
+
+## Plugin 모듈
+
+빌드한 Plugin은 ES 모듈 파일 하나입니다. 이 모듈은 다음 두 가지를 내보냅니다(named export).
+
+```ts
+export interface PluginModule {
+  /** 이 모듈을 빌드할 때 쓴 Plugin API의 PLUGIN_API_VERSION입니다. */
+  readonly apiVersion: number;
+  /** Daemon이 부르면 registry에 자신의 Plugin을 등록합니다. */
+  register(registry: PluginRegistry): void;
+}
+```
+
+```ts
+// Plugin 모듈의 소스
+import { PLUGIN_API_VERSION, type Plugin, type PluginRegistry } from "plugin-api";
+
+const plugin: Plugin = { /* ... */ };
+
+export const apiVersion = PLUGIN_API_VERSION;
+
+export function register(registry: PluginRegistry): void {
+  registry.register(plugin);
+}
+```
+
+- 모듈 하나는 Plugin 하나를 등록합니다.
+- `register` 안에서 `registry.register`를 곧바로 부릅니다. `register`가 끝난 뒤에는 등록할 수 없습니다.
+- 모듈을 불러오거나 `register`를 부르는 것만으로는 아무 일도 하지 않습니다. 파일을 읽거나, 감시를 시작하거나, 타이머를 거는 일은 `start`에서 시작합니다. Daemon은 Plugin 디렉터리의 모든 모듈을 불러오고 등록하지만, 그 가운데 설정에서 활성화한 Plugin만 시작하기 때문입니다.
+
+## PluginRegistry
+
+Daemon이 가진 Plugin Collection에 Plugin을 등록하는 창구입니다. Daemon은 모듈마다 `register`에 이 값을 넘깁니다.
+
+```ts
+export interface PluginRegistry {
+  /** Plugin을 Collection에 등록합니다. */
+  register(plugin: Plugin): void;
+}
+```
+
+Daemon은 다음 경우 등록을 거절하고 로그를 남깁니다.
+
+- `agent`가 [에이전트 id](../model/PLUGIN_SPEC.md#에이전트-id) 형식(소문자와 하이픈)이 아니거나, `version`이 빈 문자열이거나, `start`나 `stop`이 함수가 아닌 경우
+- 같은 `agent`의 Plugin이 이미 등록된 경우. 먼저 등록한 Plugin이 남습니다.
+
+## Plugin API 버전
+
+```ts
+export const PLUGIN_API_VERSION = 1;
+```
+
+- Daemon은 모듈의 `apiVersion`이 자신이 빌드에 쓴 `PLUGIN_API_VERSION`과 같을 때만 그 모듈의 `register`를 부릅니다.
+- `PLUGIN_API_VERSION`은 이미 빌드한 Plugin이나 Daemon과 호환되지 않는 변경이 있을 때만 올립니다. `PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginTransportUnit`에 멤버를 더하거나, 빼거나, 이름이나 의미를 바꾸는 것이 호환되지 않는 변경입니다.
+- Session Log Event 종류나 선택 필드를 더할 때는 올리지 않습니다. Daemon은 `events`를 해석하지 않고 그대로 보내기 때문입니다. 이때는 [Agent Logging Protocol의 버전 규칙](../model/AGENT_LOGGING_PROTOCOL.md#버전)을 따릅니다.
+
+## Plugin
+
+Plugin 모듈이 Collection에 등록하는 값입니다.
+
+```ts
+export interface Plugin {
+  /** 에이전트 id입니다(예: "claude-code"). Transport Unit의 source.agent에 담깁니다. */
+  readonly agent: string;
+  /** Plugin의 버전입니다. Transport Unit의 source.plugin_version에 담깁니다. */
+  readonly version: string;
+  /** Trigger를 설정하고 수집을 시작합니다. */
+  start(context: PluginContext): Promise<void>;
+  /** Trigger를 해제하고 진행 중인 수집을 멈춥니다. */
+  stop(): Promise<void>;
+}
+```
+
+- `agent`는 [Plugin Specification의 에이전트 id](../model/PLUGIN_SPEC.md#에이전트-id)입니다. Session 안의 Agent를 식별하는 Agent ID와 다릅니다. Daemon은 이 값으로 Collection에서 Plugin을 고릅니다.
+- `version`은 Plugin 패키지의 버전과 같은 값입니다.
+
+### 시작과 종료
+
+| 시점 | Daemon | Plugin |
+|---|---|---|
+| Daemon 시작: 등록 | Plugin 디렉터리의 모듈을 모두 불러오고 `register`를 불러 Collection을 채웁니다([Plugin Guide](PLUGIN_GUIDE.md#daemon이-plugin을-불러오는-방식) 참고). | `registry.register`로 자신을 등록합니다. |
+| Daemon 시작: 시작 | 설정의 "사용할 Plugin"에 있는 에이전트 id마다 Collection에서 그 `agent`의 Plugin을 골라 `start`를 한 번 부릅니다. Plugin마다 다른 `PluginContext`를 넘깁니다. | Trigger를 설정한 뒤 `start`를 끝냅니다. 수집은 `start`가 끝난 뒤에도 Trigger에 따라 계속합니다. |
+| 불러오기, 등록 또는 `start` 실패 | 로그를 남기고 그 Plugin을 시작하지 않은 것으로 봅니다. 다른 Plugin은 그대로 등록하고 시작합니다. | |
+| Daemon 종료 | 시작한 Plugin마다 `stop`을 부릅니다. | Trigger를 해제하고 진행 중인 수집을 멈춘 뒤 `stop`을 끝냅니다. `stop`이 끝난 뒤에는 `submit`을 부르지 않습니다. |
+
+- 등록했지만 설정에서 활성화하지 않은 Plugin은 `start`가 불리지 않으므로 Session Log를 수집하지 않습니다.
+- Plugin은 Daemon과 같은 프로세스에서 실행됩니다. `start`가 끝난 뒤 Plugin 안에서 일어난 오류는 Plugin이 처리하며, Plugin은 자신의 오류로 Daemon 프로세스를 끝내지 않습니다.
+
+## PluginContext
+
+Daemon이 `start`에 넘기는 값입니다. Plugin이 Daemon에 접근하는 방법은 이것뿐입니다.
+
+```ts
+export interface PluginContext {
+  /** Transport Unit 하나를 Daemon에 넘깁니다. */
+  submit(unit: PluginTransportUnit): void;
+  /** Daemon의 로그 파일에 기록합니다. */
+  readonly logger: PluginLogger;
+}
+
+export interface PluginLogger {
+  info(message: string, details?: Readonly<Record<string, JsonValue>>): void;
+  warn(message: string, details?: Readonly<Record<string, JsonValue>>): void;
+  error(message: string, details?: Readonly<Record<string, JsonValue>>): void;
+}
+```
+
+### `submit`
+
+- Plugin은 완결된 레코드 하나를 Session Log Event로 변환할 때마다 `submit`을 한 번 부릅니다. Turn이 끝나기를 기다리지 않습니다([Transport Unit](../model/PLUGIN_SPEC.md#transport-unit) 참고). Daemon은 넘겨받은 `PluginTransportUnit` 하나를 Transport Unit 하나로 보냅니다.
+- `submit`은 Transport Unit을 Daemon의 전송 대기열에 넣고 바로 돌아옵니다. 전송 결과를 Plugin에 돌려주지 않으며, 재시도는 Daemon이 맡습니다([Client Adapter Daemon](../model/CLIENT_ADAPTER_DAEMON.md#ack-처리) 참고).
+- Daemon은 여러 Plugin이 넘긴 Transport Unit을 `submit`이 불린 순서대로 보냅니다.
+- Daemon은 `PluginTransportUnit`을 합치거나, 나누거나, Transport Unit 규칙을 다시 확인하지 않습니다. 규칙은 Plugin이 지킵니다.
+- Plugin은 `submit`에 넘긴 객체를 그 뒤에 바꾸지 않습니다. [프로세스 내 호출](TRANSPORT.md#프로세스-내-호출)에서는 이 객체가 복사되지 않고 Main Server까지 그대로 넘어갑니다.
+
+### `logger`
+
+Daemon은 자신의 로그 파일에만 기록합니다([Client Adapter Daemon](../model/CLIENT_ADAPTER_DAEMON.md#로그) 참고). Plugin은 표준 출력, 표준 오류나 자신의 로그 파일에 쓰지 않고 `logger`에 기록합니다. Daemon은 Plugin이 남긴 로그에 그 Plugin의 에이전트 id를 붙입니다.
+
+| 경우 | 수준 |
+|---|---|
+| 완결되었지만 해석할 수 없는 레코드를 건너뛴 경우 | `warn` |
+
+## PluginTransportUnit
+
+Plugin이 `submit`에 넘기는 Transport Unit입니다. [Agent Logging Protocol의 Transport Unit](../model/AGENT_LOGGING_PROTOCOL.md#transport-unit)에서 Daemon이 채우는 `protocol_version`, `transport_unit_id`, `source`를 뺀 것입니다. 필드 이름은 Transport Unit의 필드 이름을 그대로 쓰므로, Daemon은 이 객체에 세 필드를 더해 Transport로 넘깁니다. 프로세스 내 호출에서는 직렬화하지 않고, 다른 Transport에서는 그대로 직렬화합니다.
+
+```ts
+export interface PluginTransportUnit {
+  readonly session: {
+    /** Session ID입니다. Main Agent와 Subagent가 같은 값을 씁니다. */
+    readonly id: string;
+    /** 에이전트의 작업 디렉터리입니다. 알 수 없으면 뺍니다. */
+    readonly cwd?: string;
+  };
+  readonly agent: {
+    /** events를 기록한 Agent의 Agent ID입니다. */
+    readonly id: string;
+    /** 부모 Agent ID입니다. Main Agent이면 뺍니다. */
+    readonly parent_id?: string;
+  };
+  readonly turn: {
+    /** events가 속한 Turn을 시작한 user_message의 event_id입니다. */
+    readonly id: string;
+    /** events의 첫 Session Log Event의 Turn 안 위치입니다. user_message가 0입니다. */
+    readonly position: number;
+  };
+  /** 레코드 하나에서 나온 Session Log Event입니다. 레코드 안에서 나온 순서를 따릅니다. */
+  readonly events: readonly [SessionLogEvent, ...SessionLogEvent[]];
+}
+```
+
+## Session Log Event
+
+[Domain Model의 Session Log Event](../model/DOMAIN_MODEL.md#session-log-event)를 그대로 옮긴 타입입니다. Domain Model에 Session Log Event 종류나 필드가 더해지면 이 타입에도 더합니다.
+
+```ts
+/** RFC 3339 형식의 시각입니다. 시간대를 포함합니다. */
+export type Timestamp = string;
+
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly JsonValue[]
+  | JsonObject;
+
+export interface JsonObject {
+  readonly [key: string]: JsonValue;
+}
+
+export type SessionLogEvent =
+  | UserMessageEvent
+  | AssistantMessageEvent
+  | ToolResultEvent
+  | TurnInterruptedEvent;
+
+interface SessionLogEventBase {
+  readonly event_id: string;
+  readonly timestamp: Timestamp;
+}
+
+export interface UserMessageEvent extends SessionLogEventBase {
+  readonly type: "user_message";
+  readonly text: string;
+}
+
+export interface AssistantMessageEvent extends SessionLogEventBase {
+  readonly type: "assistant_message";
+  readonly model?: string;
+  readonly content: readonly ContentBlock[];
+  readonly usage?: TokenUsage;
+  readonly started_at?: Timestamp;
+}
+
+export type ContentBlock = TextBlock | ReasoningBlock | ToolUseBlock;
+
+export interface TextBlock {
+  readonly type: "text";
+  readonly text: string;
+}
+
+export interface ReasoningBlock {
+  readonly type: "reasoning";
+  readonly text: string;
+}
+
+export interface ToolUseBlock {
+  readonly type: "tool_use";
+  readonly tool_use_id: string;
+  readonly name: string;
+  readonly input: JsonObject;
+}
+
+export interface ToolResultEvent extends SessionLogEventBase {
+  readonly type: "tool_result";
+  readonly tool_use_id: string;
+  readonly output: string | JsonObject;
+  readonly is_error?: boolean;
+}
+
+export interface TurnInterruptedEvent extends SessionLogEventBase {
+  readonly type: "turn_interrupted";
+}
+
+export interface TokenUsage {
+  readonly input_tokens?: number;
+  readonly output_tokens?: number;
+  readonly cache_read_tokens?: number;
+  readonly cache_write_tokens?: number;
+  readonly reasoning_tokens?: number;
+}
+```
+
+- **없는 값은 속성을 뺍니다.** 에이전트가 기록하지 않은 값은 속성을 두지 않으며, `undefined`나 `null`, `0`을 넣지 않습니다([Plugin Specification](../model/PLUGIN_SPEC.md#수집-방식) 참고).
+- **시각은 에이전트가 기록한 값으로 만듭니다.** `Date`로 바꾸지 않고 RFC 3339 string으로 넘깁니다. 에이전트가 기록한 형식이 RFC 3339가 아니면 Plugin이 RFC 3339로 바꿉니다.
+- **`TokenUsage`의 값은 0 이상의 정수입니다.**
+
+## 결정되지 않은 사항
+
+- Plugin이 수집한 위치 같은 자신의 상태를 저장하는 위치와, 그 위치를 `PluginContext`로 넘길지 여부
+- `stop`이 끝나기를 Daemon이 기다리는 최대 시간
+- Daemon의 전송 대기열의 크기 상한과, 상한에 닿았을 때 Plugin의 수집을 늦추는 방법. `submit`은 바로 돌아오므로, Plugin이 쌓인 Session Log를 한꺼번에 수집하면 대기열이 Transport Unit 수만큼 커질 수 있습니다.

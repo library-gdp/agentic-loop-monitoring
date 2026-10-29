@@ -4,7 +4,53 @@
 
 ## Plugin을 Daemon에 넣는 방식
 
-Plugin 코드는 Daemon 실행 파일에 함께 빌드합니다. Daemon은 실행 중에 Plugin을 불러오지 않으며, Daemon 설정의 "사용할 Plugin"은 실행 파일에 들어 있는 Plugin 가운데 활성화할 것을 고릅니다. 새 에이전트를 지원하거나 Plugin을 고치면 Daemon을 다시 빌드하고 배포합니다. 결정 배경은 [Bundle Plugins into the Client Adapter Daemon executable](../../adr/2026-10-22-bundle-plugins-into-daemon-executable.md)을 참고하세요.
+Daemon은 어떤 Plugin이 있는지 모릅니다. Daemon 소스와 실행 파일에는 Plugin 코드도, Plugin 목록도 없습니다. Plugin은 Daemon과 따로 빌드합니다. 빌드한 Plugin을 Plugin 디렉터리에 넣으면, Daemon은 시작할 때 이를 불러오고 각 Plugin이 Daemon의 Plugin Collection에 자신을 등록합니다. Daemon은 에이전트의 Session Log를 수집할 Plugin을 이 Collection에서 에이전트 id로 골라 씁니다. 새 에이전트를 지원하거나 Plugin을 고칠 때 Daemon을 다시 빌드하지 않습니다. 결정 배경은 [Load built Plugins into the Daemon at runtime](../../adr/2026-10-29-load-built-plugins-into-daemon-at-runtime.md)을 참고하세요.
+
+### 패키지 구성
+
+| 패키지 | 내용 | 의존하는 패키지 |
+|---|---|---|
+| Plugin API | [Plugin Interface](PLUGIN_INTERFACE.md)의 타입과 `PLUGIN_API_VERSION` | 없음 |
+| Plugin | 에이전트 하나의 Plugin 구현. 에이전트마다 하나씩 둡니다. | Plugin API |
+| Daemon | Plugin 불러오기와 Plugin Collection, Transport Unit 전송, Transport Client | Plugin API |
+
+- Daemon과 Plugin은 Plugin API에만 의존합니다. Daemon은 Plugin 패키지에, Plugin은 Daemon 패키지나 다른 Plugin 패키지에 의존하지 않습니다.
+- Plugin API에서 실행 중에 쓰는 값은 `PLUGIN_API_VERSION` 하나뿐이며, Plugin을 빌드할 때 Plugin 안에 함께 들어갑니다. 그래서 Daemon은 Plugin에 모듈을 제공하지 않습니다.
+
+### 빌드한 Plugin
+
+빌드한 Plugin은 [Plugin 모듈](PLUGIN_INTERFACE.md#plugin-모듈)을 담은 ES 모듈 파일 하나입니다. Plugin이 쓰는 라이브러리는 모두 이 파일 안에 넣으며, 파일 밖에서는 Daemon 런타임의 내장 모듈만 가져옵니다. 파일 이름은 에이전트 id를 씁니다.
+
+```
+<Plugin 디렉터리>/
+├── claude-code.js
+├── codex.js
+└── opencode.js
+```
+
+### Daemon이 Plugin을 불러오는 방식
+
+Daemon은 시작할 때 다음을 수행합니다.
+
+1. **불러오기**: Plugin 디렉터리 바로 아래의 `.js` 파일을 파일 이름 순서대로 동적 `import()`로 불러옵니다.
+2. **등록**: 불러온 모듈마다 `apiVersion`이 Daemon이 빌드에 쓴 `PLUGIN_API_VERSION`과 같은지 확인하고, 같으면 `register`를 불러 [`PluginRegistry`](PLUGIN_INTERFACE.md#pluginregistry)를 넘깁니다. Plugin은 이때 자신을 Plugin Collection에 등록합니다. 모든 모듈을 처리하면 등록을 닫습니다.
+3. **고르기와 시작**: 설정의 "사용할 Plugin"에 있는 에이전트 id마다 Plugin Collection에서 그 `agent`의 Plugin을 골라 `start`를 부릅니다. 이 Plugin이 넘긴 Transport Unit의 `source.agent`와 `source.plugin_version`은 Plugin의 `agent`와 `version`으로 채웁니다.
+
+- 어느 단계에서든 실패하면 Daemon은 로그를 남기고 그 모듈이나 Plugin을 건너뜁니다. 다른 Plugin은 그대로 등록하고 시작하며, Daemon은 계속 실행합니다.
+- "사용할 Plugin"에 있는 에이전트 id의 Plugin이 Collection에 없으면 로그를 남깁니다.
+- Plugin 디렉터리의 모듈은 활성화 여부와 관계없이 모두 불러오고 등록합니다. 그래서 모듈을 불러오거나 `register`를 부르는 것만으로는 아무 일도 하지 않아야 합니다([Plugin 모듈](PLUGIN_INTERFACE.md#plugin-모듈) 참고).
+- Plugin을 시작한 뒤 언제, 어떤 Session Log를 수집할지는 Plugin의 Trigger와 수집 방식을 따릅니다.
+
+### Plugin 추가하기
+
+1. 에이전트의 Plugin 패키지를 만들고, Plugin API에 맞춰 구현합니다.
+2. Plugin을 ES 모듈 파일 하나로 빌드합니다.
+3. 그 파일을 Plugin 디렉터리에 넣습니다. Plugin을 고칠 때는 파일을 바꿉니다.
+4. 설정의 "사용할 Plugin"에 에이전트 id를 넣습니다.
+5. Daemon을 다시 시작합니다.
+6. [에이전트별 문서](#에이전트별-문서)를 추가합니다.
+
+[Plugin Interface](PLUGIN_INTERFACE.md)의 예시에 쓴 패키지 이름 `plugin-api`는 예시입니다.
 
 ## 에이전트별 문서
 
@@ -28,5 +74,9 @@ Plugin 코드는 Daemon 실행 파일에 함께 빌드합니다. Daemon은 실�
 
 ## 결정되지 않은 사항
 
-- Plugin이 Transport Unit을 Daemon에 넘기는 TypeScript 인터페이스
 - Plugin이 수집한 위치 같은 자신의 상태를 저장하는 위치
+- 패키지 이름과 저장소 구성. Plugin 패키지를 Daemon과 같은 저장소에 둘지, 따로 둘지
+- 패키지 관리 도구와 Plugin을 번들하는 도구
+- 빌드한 Plugin을 에이전트 머신에 배포하는 방법
+- Plugin 디렉터리의 Plugin을 믿을 수 있는지 확인하는 방법(예: 서명 검증)
+- Daemon을 다시 시작하지 않고 Plugin을 추가하거나 바꾸는 방법
