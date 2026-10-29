@@ -12,9 +12,10 @@ AI 에이전트의 작업을 나누는 단위입니다. 위에서 아래로 갈�
 Session
 └── Agent (Main Agent, Subagent)
     └── Turn
-        └── Loop
-            ├── LLM Call
-            └── Tool Call ── (Subagent)
+        ├── Loop
+        │   ├── LLM Call
+        │   └── Tool Call ── (Subagent)
+        └── Compaction
 ```
 
 | 용어 | 정의 |
@@ -25,9 +26,12 @@ Session
 | Main Agent | 사용자와 직접 대화하는 Agent입니다. Session마다 하나이며, 부모 Agent가 없으므로 부모 Agent ID는 NULL입니다. |
 | Turn | Agent가 프롬프트 한 번을 받은 때부터 Stop할 때까지의 구간입니다. Main Agent의 프롬프트는 사용자가 입력하고, Subagent의 프롬프트는 부모 Agent가 넘깁니다. 하나의 Turn은 하나 이상의 Loop로 이루어집니다. |
 | Loop | Turn 안에서 LLM Call 한 번과, 그 응답이 요청한 Tool Call들의 묶음입니다. Agentic Loop의 반복 한 번에 해당합니다. |
-| LLM Call | 모델에 대한 요청과 응답 한 번입니다. input, output, reasoning, 토큰 사용량, 모델 이름, 소요 시간을 가집니다. input은 그 요청으로 모델에 들어간 모든 것입니다. 시스템 프롬프트, AGENTS.md(CLAUDE.md) 같은 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과를 포함합니다. |
+| LLM Call | 모델에 대한 요청과 응답 한 번입니다. input, output, reasoning, 토큰 사용량, 모델 이름, 소요 시간, Stop Reason을 가집니다. 오류로 응답을 받지 못한 요청도 LLM Call 한 번이며 LLM 호출 오류를 가집니다. input은 그 요청으로 모델에 들어간 모든 것입니다. 시스템 프롬프트, AGENTS.md(CLAUDE.md) 같은 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과를 포함합니다. |
 | Tool Call | LLM Call이 요청한 도구 실행 한 번입니다. 도구 이름, 인자, 결과, 성공 여부, 소요 시간을 가집니다. 자신을 요청한 LLM Call과 연결됩니다. |
 | Subagent | Agent가 작업 중에 Tool Call로 띄운 하위 Agent입니다. 자신을 띄운 Agent가 부모 Agent이며, Subagent가 띄운 Agent도 Subagent입니다. 자신을 띄운 Tool Call과 연결되며, 부모 Agent와 따로 자체적인 Turn과 Loop를 가집니다. |
+| Compaction | 에이전트가 컨텍스트를 줄이려고 앞선 대화를 요약으로 바꾸는 일입니다. 사용자가 요청하거나, 컨텍스트가 차서 에이전트가 스스로 합니다. 그 뒤의 LLM Call은 compaction 이전의 내용 대신 요약(compaction 결과)을 input으로 받습니다. 요약을 만드는 데에도 토큰을 씁니다. |
+| Stop Reason | LLM Call의 응답이 끝난 이유입니다. 모델이 응답을 마쳤는지, 도구 실행을 요청하려고 멈췄는지, 출력 토큰 한도에 닿아 잘렸는지, 요청이 거절되었는지를 나타냅니다. |
+| LLM 호출 오류 | LLM Call이 rate limit, 서버 오류, 인증 실패 같은 이유로 응답을 받지 못한 것입니다. 에이전트가 같은 요청을 다시 보내면(재시도) 다시 보낸 요청은 새 LLM Call입니다. 사용자가 중단한 것은 LLM 호출 오류가 아닙니다. |
 
 ## 식별자
 
@@ -41,7 +45,7 @@ Session
 
 | 용어 | 정의 |
 |---|---|
-| Token Usage | LLM Call 한 번에 사용한 토큰 수입니다. 에이전트가 제공하는 범위 안에서 Input Token, Output Token, Cache Read Token, Cache Write Token, Reasoning Token으로 나누어 기록합니다. |
+| Token Usage | LLM Call이나 Compaction 한 번에 사용한 토큰 수입니다. 에이전트가 제공하는 범위 안에서 Input Token, Output Token, Cache Read Token, Cache Write Token, Reasoning Token으로 나누어 기록합니다. |
 | Input Token | 모델에 입력으로 전달된 토큰입니다. Cache Read Token과 Cache Write Token은 포함하지 않습니다. |
 | Output Token | 모델이 생성한 토큰입니다. |
 | Cache Read Token | prompt cache에서 읽어 처리한 입력 토큰입니다. |

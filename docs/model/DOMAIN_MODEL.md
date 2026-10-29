@@ -7,19 +7,20 @@
 도메인 모델은 두 가지로 나뉩니다.
 
 - **Session Log Event**: Plugin이 Session Log의 레코드로 만드는 이벤트입니다. Client Adapter Daemon과 Main Server가 같은 모델을 쓰며, Main Server는 받은 그대로 저장합니다.
-- **활동 모델**: Main Server의 Core가 같은 Agent의 Session Log Event 순서와 연결 관계로 구성하는 모델입니다. Session, Agent, Turn, Loop, LLM Call, Tool Call이 있습니다. Subagent는 부모 Agent가 있는 Agent입니다. Session Log Event는 이 모델들을 직접 나타내지 않습니다.
+- **활동 모델**: Main Server의 Core가 같은 Agent의 Session Log Event 순서와 연결 관계로 구성하는 모델입니다. Session, Agent, Turn, Loop, LLM Call, Tool Call, Compaction이 있습니다. Subagent는 부모 Agent가 있는 Agent입니다. Session Log Event는 이 모델들을 직접 나타내지 않습니다.
 
-Token Usage는 LLM Call과 활동 모델의 합계에서 쓰는 값입니다.
+Token Usage는 LLM Call, Compaction과 활동 모델의 합계에서 쓰는 값입니다.
 
 ```
 Session
 └── Agent (Main Agent, Subagent) ◀── Transport Unit의 agent
     ├── Session Log Event (받은 그대로)
     └── Turn ◀── user_message
-        └── Loop
-            ├── LLM Call ◀── assistant_message
-            └── Tool Call ◀── tool_use 블록 + tool_result
-                └── (Subagent)
+        ├── Loop
+        │   ├── LLM Call ◀── assistant_message
+        │   └── Tool Call ◀── tool_use 블록 + tool_result
+        │       └── (Subagent) ◀── tool_result의 subagent_id
+        └── Compaction ◀── compaction + compaction_summary
 ```
 
 활동 모델의 필드 가운데 "계산 값"은 저장하지 않고 다른 필드로 계산할 수 있는 값입니다.
@@ -30,14 +31,14 @@ Session Log Event는 Agent Logging Protocol 버전 `1`에서 Transport Unit의 `
 
 Session Log Event는 자신이 속한 Session과 Agent를 필드로 갖지 않습니다. Session은 그 Session Log Event를 담은 Transport Unit의 `source.agent`와 `session.id`로 정하고, Agent는 그 Session 안에서 Transport Unit의 `agent.id`로 정합니다. 소속 Turn과 Turn 안 위치도 Session Log Event의 필드가 아니며, Transport Unit의 `turn`으로 정합니다. Session Log Event는 `source.agent`, `session.id`, `event_id`의 조합으로 식별합니다. Session은 Main Agent와 Subagent가 함께 쓰므로, `event_id`는 한 Session의 모든 Agent에 걸쳐 고유해야 합니다.
 
-버전 `1`로 구성할 수 있는 LLM Call의 input은 [Glossary](GLOSSARY.md)가 정의하는 **모든 것**입니다. 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과가 모두 포함됩니다. 이 문서는 아직 이 가운데 사용자 메시지, Subagent에 넘긴 프롬프트, 모델 응답, 도구 결과의 Session Log Event만 정의합니다. 나머지도 버전 `1` 안에서 Session Log Event 종류나 선택 필드로 추가합니다. 에이전트가 기록하지 않아 Plugin이 얻을 수 없는 input은 보내지 않습니다.
+버전 `1`로 구성할 수 있는 LLM Call의 input은 [Glossary](GLOSSARY.md)가 정의하는 **모든 것**입니다. 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과, Subagent에 넘긴 프롬프트, 사용자 메시지, 이전 모델 응답, 도구 결과가 모두 포함됩니다. 이 문서는 아직 이 가운데 사용자 메시지, Subagent에 넘긴 프롬프트, 모델 응답, 도구 결과, compaction 결과의 Session Log Event만 정의합니다. 나머지도 버전 `1` 안에서 Session Log Event 종류나 선택 필드로 추가합니다. 에이전트가 기록하지 않아 Plugin이 얻을 수 없는 input은 보내지 않습니다.
 
 ### 공통 필드
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `event_id` | string | O | Plugin이 붙인 event id입니다. `source.agent`와 `session.id`가 같은 범위, 곧 한 Session의 모든 Agent에 걸쳐 고유하며, 같은 레코드를 다시 수집해도 바뀌지 않습니다. |
-| `type` | string | O | Session Log Event의 종류입니다. `user_message`, `assistant_message`, `tool_result`, `turn_interrupted`가 있습니다. |
+| `type` | string | O | Session Log Event의 종류입니다. `user_message`, `assistant_message`, `tool_result`, `turn_interrupted`, `compaction`, `compaction_summary`가 있습니다. |
 | `timestamp` | 시각 | O | 에이전트가 레코드를 기록한 시각입니다. 시간대를 포함합니다. |
 
 ### `user_message`
@@ -50,12 +51,15 @@ Agent가 받은 프롬프트입니다. Main Agent에서는 사용자가 입력�
 
 ### `assistant_message`
 
-LLM Call 한 번의 응답입니다. `timestamp`는 응답이 기록된 시각입니다.
+LLM Call 한 번의 결과입니다. 모델의 응답을 받았으면 그 응답을 담고, 오류로 응답을 받지 못했으면 `error`를 담습니다. `timestamp`는 응답이나 오류가 기록된 시각입니다.
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `model` | string | | 응답한 모델의 이름입니다. |
-| `content` | array | O | 응답 내용 블록의 목록입니다. 아래 표를 참고하세요. |
+| `model` | string | | 응답한 모델의 이름입니다. 오류이면 요청한 모델의 이름입니다. |
+| `content` | array | O | 응답 내용 블록의 목록입니다. 아래 표를 참고하세요. 오류로 응답을 받지 못했으면 비어 있고, 응답 도중 오류가 났으면 그때까지 받은 블록을 담습니다. |
+| `stop_reason` | string | | 응답이 끝난 이유입니다. 아래 표를 참고하세요. 에이전트가 기록하지 않았거나 `error`가 있으면 뺍니다. |
+| `error` | object | | LLM 호출 오류입니다. 아래 표를 참고하세요. 응답을 받았으면 뺍니다. |
+| `attempt` | integer | | 같은 요청을 몇 번째로 보낸 것인지입니다. 첫 시도가 `1`이며, 오류 뒤 에이전트가 다시 보낼 때마다 1씩 늘어납니다. 에이전트가 기록하지 않으면 뺍니다. |
 | `usage` | object | | 이 LLM Call의 [Token Usage](#token-usage)입니다. |
 | `started_at` | 시각 | | 모델에 요청한 시각입니다. 에이전트가 기록할 때만 넣습니다. |
 
@@ -67,6 +71,29 @@ LLM Call 한 번의 응답입니다. `timestamp`는 응답이 기록된 시각�
 | `reasoning` | `text`: string | 모델의 reasoning입니다. 에이전트가 원문을 기록하지 않으면 블록을 넣지 않습니다. |
 | `tool_use` | `tool_use_id`: string, `name`: string, `input`: object | 모델이 요청한 도구 실행입니다. `tool_use_id`는 이 요청을 `tool_result`와 잇는 값입니다. |
 
+`stop_reason` 값:
+
+| 값 | 설명 |
+|---|---|
+| `end_turn` | 모델이 응답을 스스로 마쳤습니다. stop sequence에서 멈춘 것도 포함합니다. |
+| `tool_use` | 모델이 도구 실행을 요청하려고 멈췄습니다. |
+| `max_tokens` | 출력 토큰 한도에 닿아 응답이 잘렸습니다. |
+| `refusal` | 모델이나 provider가 요청을 거절해 응답을 멈췄습니다. |
+| `other` | 위 어느 것에도 해당하지 않습니다. |
+
+Plugin은 에이전트가 기록한 값을 이 가운데 하나로 옮깁니다. 출력 토큰 한도로 응답이 잘린 것은 에이전트가 오류로 기록하더라도 `error`가 아니라 `stop_reason`의 `max_tokens`로 나타냅니다.
+
+`error` 필드:
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `message` | string | O | 에이전트가 기록한 오류 내용입니다. |
+| `code` | string | | 에이전트나 provider가 기록한 오류 종류입니다(예: `rate_limit_error`). 받은 값을 그대로 넣습니다. |
+| `status_code` | integer | | provider가 돌려준 HTTP 상태 코드입니다. |
+| `will_retry` | boolean | | 에이전트가 이 오류 뒤 같은 요청을 다시 보낸다고 기록했으면 `true`, 다시 보내지 않고 Turn을 멈췄다고 기록했으면 `false`입니다. 에이전트가 기록하지 않으면 뺍니다. |
+
+에이전트가 오류 뒤 같은 요청을 다시 보내면, 실패한 시도와 다시 보낸 시도는 각각 다른 `assistant_message`입니다. 사용자가 중단해 응답을 받지 못한 것은 오류가 아니며 `turn_interrupted`로 나타냅니다.
+
 ### `tool_result`
 
 Tool Call의 실행 결과입니다. `timestamp`는 결과가 기록된 시각입니다.
@@ -76,14 +103,39 @@ Tool Call의 실행 결과입니다. `timestamp`는 결과가 기록된 시각�
 | `tool_use_id` | string | O | 이 결과를 요청한 `tool_use` 블록의 `tool_use_id`입니다. |
 | `output` | string 또는 object | O | 도구가 돌려준 결과입니다. |
 | `is_error` | boolean | | 도구 실행이 실패했으면 `true`입니다. 에이전트가 기록하지 않으면 뺍니다. |
+| `subagent_id` | string | | 이 도구 실행이 띄운 Subagent의 Agent ID입니다. Subagent를 띄우지 않았거나 에이전트가 기록하지 않으면 뺍니다. |
 
 ### `turn_interrupted`
 
 사용자가 Turn을 중단했다는 기록입니다. 에이전트가 사용자 중단을 기록한 레코드로 만들며, 공통 필드 밖의 필드는 없습니다. `timestamp`는 중단이 기록된 시각입니다. 에이전트가 사용자 중단을 기록하지 않으면 만들지 않습니다.
 
+### `compaction`
+
+에이전트가 컨텍스트를 줄이려고 앞선 대화를 요약으로 바꾸기 시작했다는 기록입니다. 요약은 뒤따르는 `compaction_summary`에 담깁니다. `timestamp`는 compaction의 시작이 기록된 시각입니다.
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `trigger` | string | | `manual`이면 사용자가 요청한 것이고, `auto`이면 컨텍스트가 차서 에이전트가 스스로 한 것입니다. 에이전트가 기록하지 않으면 뺍니다. |
+| `context_tokens_before` | integer | | compaction 직전 컨텍스트의 토큰 수입니다. 에이전트가 기록하지 않으면 뺍니다. |
+
+### `compaction_summary`
+
+compaction 결과입니다. 이 뒤의 LLM Call은 compaction 이전의 Session Log Event 대신 이 요약을 input으로 받습니다. `timestamp`는 요약이 기록된 시각입니다.
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `text` | string | O | 요약 원문입니다. |
+| `model` | string | | 요약을 만든 모델의 이름입니다. |
+| `usage` | object | | 요약을 만드는 데 쓴 [Token Usage](#token-usage)입니다. |
+
+- `compaction_summary`는 같은 Turn에서 바로 앞의 `compaction`과 짝을 이룹니다. 에이전트가 compaction의 시작과 요약을 한 레코드에 기록하거나 시작을 따로 기록하지 않으면, Plugin은 요약을 기록한 레코드 하나에서 `compaction`과 `compaction_summary`를 차례로 만듭니다.
+- compaction은 Turn을 시작하지 않으며, 일어난 Turn 안의 위치에 둡니다. Turn 도중 에이전트가 스스로 한 compaction은 그 Turn의 LLM Call 사이에 놓입니다.
+- 사용자가 다른 프롬프트 없이 compaction만 요청했으면, 그 요청이 Turn을 시작하는 `user_message`가 됩니다.
+- 에이전트가 사용자 메시지 형태로 기록한 요약은 `user_message`가 아니라 `compaction_summary`로 만듭니다.
+
 ## Token Usage
 
-LLM Call 한 번에 사용한 토큰 수입니다. 필드는 모두 0 이상의 integer이며 선택입니다. 에이전트가 기록하지 않은 항목은 `0`으로 채우지 않고 뺍니다. 각 항목의 의미는 [Glossary](GLOSSARY.md#metric)를 따릅니다.
+LLM Call이나 Compaction 한 번에 사용한 토큰 수입니다. 필드는 모두 0 이상의 integer이며 선택입니다. 에이전트가 기록하지 않은 항목은 `0`으로 채우지 않고 뺍니다. 각 항목의 의미는 [Glossary](GLOSSARY.md#metric)를 따릅니다.
 
 | 필드 | 설명 |
 |---|---|
@@ -126,7 +178,7 @@ Session 안에서 Agentic Loop를 수행하는 주체입니다. Main Agent와 Su
 | `turns` | Turn 목록 | O | 이 Agent의 Turn입니다. |
 | `started_at` | 시각 | 계산 값 | 첫 Turn의 `started_at`입니다. |
 | `ended_at` | 시각 | 계산 값 | 마지막 Turn의 `ended_at`입니다. |
-| `usage` | Token Usage | 계산 값 | 이 Agent의 모든 LLM Call의 Token Usage를 항목별로 더한 값입니다. Subagent의 Token Usage는 더하지 않습니다. |
+| `usage` | Token Usage | 계산 값 | 이 Agent의 모든 Turn의 Token Usage를 항목별로 더한 값입니다. Subagent의 Token Usage는 더하지 않습니다. |
 
 Agent는 자신이 속한 Session과 `id`의 조합으로 식별합니다.
 
@@ -146,28 +198,34 @@ Agent가 프롬프트 한 번을 받은 때부터 Stop할 때까지의 구간입
 | `prompt` | string | O | `user_message`의 `text`입니다. |
 | `status` | string | O | `completed`, `interrupted`, `errored`, `in_progress` 가운데 하나입니다. 아래 구성 규칙을 참고하세요. |
 | `loops` | Loop 목록 | O | 이 Turn의 Loop입니다. 모델이 응답하기 전에 끝난 Turn이면 비어 있습니다. |
+| `compactions` | Compaction 목록 | O | 이 Turn에서 일어난 Compaction입니다. 일어난 순서를 따르며, 없으면 비어 있습니다. |
 | `started_at` | 시각 | O | `user_message`의 `timestamp`입니다. |
 | `ended_at` | 시각 | O | 이 Turn에서 Turn 안 위치가 가장 큰 Session Log Event의 `timestamp`입니다. `in_progress`이면 지금까지 받은 것 가운데 가장 큰 것입니다. |
-| `usage` | Token Usage | 계산 값 | 이 Turn의 모든 LLM Call의 Token Usage를 항목별로 더한 값입니다. |
+| `usage` | Token Usage | 계산 값 | 이 Turn의 모든 LLM Call과 Compaction의 Token Usage를 항목별로 더한 값입니다. |
 
 구성 규칙:
 
 - Plugin은 Turn이 끝나기를 기다리지 않고 레코드가 기록되는 대로 Transport Unit으로 보냅니다([Plugin Specification](PLUGIN_SPEC.md#transport-unit) 참고). 그래서 Turn 하나는 레코드마다 하나씩 여러 Transport Unit에 나뉘어 오고, 진행 중인 Turn도 Core에 있습니다.
 - `user_message`가 Turn을 시작합니다.
 - Session Log Event의 소속 Turn과 Turn 안 위치는 그 Session Log Event를 담은 Transport Unit의 `turn.id`와 `turn.position`으로 정합니다. Core는 Transport Unit이 도착한 순서로 정하지 않습니다.
-- Turn은 `tool_use` 블록이 없는 `assistant_message`(최종 응답), `turn_interrupted`, 다음 Turn의 시작 가운데 가장 먼저 나오는 것에서 끝납니다.
+- Turn은 다음 가운데 가장 먼저 나오는 것에서 끝납니다.
+  - `error`도 `tool_use` 블록도 없는 `assistant_message`(최종 응답)
+  - `turn_interrupted`
+  - `error`의 `will_retry`가 `false`인 `assistant_message`(다시 시도하지 않는 LLM 호출 오류)
+  - `trigger`가 `manual`인 `compaction`과 짝을 이룬 `compaction_summary`(사용자가 요청한 compaction의 결과)
+  - 다음 Turn의 시작
 - `status`는 다음 가운데 먼저 맞는 것입니다.
 
 | `status` | 조건 | 뜻 |
 |---|---|---|
-| `completed` | Turn 안 위치가 가장 큰 Session Log Event가 최종 응답입니다. | 정상적으로 끝났습니다. |
+| `completed` | Turn 안 위치가 가장 큰 Session Log Event가 최종 응답이거나, 사용자가 요청한 compaction의 `compaction_summary`입니다. | 정상적으로 끝났습니다. |
 | `interrupted` | Turn 안 위치가 가장 큰 Session Log Event가 `turn_interrupted`입니다. | 사용자가 중단했습니다. |
-| `errored` | 같은 Agent에서 이 Turn의 Session Log Event보다 나중에 받은, 다른 Turn의 Session Log Event가 있습니다. | 최종 응답도 중단도 없이 다음 Turn이 시작되었습니다. 오류나 충돌로 끝났거나, 에이전트가 사용자 중단을 기록하지 않은 경우입니다. |
+| `errored` | Turn 안 위치가 가장 큰 Session Log Event가 다시 시도하지 않는 LLM 호출 오류이거나, 같은 Agent에서 이 Turn의 Session Log Event보다 나중에 받은 다른 Turn의 Session Log Event가 있습니다. | LLM 호출 오류로 멈췄거나, 최종 응답도 중단도 없이 다음 Turn이 시작되었습니다. 오류나 충돌로 끝났거나, 에이전트가 사용자 중단을 기록하지 않은 경우입니다. |
 | `in_progress` | 위 어느 것에도 맞지 않습니다. | 아직 진행 중입니다. 에이전트가 충돌로 종료되어 Session이 이 Turn에서 끝났거나, Turn의 일부 Transport Unit이 유실되었을 수도 있습니다. |
 
 ### Loop
 
-Turn 안에서 LLM Call 한 번과, 그 응답이 요청한 Tool Call들의 묶음입니다.
+Turn 안에서 LLM Call 한 번과, 그 응답이 요청한 Tool Call들의 묶음입니다. 오류로 끝난 LLM Call도 Loop 하나를 이루며, 그 Loop에는 Tool Call이 없습니다. 그래서 오류 뒤 다시 보낸 요청은 다음 Loop가 됩니다.
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
@@ -179,17 +237,25 @@ Turn 안에서 LLM Call 한 번과, 그 응답이 요청한 Tool Call들의 묶�
 
 ### LLM Call
 
-모델에 대한 요청과 응답 한 번입니다. `assistant_message` 하나로 만듭니다.
+모델에 대한 요청과 응답 한 번입니다. 오류로 응답을 받지 못한 요청도 LLM Call 한 번입니다. `assistant_message` 하나로 만듭니다.
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `id` | string | O | `assistant_message`의 `event_id`입니다. |
 | `model` | string | | `assistant_message`의 `model`입니다. |
-| `input` | Session Log Event 목록 | O | 이 요청으로 모델에 들어간 것입니다. 같은 Agent에서 이 `assistant_message` 앞에 있는 Session Log Event로 구성합니다. 다른 Agent의 Session Log Event는 넣지 않습니다. |
-| `output` | `content` 블록 목록 | O | `assistant_message`의 `content`입니다. 모델이 출력한 텍스트, reasoning, 도구 실행 요청을 담습니다. |
+| `input` | Session Log Event 목록 | O | 이 요청으로 모델에 들어간 것입니다. 아래 구성 규칙을 참고하세요. |
+| `output` | `content` 블록 목록 | O | `assistant_message`의 `content`입니다. 모델이 출력한 텍스트, reasoning, 도구 실행 요청을 담습니다. 오류로 응답을 받지 못했으면 비어 있습니다. |
+| `stop_reason` | string | | `assistant_message`의 `stop_reason`입니다. |
+| `error` | object | | `assistant_message`의 `error`입니다. 있으면 오류로 끝난 LLM Call입니다. |
+| `attempt` | integer | | `assistant_message`의 `attempt`입니다. |
 | `usage` | Token Usage | | `assistant_message`의 `usage`입니다. |
 | `started_at` | 시각 | O | `assistant_message`의 `started_at`입니다. 없으면 바로 앞 Session Log Event의 `timestamp`로 추정합니다. |
 | `ended_at` | 시각 | O | `assistant_message`의 `timestamp`입니다. |
+
+구성 규칙:
+
+- `input`은 같은 Agent에서 이 `assistant_message` 앞에 있는 Session Log Event로 구성합니다. 다른 Agent의 Session Log Event는 넣지 않습니다.
+- 앞에 `compaction`이 있으면 `input`은 가장 가까운 `compaction`에서 시작합니다. 그 `compaction`보다 앞의 Session Log Event는 요약으로 바뀌었으므로 넣지 않습니다.
 
 ### Tool Call
 
@@ -206,16 +272,32 @@ LLM Call이 요청한 도구 실행 한 번입니다. `assistant_message`의 `to
 | `is_error` | boolean | | `tool_result`의 `is_error`입니다. 에이전트가 기록하지 않았으면 비웁니다. |
 | `started_at` | 시각 | O | 요청한 `assistant_message`의 `timestamp`입니다. 에이전트가 도구 실행을 시작한 시각을 기록하지 않으므로 요청 시각으로 대신합니다. |
 | `ended_at` | 시각 | | `tool_result`의 `timestamp`입니다. 결과가 기록되지 않았으면 비웁니다. |
-| `subagent_id` | string | | 이 Tool Call이 띄운 Subagent의 Agent `id`입니다. |
+| `subagent_id` | string | | 이 Tool Call이 띄운 Subagent의 Agent `id`입니다. `tool_result`의 `subagent_id`입니다. 결과가 기록되지 않았거나 Subagent를 띄우지 않았으면 비웁니다. |
 
-Agent Logging Protocol에는 아직 Subagent를 자신을 띄운 Tool Call과 잇는 필드가 없습니다. 그래서 Core는 지금 `subagent_id`를 채우지 않습니다. Subagent와 부모 Agent는 Agent의 `parent_id`로 잇습니다.
+- `subagent_id`가 가리키는 Subagent는 `parent_id`가 이 Tool Call의 Agent입니다. Subagent의 Transport Unit이 아직 오지 않았을 수 있으므로, Core는 그 Subagent가 있는지 검사하지 않습니다.
+- `subagent_id`가 비어 있어도 Subagent와 부모 Agent는 Agent의 `parent_id`로 이어집니다. 다만 그 Subagent를 어느 Tool Call이 띄웠는지는 알 수 없습니다.
+
+### Compaction
+
+에이전트가 앞선 대화를 요약으로 바꾼 일 한 번입니다. `compaction`과, 같은 Turn에서 그 뒤에 처음 나오는 `compaction_summary`로 만듭니다.
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `id` | string | O | `compaction`의 `event_id`입니다. |
+| `summary_event_id` | string | | `compaction_summary`의 `event_id`입니다. 요약이 아직 기록되지 않았으면 비웁니다. |
+| `trigger` | string | | `compaction`의 `trigger`입니다. |
+| `context_tokens_before` | integer | | `compaction`의 `context_tokens_before`입니다. |
+| `summary` | string | | `compaction_summary`의 `text`입니다. |
+| `model` | string | | `compaction_summary`의 `model`입니다. |
+| `usage` | Token Usage | | `compaction_summary`의 `usage`입니다. |
+| `started_at` | 시각 | O | `compaction`의 `timestamp`입니다. |
+| `ended_at` | 시각 | | `compaction_summary`의 `timestamp`입니다. 요약이 아직 기록되지 않았으면 비웁니다. |
 
 ## 결정되지 않은 사항
 
-- 시스템 프롬프트, 지침 파일, Skill, 도구 정의, compaction 결과를 나타내는 Session Log Event의 형식
+- 시스템 프롬프트, 지침 파일, Skill, 도구 정의를 나타내는 Session Log Event의 형식
 - 에이전트의 원본 레코드를 Session Log Event에 함께 실을지 여부
-- Subagent를 자신을 띄운 Tool Call과 잇는 필드
-- LLM Call의 `input`에 앞선 Session Log Event를 어디까지 넣을지. 예를 들어 compaction 이전의 내용을 넣을지
+- 오류로 끝난 `assistant_message`를 뒤 LLM Call의 `input`에 넣을지. 에이전트마다 실패한 시도의 내용을 다음 요청에 다시 넣는지가 다를 수 있습니다.
 - Agent 안 Turn의 순서를 Core가 정하는 기준. 한 Turn 안의 순서는 Turn 안 위치를 따릅니다.
 - Token Usage를 더할 때, 일부 LLM Call만 기록한 항목을 어떻게 다룰지
 - Transport Unit의 `source.plugin_version`을 도메인 모델에 남길지

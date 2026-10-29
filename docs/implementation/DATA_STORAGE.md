@@ -33,7 +33,7 @@ Transport Unit 하나를 트랜잭션 하나로 처리합니다. [Data Architect
 1. `BEGIN IMMEDIATE`로 쓰기 잠금을 잡습니다. 쓰기 잠금 대기 시간 안에 잡지 못하면 `unavailable`로 거절합니다.
 2. `session`, `agent`를 찾거나 추가하고, `ingest`를 추가합니다. `session`과 `agent`의 비어 있는 열은 `NULL`일 때만 채웁니다(예: `UPDATE session SET cwd = ? WHERE pk = ? AND cwd IS NULL`).
 3. `event`를 추가합니다. `turn_id`는 Transport Unit의 `turn.id`, `position`은 `turn.position`에 `events` 안 순서를 더한 값입니다. 중복은 `INSERT ... ON CONFLICT (session_pk, event_id) DO NOTHING`으로 건너뜁니다.
-4. Transport Unit의 `turn.id`에 해당하는 `turn`, `llm_call`, `tool_call`의 행을 지우고, `event`에서 그 Turn의 행을 `position` 순으로 읽어 다시 만듭니다. 3번에서 새로 추가한 `event` 행이 있으면, 같은 `agent_pk`에서 `status`가 `in_progress`인 다른 `turn` 행의 `status`를 `errored`로 바꿉니다.
+4. Transport Unit의 `turn.id`에 해당하는 `turn`, `llm_call`, `tool_call`, `compaction`의 행을 지우고, `event`에서 그 Turn의 행을 `position` 순으로 읽어 다시 만듭니다. 3번에서 새로 추가한 `event` 행이 있으면, 같은 `agent_pk`에서 `status`가 `in_progress`인 다른 `turn` 행의 `status`를 `errored`로 바꿉니다.
 5. `ingest`의 `stored_count`를 채우고 `COMMIT`합니다.
 6. `COMMIT`이 끝난 뒤에 `accepted`를 돌려줍니다.
 
@@ -41,14 +41,16 @@ Transport Unit 하나를 트랜잭션 하나로 처리합니다. [Data Architect
 
 ## 읽기
 
-LLM Call의 input은 같은 `agent_pk`의 `event`를 범위로 읽습니다.
+LLM Call의 input은 같은 `agent_pk`의 `event`를 범위로 읽습니다. 범위의 시작은 대상 LLM Call보다 앞에 있는 가장 가까운 `compaction` 행입니다. 먼저 그 행을 `compaction_by_turn` 인덱스로 찾고, 없으면 시작 조건을 뺍니다.
 
 ```sql
 -- :turn_id, :position 은 대상 LLM Call의 값
+-- :start_turn_id, :start_position 은 가장 가까운 compaction의 값
 SELECT e.body
 FROM event e JOIN turn t ON t.agent_pk = e.agent_pk AND t.turn_id = e.turn_id
 WHERE e.agent_pk = :agent_pk
   AND (<t가 대상 Turn보다 앞> OR (e.turn_id = :turn_id AND e.position < :position))
+  AND (<t가 시작 Turn보다 뒤> OR (e.turn_id = :start_turn_id AND e.position >= :start_position))
 ORDER BY <Turn 순서>, e.position;
 ```
 
@@ -65,7 +67,7 @@ Session 목록의 시작 시각은 그 Session의 `agent`에 속한 `turn.starte
 
 ## Session 삭제
 
-Session 하나를 트랜잭션 하나로 지웁니다. 그 Session의 `tool_call`, `llm_call`, `turn`, `event`, `ingest`, `agent`, `session` 행을 이 순서로 지웁니다.
+Session 하나를 트랜잭션 하나로 지웁니다. 그 Session의 `tool_call`, `llm_call`, `compaction`, `turn`, `event`, `ingest`, `agent`, `session` 행을 이 순서로 지웁니다.
 
 ## 결정되지 않은 사항
 

@@ -180,7 +180,9 @@ export type SessionLogEvent =
   | UserMessageEvent
   | AssistantMessageEvent
   | ToolResultEvent
-  | TurnInterruptedEvent;
+  | TurnInterruptedEvent
+  | CompactionEvent
+  | CompactionSummaryEvent;
 
 interface SessionLogEventBase {
   readonly event_id: string;
@@ -196,8 +198,21 @@ export interface AssistantMessageEvent extends SessionLogEventBase {
   readonly type: "assistant_message";
   readonly model?: string;
   readonly content: readonly ContentBlock[];
+  readonly stop_reason?: StopReason;
+  readonly error?: LlmCallError;
+  /** 1 이상의 정수입니다. */
+  readonly attempt?: number;
   readonly usage?: TokenUsage;
   readonly started_at?: Timestamp;
+}
+
+export type StopReason = "end_turn" | "tool_use" | "max_tokens" | "refusal" | "other";
+
+export interface LlmCallError {
+  readonly message: string;
+  readonly code?: string;
+  readonly status_code?: number;
+  readonly will_retry?: boolean;
 }
 
 export type ContentBlock = TextBlock | ReasoningBlock | ToolUseBlock;
@@ -224,10 +239,25 @@ export interface ToolResultEvent extends SessionLogEventBase {
   readonly tool_use_id: string;
   readonly output: string | JsonObject;
   readonly is_error?: boolean;
+  readonly subagent_id?: string;
 }
 
 export interface TurnInterruptedEvent extends SessionLogEventBase {
   readonly type: "turn_interrupted";
+}
+
+export interface CompactionEvent extends SessionLogEventBase {
+  readonly type: "compaction";
+  readonly trigger?: "auto" | "manual";
+  /** 0 이상의 정수입니다. */
+  readonly context_tokens_before?: number;
+}
+
+export interface CompactionSummaryEvent extends SessionLogEventBase {
+  readonly type: "compaction_summary";
+  readonly text: string;
+  readonly model?: string;
+  readonly usage?: TokenUsage;
 }
 
 export interface TokenUsage {
