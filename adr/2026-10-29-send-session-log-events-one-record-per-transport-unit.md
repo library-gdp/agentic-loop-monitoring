@@ -48,13 +48,13 @@ Daemon과 Main Server 사이의 데이터 송수신 단위를 **Transport Unit**
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/model/AGENT_LOGGING_PROTOCOL.md`](../docs/model/AGENT_LOGGING_PROTOCOL.md): Transport Unit과 Ack의 필드
-  - [`docs/model/PLUGIN_SPEC.md`](../docs/model/PLUGIN_SPEC.md): Trigger, 수집, Turn 단위, Transport Unit을 넘기는 규칙
-  - [`docs/model/CLIENT_ADAPTER_DAEMON.md`](../docs/model/CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송과 Ack 처리
-  - [`docs/model/DOMAIN_MODEL.md`](../docs/model/DOMAIN_MODEL.md): `turn_interrupted`, Turn 구성 규칙과 `status`
-  - [`docs/model/DATA_ARCHITECTURE.md`](../docs/model/DATA_ARCHITECTURE.md): 수신 기록, 쓰기 절차
-  - [`docs/model/SYSTEM_ARCHITECTURE.md`](../docs/model/SYSTEM_ARCHITECTURE.md): 데이터 흐름, 전달 보장
-  - [`docs/implementation/TABLE_DEFINITION.md`](../docs/implementation/TABLE_DEFINITION.md), [`docs/implementation/DATA_STORAGE.md`](../docs/implementation/DATA_STORAGE.md), [`docs/implementation/MESSAGE_CONVENTION.md`](../docs/implementation/MESSAGE_CONVENTION.md), [`docs/implementation/TRANSPORT.md`](../docs/implementation/TRANSPORT.md), [`docs/implementation/PLUGIN_GUIDE.md`](../docs/implementation/PLUGIN_GUIDE.md)
+  - [`docs/001.model/004.AGENT_LOGGING_PROTOCOL.md`](../docs/001.model/004.AGENT_LOGGING_PROTOCOL.md): Transport Unit과 Ack의 필드
+  - [`docs/001.model/005.PLUGIN_SPEC.md`](../docs/001.model/005.PLUGIN_SPEC.md): Trigger, 수집, Turn 단위, Transport Unit을 넘기는 규칙
+  - [`docs/001.model/006.CLIENT_ADAPTER_DAEMON.md`](../docs/001.model/006.CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송과 Ack 처리
+  - [`docs/001.model/003.DOMAIN_MODEL.md`](../docs/001.model/003.DOMAIN_MODEL.md): `turn_interrupted`, Turn 구성 규칙과 `status`
+  - [`docs/001.model/008.DATA_ARCHITECTURE.md`](../docs/001.model/008.DATA_ARCHITECTURE.md): 수신 기록, 쓰기 절차
+  - [`docs/001.model/001.SYSTEM_ARCHITECTURE.md`](../docs/001.model/001.SYSTEM_ARCHITECTURE.md): 데이터 흐름, 전달 보장
+  - [`docs/002.implementation/009.TABLE_DEFINITION.md`](../docs/002.implementation/009.TABLE_DEFINITION.md), [`docs/002.implementation/008.DATA_STORAGE.md`](../docs/002.implementation/008.DATA_STORAGE.md), [`docs/002.implementation/002.MESSAGE_CONVENTION.md`](../docs/002.implementation/002.MESSAGE_CONVENTION.md), [`docs/002.implementation/003.TRANSPORT.md`](../docs/002.implementation/003.TRANSPORT.md), [`docs/002.implementation/004.PLUGIN_GUIDE.md`](../docs/002.implementation/004.PLUGIN_GUIDE.md)
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - Plugin은 레코드를 하나씩 읽고 변환해 곧바로 넘기며, Turn의 Session Log Event를 메모리에 모아 두지 않습니다.
@@ -85,4 +85,4 @@ Daemon과 Main Server 사이의 데이터 송수신 단위를 **Transport Unit**
 
 - 관련 ADR: [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md), [Keep Session Log Events as the source data and derive the activity model](2026-10-28-keep-session-log-events-as-source-and-derive-activity-model.md)
 - 다시 검토할 조건: Transport Unit마다 트랜잭션을 쓰는 비용 때문에 수집이 에이전트의 기록 속도를 따라가지 못할 때
-- 용어: [Glossary](../docs/model/GLOSSARY.md)
+- 용어: [Glossary](../docs/001.model/002.GLOSSARY.md)

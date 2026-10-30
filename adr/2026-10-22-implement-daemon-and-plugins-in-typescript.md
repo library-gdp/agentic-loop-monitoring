@@ -14,7 +14,7 @@ decision-makers: pgd
 
 Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 
-- [Plugin Specification](../docs/model/PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
+- [Plugin Specification](../docs/001.model/005.PLUGIN_SPEC.md)의 Plugin과 Daemon 사이 인터페이스를 TypeScript 타입으로 정의하고, 모든 Plugin이 이 타입을 구현합니다.
 - Plugin은 에이전트마다 별도의 모듈로 두고 Daemon과 따로 빌드합니다. Daemon은 시작할 때 빌드한 Plugin의 ES 모듈을 불러오고, Plugin은 Daemon의 Plugin Collection에 자신을 등록합니다([Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md) 참고).
 
 **범위 밖**
@@ -34,9 +34,9 @@ Client Adapter Daemon과 Plugin을 TypeScript로 구현합니다.
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/implementation/TECH_STACK.md`](../docs/implementation/TECH_STACK.md): Daemon과 Plugin의 구현 언어
-  - [`docs/implementation/CLIENT_ADAPTER_DAEMON.md`](../docs/implementation/CLIENT_ADAPTER_DAEMON.md): 런타임과 빌드 방법에 관한 결정되지 않은 사항
-  - [`docs/implementation/PLUGIN_GUIDE.md`](../docs/implementation/PLUGIN_GUIDE.md): Plugin 인터페이스에 관한 결정되지 않은 사항
+  - [`docs/002.implementation/001.TECH_STACK.md`](../docs/002.implementation/001.TECH_STACK.md): Daemon과 Plugin의 구현 언어
+  - [`docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md`](../docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md): 런타임과 빌드 방법에 관한 결정되지 않은 사항
+  - [`docs/002.implementation/004.PLUGIN_GUIDE.md`](../docs/002.implementation/004.PLUGIN_GUIDE.md): Plugin 인터페이스에 관한 결정되지 않은 사항
 - **Dependencies**: TypeScript 컴파일러. 런타임은 후속 결정으로 정합니다.
 - **Patterns to follow**:
   - Plugin 인터페이스 타입은 한 곳에 두고, Daemon과 모든 Plugin이 그 타입만 참조합니다.
