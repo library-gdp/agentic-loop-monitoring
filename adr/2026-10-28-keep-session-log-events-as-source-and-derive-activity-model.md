@@ -8,7 +8,7 @@ decision-makers: pgd
 
 ## Context and Problem Statement
 
-[Domain Model](../docs/001.model/003.DOMAIN_MODEL.md)은 Main Server가 Session Log Event를 받은 그대로 저장하고, Core가 그 순서와 연결 관계로 Session, Agent, Turn, Loop, LLM Call, Tool Call(Activity Model)을 구성한다고 정합니다. 하지만 무엇을 저장하고 무엇을 계산하는지, Activity Model을 언제 구성하는지는 정하지 않았습니다. Persistence를 구현하려면 이것을 정해야 합니다.
+[Domain Model](../docs/001.model/003.domain_model/001.OVERVIEW.md)은 Main Server가 Session Log Event를 받은 그대로 저장하고, Core가 그 순서와 연결 관계로 Session, Agent, Turn, Loop, LLM Call, Tool Call(Activity Model)을 구성한다고 정합니다. 하지만 무엇을 저장하고 무엇을 계산하는지, Activity Model을 언제 구성하는지는 정하지 않았습니다. Persistence를 구현하려면 이것을 정해야 합니다.
 
 데이터에는 다음 성질이 있습니다.
 
@@ -31,7 +31,7 @@ Main Server의 데이터를 원본 데이터와 파생 데이터로 나눕니다
 **범위 밖**
 
 - 저장소 기술과 물리 스키마. [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md)에서 정합니다.
-- Agent 안 Turn의 순서 기준, LLM Call input의 시작 범위. [Domain Model](../docs/001.model/003.DOMAIN_MODEL.md#결정되지-않은-사항)에서 정합니다.
+- Agent 안 Turn의 순서 기준, LLM Call input의 시작 범위. [Domain Model](../docs/001.model/003.domain_model/001.OVERVIEW.md#결정되지-않은-사항)에서 정합니다.
 - 보관 기간, 암호화, 접근 제어
 
 ## Consequences

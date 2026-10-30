@@ -17,7 +17,16 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 |---|---|---|
 | [System Architecture](docs/001.model/001.SYSTEM_ARCHITECTURE.md) | 시스템 구성(Client Adapter Daemon, Main Server), 데이터 흐름, 전달 보장, 원칙(Observe-only, Fail-open, Masking) | 프로세스 간 역할 분담이나 데이터 흐름을 확인할 때 |
 | [Glossary](docs/001.model/002.GLOSSARY.md) | 도메인 용어(Session, Main Agent, Subagent, Turn, Loop, LLM Call, Tool Call 등), Session ID와 Agent ID 같은 식별자, 시스템 구성, 수집, 전송, 데이터(원본 데이터, 파생 데이터, 수신 기록) 관련 용어의 정의 | 도메인 모델이나 Session Log Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
-| [Domain Model](docs/001.model/003.DOMAIN_MODEL.md) | Session Log Event, Token Usage와 Core가 구성하는 Session, Agent(Main Agent, Subagent), Turn, Loop, LLM Call, Tool Call, Compaction의 필드, Agent와 Turn 구성 규칙 | Session Log Event를 만들거나 바꿀 때, Core의 엔티티나 저장 구조를 설계할 때 |
+| [Domain Model Overview](docs/001.model/003.domain_model/001.OVERVIEW.md) | 도메인 모델의 전체 구성(Session Log Event와 Activity Model의 구분, 모델 간 계층), Activity Model의 id와 계산 값 규칙 | 도메인 모델의 전체 구조를 파악할 때, Session Log Event와 Activity Model의 관계를 확인할 때 |
+| [Session Log Event](docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md) | Session Log Event의 공통 필드와 종류별(`user_message`, `assistant_message`, `tool_result`, `turn_interrupted`, `compaction`, `compaction_summary`) 필드 | Session Log Event를 만들거나 바꿀 때, Plugin의 변환 규칙을 정할 때 |
+| [Token Usage](docs/001.model/003.domain_model/003.TOKEN_USAGE.md) | Token Usage의 필드 | 토큰 사용량을 기록하거나 합산할 때 |
+| [Session](docs/001.model/003.domain_model/004.SESSION.md) | Activity Model Session의 필드 | Core의 Session을 구성하거나 저장 구조를 설계할 때 |
+| [Agent](docs/001.model/003.domain_model/005.AGENT.md) | Activity Model Agent(Main Agent, Subagent)의 필드와 구성 규칙 | Core의 Agent를 구성하거나 부모 Agent와의 관계를 다룰 때 |
+| [Turn](docs/001.model/003.domain_model/006.TURN.md) | Activity Model Turn의 필드, 구성 규칙, `status` 판단 기준 | Core의 Turn을 구성하거나 Turn의 끝과 `status`를 판단할 때 |
+| [Loop](docs/001.model/003.domain_model/007.LOOP.md) | Activity Model Loop의 필드 | Core의 Loop를 구성할 때 |
+| [LLM Call](docs/001.model/003.domain_model/008.LLM_CALL.md) | Activity Model LLM Call의 필드와 `input` 구성 규칙 | Core의 LLM Call을 구성하거나 `input`의 범위를 다룰 때 |
+| [Tool Call](docs/001.model/003.domain_model/009.TOOL_CALL.md) | Activity Model Tool Call의 필드와 Subagent 연결 | Core의 Tool Call을 구성하거나 Subagent를 띄운 Tool Call을 다룰 때 |
+| [Compaction](docs/001.model/003.domain_model/010.COMPACTION.md) | Activity Model Compaction의 필드 | Core의 Compaction을 구성할 때 |
 | [Agent Logging Protocol](docs/001.model/004.AGENT_LOGGING_PROTOCOL.md) | Transport Unit, Ack의 형식, 버전 규칙, Transport가 지켜야 하는 규칙 | Daemon과 Main Server 사이의 통신을 설계하거나 구현할 때 |
 | [Plugin Specification](docs/001.model/005.PLUGIN_SPEC.md) | Plugin이 정의하는 Trigger, 수집 방식과 지켜야 하는 규칙, Session ID와 Agent ID 규칙, Turn 단위, 레코드 하나마다 넘기는 Transport Unit의 규칙, 에이전트 id, event id 규칙, 에이전트별 문서에 적을 내용 | 새 에이전트를 지원하거나 Plugin을 구현할 때, 에이전트별 Plugin 문서를 쓸 때 |
 | [Client Adapter Daemon](docs/001.model/006.CLIENT_ADAPTER_DAEMON.md) | Daemon의 구성 요소, Transport Unit 전송, Ack 처리, 설정 | Daemon을 구현하거나 바꿀 때 |

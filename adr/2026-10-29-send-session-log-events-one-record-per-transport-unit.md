@@ -51,7 +51,8 @@ Daemon과 Main Server 사이의 데이터 송수신 단위를 **Transport Unit**
   - [`docs/001.model/004.AGENT_LOGGING_PROTOCOL.md`](../docs/001.model/004.AGENT_LOGGING_PROTOCOL.md): Transport Unit과 Ack의 필드
   - [`docs/001.model/005.PLUGIN_SPEC.md`](../docs/001.model/005.PLUGIN_SPEC.md): Trigger, 수집, Turn 단위, Transport Unit을 넘기는 규칙
   - [`docs/001.model/006.CLIENT_ADAPTER_DAEMON.md`](../docs/001.model/006.CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송과 Ack 처리
-  - [`docs/001.model/003.DOMAIN_MODEL.md`](../docs/001.model/003.DOMAIN_MODEL.md): `turn_interrupted`, Turn 구성 규칙과 `status`
+  - [`docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md`](../docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md): `turn_interrupted`
+  - [`docs/001.model/003.domain_model/006.TURN.md`](../docs/001.model/003.domain_model/006.TURN.md): Turn 구성 규칙과 `status`
   - [`docs/001.model/008.DATA_ARCHITECTURE.md`](../docs/001.model/008.DATA_ARCHITECTURE.md): 수신 기록, 쓰기 절차
   - [`docs/001.model/001.SYSTEM_ARCHITECTURE.md`](../docs/001.model/001.SYSTEM_ARCHITECTURE.md): 데이터 흐름, 전달 보장
   - [`docs/002.implementation/009.TABLE_DEFINITION.md`](../docs/002.implementation/009.TABLE_DEFINITION.md), [`docs/002.implementation/008.DATA_STORAGE.md`](../docs/002.implementation/008.DATA_STORAGE.md), [`docs/002.implementation/002.MESSAGE_CONVENTION.md`](../docs/002.implementation/002.MESSAGE_CONVENTION.md), [`docs/002.implementation/003.TRANSPORT.md`](../docs/002.implementation/003.TRANSPORT.md), [`docs/002.implementation/004.PLUGIN_GUIDE.md`](../docs/002.implementation/004.PLUGIN_GUIDE.md)
