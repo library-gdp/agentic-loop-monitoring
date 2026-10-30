@@ -1,6 +1,6 @@
 # INTENT-1.0.md
 
-이 문서는 프로젝트가 무엇을 위해 존재하는지와 사용자가 이 도구로 얻어야 하는 결과를 설명합니다. 구현 방법은 다루지 않으며, 설계는 [docs/](../docs/)와 [adr/](../adr/)에 있습니다. 용어는 [Glossary](../docs/model/001.GLOSSARY.md)를 따릅니다.
+이 문서는 프로젝트가 무엇을 위해 존재하는지와 사용자가 이 도구로 얻어야 하는 결과를 설명합니다. 구현 방법은 다루지 않으며, 설계는 [docs/](../docs/)와 [adr/](../adr/)에 있습니다. 용어는 [Glossary](../docs/001.model/002.GLOSSARY.md)를 따릅니다.
 
 ## Problem
 
@@ -58,7 +58,7 @@ AI 코딩 에이전트에게 작업을 맡기고 그 결과를 검증하는 개�
 ### 관련 시스템
 
 - 에이전트가 실행되는 머신의 에이전트 프로세스와 Session Log
-- 이 프로젝트의 Client Adapter Daemon과 Main Server([System Architecture](../docs/model/000.SYSTEM_ARCHITECTURE.md) 참고)
+- 이 프로젝트의 Client Adapter Daemon과 Main Server([System Architecture](../docs/001.model/001.SYSTEM_ARCHITECTURE.md) 참고)
 
 ## Constraints
 
@@ -71,7 +71,7 @@ AI 코딩 에이전트에게 작업을 맡기고 그 결과를 검증하는 개�
 
 ### 현재 설계의 원칙
 
-다음은 [System Architecture](../docs/model/000.SYSTEM_ARCHITECTURE.md#principles)에 정한 원칙입니다. 팀과 오픈소스 단계에서도 유지할지는 아직 정하지 않았습니다([Open Questions](#open-questions) 참고).
+다음은 [System Architecture](../docs/001.model/001.SYSTEM_ARCHITECTURE.md#principles)에 정한 원칙입니다. 팀과 오픈소스 단계에서도 유지할지는 아직 정하지 않았습니다([Open Questions](#open-questions) 참고).
 
 - **Observe-only**: 에이전트를 관찰만 합니다. 동작을 막거나 바꾸지 않고, 컨텍스트에 아무것도 주입하지 않습니다.
 - **Fail-open**: 이 도구 때문에 에이전트의 작업이 멈추면 안 됩니다. 이벤트 유실을 허용합니다.
@@ -81,7 +81,7 @@ AI 코딩 에이전트에게 작업을 맡기고 그 결과를 검증하는 개�
 
 1. **확장 단계의 원칙**: 팀과 오픈소스 단계에서도 Observe-only, Fail-open, 마스킹 없음을 유지할지 정하지 않았습니다. 특히 팀 서버로 프롬프트, 코드, 도구 결과의 원문을 보낼 때 무엇을 보호해야 하는지가 열려 있습니다.
 2. **원격 전송의 인증과 암호화**: 팀에 공유하려면 필요하지만 아직 정하지 않았습니다.
-3. **나머지 input의 전송 형식**: [Agent Logging Protocol](../docs/model/003.AGENT_LOGGING_PROTOCOL.md) 버전 1은 LLM Call의 모든 input을 다룹니다. 그 가운데 시스템 프롬프트, AGENTS.md, Skill, 도구 정의, compaction, Subagent 프롬프트를 나타내는 형식은 아직 정하지 않았습니다.
+3. **나머지 input의 전송 형식**: [Agent Logging Protocol](../docs/001.model/004.AGENT_LOGGING_PROTOCOL.md) 버전 1은 LLM Call의 모든 input을 다룹니다. 그 가운데 시스템 프롬프트, AGENTS.md, Skill, 도구 정의, compaction, Subagent 프롬프트를 나타내는 형식은 아직 정하지 않았습니다.
 4. **에이전트별로 얻을 수 있는 정보**: Claude Code, OpenCode, Codex가 각각 3번의 input 중 무엇을 로그에 남기는지 확인하지 않았습니다.
 5. **Subagent와 부모의 연결**: Subagent에 넘긴 프롬프트와 그 Subagent의 Loop를 부모 Tool Call과 어떻게 이을지 정하지 않았습니다.
 6. **"토큰 낭비"의 기준**: 어떤 토큰 사용을 낭비로 볼지 정하지 않았습니다.

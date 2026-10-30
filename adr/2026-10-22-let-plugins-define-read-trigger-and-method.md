@@ -19,7 +19,7 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 - **Trigger**: Plugin마다 언제 읽기를 시작할지 정합니다. Daemon은 Hook Client와 Signal을 두지 않습니다.
 - **읽는 방식**: Plugin마다 Session Log File을 찾고, 어디까지 읽었는지 기록하고, 이어 읽는 방법을 정합니다. Daemon은 Offset과 Offset Store를 두지 않습니다.
 - **Daemon의 역할**: Plugin이 Transport Unit으로 넘긴 Session Log Event를 그대로 Main Server에 보냅니다.
-- **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/model/004.PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 완결된 레코드를 곧바로 넘깁니다.
+- **공통 규칙**: Plugin은 어떤 Trigger와 읽는 방식을 정의하든 [Plugin Specification](../docs/001.model/005.PLUGIN_SPEC.md)의 규칙을 지킵니다. 에이전트를 기다리게 하지 않고, 완결된 레코드를 곧바로 넘깁니다.
 
 **범위 밖**
 
@@ -38,10 +38,10 @@ Session Log File을 읽는 Trigger와 읽는 방식을 각 Plugin이 정의합�
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/model/004.PLUGIN_SPEC.md`](../docs/model/004.PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 읽는 방식, 지켜야 하는 규칙
-  - [`docs/model/005.CLIENT_ADAPTER_DAEMON.md`](../docs/model/005.CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송
-  - [`docs/model/000.SYSTEM_ARCHITECTURE.md`](../docs/model/000.SYSTEM_ARCHITECTURE.md): 구성, 데이터 흐름, 전달 보장
-  - [`docs/model/001.GLOSSARY.md`](../docs/model/001.GLOSSARY.md): Hook, Signal, Offset 관련 용어 삭제와 Trigger 추가
+  - [`docs/001.model/005.PLUGIN_SPEC.md`](../docs/001.model/005.PLUGIN_SPEC.md): Plugin이 정의하는 Trigger와 읽는 방식, 지켜야 하는 규칙
+  - [`docs/001.model/006.CLIENT_ADAPTER_DAEMON.md`](../docs/001.model/006.CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송
+  - [`docs/001.model/001.SYSTEM_ARCHITECTURE.md`](../docs/001.model/001.SYSTEM_ARCHITECTURE.md): 구성, 데이터 흐름, 전달 보장
+  - [`docs/001.model/002.GLOSSARY.md`](../docs/001.model/002.GLOSSARY.md): Hook, Signal, Offset 관련 용어 삭제와 Trigger 추가
 - **Dependencies**: 없음
 - **Patterns to follow**:
   - Trigger와 읽는 방식에 관한 코드는 그 Plugin 모듈 안에만 둡니다.

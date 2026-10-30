@@ -32,7 +32,7 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
   - Session Log File이 바뀌었는지와 그때 처음부터 다시 읽을지는 Plugin이 판단합니다. Daemon은 파일의 경로나 inode를 기록하지 않습니다.
   - Offset 레코드 파일은 임시 파일에 쓰고 `fsync`한 뒤 rename해서 원자적으로 갱신합니다.
 
-세부 규칙은 [Client Adapter Daemon](../docs/model/005.CLIENT_ADAPTER_DAEMON.md)과 [Plugin Specification](../docs/model/004.PLUGIN_SPEC.md)에 있습니다.
+세부 규칙은 [Client Adapter Daemon](../docs/001.model/006.CLIENT_ADAPTER_DAEMON.md)과 [Plugin Specification](../docs/001.model/005.PLUGIN_SPEC.md)에 있습니다.
 
 **범위 밖**
 
@@ -57,9 +57,9 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/model/005.CLIENT_ADAPTER_DAEMON.md`](../docs/model/005.CLIENT_ADAPTER_DAEMON.md): Signal 처리, Ack 처리, Offset Store, Offset 검증
-  - [`docs/model/004.PLUGIN_SPEC.md`](../docs/model/004.PLUGIN_SPEC.md): `read`의 Turn 단위 규칙, Plugin State, event id
-  - [`docs/model/003.AGENT_LOGGING_PROTOCOL.md`](../docs/model/003.AGENT_LOGGING_PROTOCOL.md): Ack 형식, `retryable`, 중복 처리 규칙
+  - [`docs/001.model/006.CLIENT_ADAPTER_DAEMON.md`](../docs/001.model/006.CLIENT_ADAPTER_DAEMON.md): Signal 처리, Ack 처리, Offset Store, Offset 검증
+  - [`docs/001.model/005.PLUGIN_SPEC.md`](../docs/001.model/005.PLUGIN_SPEC.md): `read`의 Turn 단위 규칙, Plugin State, event id
+  - [`docs/001.model/004.AGENT_LOGGING_PROTOCOL.md`](../docs/001.model/004.AGENT_LOGGING_PROTOCOL.md): Ack 형식, `retryable`, 중복 처리 규칙
   - 코드 디렉터리 구성은 구현 언어를 정하는 ADR에서 정합니다.
 - **Dependencies**: 없음
 - **Patterns to follow**:
@@ -94,5 +94,5 @@ Stop Hook이 올 때마다 파일 전체를 다시 읽으면, Turn이 늘어날�
 ## More Information
 
 - 관련 ADR: [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md)
-- 용어: [Glossary](../docs/model/001.GLOSSARY.md)
+- 용어: [Glossary](../docs/001.model/002.GLOSSARY.md)
 - 다시 검토할 조건: 진행 중인 Turn을 실시간으로 보여줘야 하는 경우, 또는 Session Log File을 덧붙여 쓰지 않는 에이전트를 지원해야 하는 경우

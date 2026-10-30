@@ -15,15 +15,15 @@ decision-makers: pgd
 ## Decision Drivers
 
 - **메모리 사용량을 최소화합니다.** 다른 기준보다 우선합니다.
-- Daemon은 에이전트를 실행하는 사용자 계정마다 상주합니다([Client Adapter Daemon 구현](../docs/implementation/016.CLIENT_ADAPTER_DAEMON.md#실행)). 늘 떠 있는 메모리가 작아야 합니다.
+- Daemon은 에이전트를 실행하는 사용자 계정마다 상주합니다([Client Adapter Daemon 구현](../docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md#실행)). 늘 떠 있는 메모리가 작아야 합니다.
 - Daemon과 Main Server가 함께 쓰는 Session Log Event, Transport Unit, Ack의 타입이 어긋나지 않아야 합니다.
 
 ## Decision
 
-- **Main Server를 TypeScript로 구현합니다.** Main Server의 모든 모듈(Input Adapter, Core, Persistence, Visualization)이 대상입니다. 모듈 구성은 [Application Architecture](../docs/model/006.APPLICATION_ARCHITECTURE.md)를 따릅니다.
+- **Main Server를 TypeScript로 구현합니다.** Main Server의 모든 모듈(Input Adapter, Core, Persistence, Visualization)이 대상입니다. 모듈 구성은 [Application Architecture](../docs/001.model/007.APPLICATION_ARCHITECTURE.md)를 따릅니다.
 - **런타임은 Bun입니다.** Daemon, Plugin, Main Server가 모두 Bun에서 실행됩니다.
 - **HTTP 프레임워크는 Hono입니다.** Visualization과 원격 Transport(REST API, Streamable HTTP, WebSocket)의 HTTP 처리를 Hono로 구현하고 `Bun.serve`로 띄웁니다.
-- **Daemon과 Main Server를 하나의 프로세스로 구동합니다.** 둘 사이의 Transport는 같은 프로세스 안의 함수 호출입니다([Transport](../docs/implementation/010.TRANSPORT.md#프로세스-내-호출)). Transport Unit을 직렬화하지 않고 객체 그대로 넘깁니다.
+- **Daemon과 Main Server를 하나의 프로세스로 구동합니다.** 둘 사이의 Transport는 같은 프로세스 안의 함수 호출입니다([Transport](../docs/002.implementation/003.TRANSPORT.md#프로세스-내-호출)). Transport Unit을 직렬화하지 않고 객체 그대로 넘깁니다.
 - **SQLite는 Bun에 내장된 `bun:sqlite`로 접근합니다.**
 - 실행 파일은 `bun build --compile`로 하나만 만듭니다. Daemon과 Main Server가 이 실행 파일에 들어 있습니다. Plugin은 [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md)에 따라 따로 빌드하고, Daemon이 시작할 때 Plugin 디렉터리에서 같은 프로세스로 불러옵니다.
 
@@ -41,7 +41,7 @@ Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Se
 - Good, because Transport Unit을 직렬화하지 않으므로, 큰 Session Log Event를 보낼 때 같은 내용의 사본이 생기지 않습니다.
 - Good, because Daemon과 Main Server가 Session Log Event, Transport Unit, Ack의 타입 정의 하나를 함께 씁니다. 두 정의가 어긋날 일이 없습니다.
 - Good, because `bun:sqlite`는 Bun에 들어 있으므로 플랫폼마다 네이티브 애드온을 빌드하거나 배포하지 않습니다.
-- Bad, because Daemon과 Main Server가 메모리 상한과 이벤트 루프를 함께 씁니다. Visualization의 무거운 질의와 큰 Session Log Event의 수집이 겹치면 메모리가 함께 오르고, 메모리가 부족해 프로세스가 끝나면 수집과 시각화가 함께 멈춥니다. 에이전트는 영향을 받지 않습니다([Fail-open](../docs/model/000.SYSTEM_ARCHITECTURE.md#fail-open)).
+- Bad, because Daemon과 Main Server가 메모리 상한과 이벤트 루프를 함께 씁니다. Visualization의 무거운 질의와 큰 Session Log Event의 수집이 겹치면 메모리가 함께 오르고, 메모리가 부족해 프로세스가 끝나면 수집과 시각화가 함께 멈춥니다. 에이전트는 영향을 받지 않습니다([Fail-open](../docs/001.model/001.SYSTEM_ARCHITECTURE.md#fail-open)).
 - Bad, because `bun:sqlite`는 동기 API입니다. 큰 트랜잭션이나 무거운 질의가 도는 동안 Daemon의 수집과 Visualization의 응답이 멈춥니다.
 - Bad, because Plugin은 따로 번들하므로, 여러 Plugin이 같은 라이브러리를 쓰면 그 라이브러리가 Plugin마다 메모리에 따로 올라갑니다.
 - Bad, because Daemon이 사용자 계정마다 상주하므로 Main Server와 그 데이터 파일도 사용자 계정마다 하나씩 생깁니다.
@@ -50,10 +50,10 @@ Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Se
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/implementation/008.TECH_STACK.md`](../docs/implementation/008.TECH_STACK.md): 구현 언어, 런타임, 프레임워크, 실행 구성
-  - [`docs/implementation/016.CLIENT_ADAPTER_DAEMON.md`](../docs/implementation/016.CLIENT_ADAPTER_DAEMON.md): Main Server와 한 프로세스로 실행
-  - [`docs/implementation/010.TRANSPORT.md`](../docs/implementation/010.TRANSPORT.md): 프로세스 내 호출 바인딩
-  - [`docs/implementation/017.DATA_STORAGE.md`](../docs/implementation/017.DATA_STORAGE.md): SQLite 라이브러리
+  - [`docs/002.implementation/001.TECH_STACK.md`](../docs/002.implementation/001.TECH_STACK.md): 구현 언어, 런타임, 프레임워크, 실행 구성
+  - [`docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md`](../docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md): Main Server와 한 프로세스로 실행
+  - [`docs/002.implementation/003.TRANSPORT.md`](../docs/002.implementation/003.TRANSPORT.md): 프로세스 내 호출 바인딩
+  - [`docs/002.implementation/008.DATA_STORAGE.md`](../docs/002.implementation/008.DATA_STORAGE.md): SQLite 라이브러리
 - **Dependencies**: Bun, Hono
 - **Patterns to follow**:
   - Session Log Event, Transport Unit, Ack의 타입은 한 곳에 두고 Daemon, Plugin, Main Server가 모두 그 타입만 참조합니다.
@@ -82,4 +82,4 @@ Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Se
 
 - 관련 ADR: [Implement the Client Adapter Daemon and Plugins in TypeScript](2026-10-22-implement-daemon-and-plugins-in-typescript.md), [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md), [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md), [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)
 - 다시 검토할 조건: Main Server를 원격에 두어 여러 머신의 Daemon이 데이터를 모아야 할 때, 또는 Bun에서 메모리 사용량이 기대보다 클 때
-- 용어: [Glossary](../docs/model/001.GLOSSARY.md)
+- 용어: [Glossary](../docs/001.model/002.GLOSSARY.md)
