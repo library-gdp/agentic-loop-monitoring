@@ -51,7 +51,8 @@ Daemon과 Main Server 사이의 데이터 송수신 단위를 **Transport Unit**
   - [`docs/001.model/004.AGENT_LOGGING_PROTOCOL.md`](../docs/001.model/004.AGENT_LOGGING_PROTOCOL.md): Transport Unit과 Ack의 필드
   - [`docs/001.model/005.PLUGIN_SPEC.md`](../docs/001.model/005.PLUGIN_SPEC.md): Trigger, 수집, Turn 단위, Transport Unit을 넘기는 규칙
   - [`docs/001.model/006.CLIENT_ADAPTER_DAEMON.md`](../docs/001.model/006.CLIENT_ADAPTER_DAEMON.md): Transport Unit 전송과 Ack 처리
-  - [`docs/001.model/003.DOMAIN_MODEL.md`](../docs/001.model/003.DOMAIN_MODEL.md): `turn_interrupted`, Turn 구성 규칙과 `status`
+  - [`docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md`](../docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md): `turn_interrupted`
+  - [`docs/001.model/003.domain_model/006.TURN.md`](../docs/001.model/003.domain_model/006.TURN.md): Turn 구성 규칙과 `status`
   - [`docs/001.model/008.DATA_ARCHITECTURE.md`](../docs/001.model/008.DATA_ARCHITECTURE.md): 수신 기록, 쓰기 절차
   - [`docs/001.model/001.SYSTEM_ARCHITECTURE.md`](../docs/001.model/001.SYSTEM_ARCHITECTURE.md): 데이터 흐름, 전달 보장
   - [`docs/002.implementation/009.TABLE_DEFINITION.md`](../docs/002.implementation/009.TABLE_DEFINITION.md), [`docs/002.implementation/008.DATA_STORAGE.md`](../docs/002.implementation/008.DATA_STORAGE.md), [`docs/002.implementation/002.MESSAGE_CONVENTION.md`](../docs/002.implementation/002.MESSAGE_CONVENTION.md), [`docs/002.implementation/003.TRANSPORT.md`](../docs/002.implementation/003.TRANSPORT.md), [`docs/002.implementation/004.PLUGIN_GUIDE.md`](../docs/002.implementation/004.PLUGIN_GUIDE.md)
@@ -79,7 +80,7 @@ Daemon과 Main Server 사이의 데이터 송수신 단위를 **Transport Unit**
 - **레코드 하나씩 보내되 Turn이 끝난 뒤에 보내기**: 메모리는 레코드 하나로 제한되지만, Plugin이 Turn의 끝을 확인할 때까지 보내지 못하므로 진행 중인 Turn이 보이지 않습니다. 받는 대로 저장하는 결정과 맞지 않아 기각했습니다.
 - **Session Log Event 하나씩 보내기**: 단위가 가장 작지만, 레코드 하나에서 나온 Session Log Event들이 나뉘어 저장되고 Transport Unit 수가 더 늘어납니다. 레코드 하나는 이미 수집과 event id의 기본 단위이므로 레코드를 단위로 삼았습니다.
 - **사용자가 중단한 Turn을 지우기**: 중단이 확인되면 그 Turn의 Session Log Event를 지웁니다. 원본 데이터는 추가만 하고 Session 단위로만 지운다는 원칙을 깨고, 중단도 실패 판단의 단서이므로 기각했습니다.
-- **사용자가 중단한 Turn을 원문에만 남기고 활동 모델에서 빼기**: 저장은 하지만 역추적할 때 보이지 않으므로 기각했습니다.
+- **사용자가 중단한 Turn을 원문에만 남기고 Activity Model에서 빼기**: 저장은 하지만 역추적할 때 보이지 않으므로 기각했습니다.
 
 ## More Information
 
