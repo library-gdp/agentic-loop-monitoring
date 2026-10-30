@@ -17,7 +17,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 |---|---|---|
 | [System Architecture](docs/001.model/001.SYSTEM_ARCHITECTURE.md) | 시스템 구성(Client Adapter Daemon, Main Server), 데이터 흐름, 전달 보장, 원칙(Observe-only, Fail-open, Masking) | 프로세스 간 역할 분담이나 데이터 흐름을 확인할 때 |
 | [Glossary](docs/001.model/002.GLOSSARY.md) | 도메인 용어(Session, Main Agent, Subagent, Turn, Loop, LLM Call, Tool Call 등), Session ID와 Agent ID 같은 식별자, 시스템 구성, 수집, 전송, 데이터(원본 데이터, 파생 데이터, 수신 기록) 관련 용어의 정의 | 도메인 모델이나 Session Log Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
-| [Domain Model Overview](docs/001.model/003.domain_model/001.OVERVIEW.md) | 도메인 모델의 전체 구성(Session Log Event와 Activity Model의 구분, 모델 간 계층), Activity Model의 id와 계산 값 규칙 | 도메인 모델의 전체 구조를 파악할 때, Session Log Event와 Activity Model의 관계를 확인할 때 |
+| [Domain Model Overview](docs/001.model/003.domain_model/001.OVERVIEW.md) | 도메인 모델의 전체 구성(Session Log Event와 Activity Model의 구분, 모델 간 관계를 나타낸 Mermaid 그림), Activity Model의 id와 계산 값 규칙 | 도메인 모델의 전체 구조를 파악할 때, Session Log Event와 Activity Model의 관계를 확인할 때 |
 | [Session Log Event](docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md) | Session Log Event의 공통 필드와 종류별(`user_message`, `assistant_message`, `tool_result`, `turn_interrupted`, `compaction`, `compaction_summary`) 필드 | Session Log Event를 만들거나 바꿀 때, Plugin의 변환 규칙을 정할 때 |
 | [Token Usage](docs/001.model/003.domain_model/003.TOKEN_USAGE.md) | Token Usage의 필드 | 토큰 사용량을 기록하거나 합산할 때 |
 | [Session](docs/001.model/003.domain_model/004.SESSION.md) | Activity Model Session의 필드 | Core의 Session을 구성하거나 저장 구조를 설계할 때 |
