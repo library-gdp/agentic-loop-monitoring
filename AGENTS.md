@@ -15,29 +15,29 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 
 | 문서 | 내용 | 이럴 때 읽기 |
 |---|---|---|
-| [System Architecture](docs/model/SYSTEM_ARCHITECTURE.md) | 시스템 구성(Client Adapter Daemon, Main Server), 데이터 흐름, 전달 보장, 원칙(Observe-only, Fail-open, Masking) | 프로세스 간 역할 분담이나 데이터 흐름을 확인할 때 |
-| [Application Architecture](docs/model/APPLICATION_ARCHITECTURE.md) | Main Server의 모듈 구성(Core, Input Adapter, Persistence, Visualization)과 모듈 간 의존 관계 | Main Server의 모듈을 추가하거나 바꿀 때, 모듈 간 의존 관계를 확인할 때 |
-| [Client Adapter Daemon](docs/model/CLIENT_ADAPTER_DAEMON.md) | Daemon의 구성 요소, Transport Unit 전송, Ack 처리, 설정 | Daemon을 구현하거나 바꿀 때 |
-| [Plugin Specification](docs/model/PLUGIN_SPEC.md) | Plugin이 정의하는 Trigger, 수집 방식과 지켜야 하는 규칙, Session ID와 Agent ID 규칙, Turn 단위, 레코드 하나마다 넘기는 Transport Unit의 규칙, 에이전트 id, event id 규칙, 에이전트별 문서에 적을 내용 | 새 에이전트를 지원하거나 Plugin을 구현할 때, 에이전트별 Plugin 문서를 쓸 때 |
-| [Agent Logging Protocol](docs/model/AGENT_LOGGING_PROTOCOL.md) | Transport Unit, Ack의 형식, 버전 규칙, Transport가 지켜야 하는 규칙 | Daemon과 Main Server 사이의 통신을 설계하거나 구현할 때 |
-| [Domain Model](docs/model/DOMAIN_MODEL.md) | Session Log Event, Token Usage와 Core가 구성하는 Session, Agent(Main Agent, Subagent), Turn, Loop, LLM Call, Tool Call, Compaction의 필드, Agent와 Turn 구성 규칙 | Session Log Event를 만들거나 바꿀 때, Core의 엔티티나 저장 구조를 설계할 때 |
-| [Data Architecture](docs/model/DATA_ARCHITECTURE.md) | 데이터가 있는 곳과 소유자, Main Server가 저장하는 Entity(원본 데이터: Session, Agent, Session Log Event, 수신 기록 / 파생 데이터: Turn, LLM Call, Tool Call, Compaction)의 목록과 필드, 관계, 원자적 쓰기, 질의, Session 단위 삭제, 형식 변경 처리 | Persistence나 Ingest API, Query API를 설계하거나 구현할 때, 무엇을 저장하고 무엇을 계산할지 정할 때 |
-| [Glossary](docs/model/GLOSSARY.md) | 도메인 용어(Session, Main Agent, Subagent, Turn, Loop, LLM Call, Tool Call 등), Session ID와 Agent ID 같은 식별자, 시스템 구성, 수집, 전송, 데이터(원본 데이터, 파생 데이터, 수신 기록) 관련 용어의 정의 | 도메인 모델이나 Session Log Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
-| [Tech Stack](docs/implementation/TECH_STACK.md) | 구현 언어(모두 TypeScript), 런타임(Bun), 프레임워크(Hono), Daemon과 Main Server를 한 프로세스로 구동하는 실행 구성, 저장소(SQLite), 그 이유 | 코드를 작성하기 전에 구현 언어와 런타임, 실행 구성을 확인할 때 |
-| [Client Adapter Daemon 구현](docs/implementation/CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상태 디렉터리 등 구현 설정 | Daemon 코드를 작성, 빌드, 배포할 때 |
-| [Plugin Guide](docs/implementation/PLUGIN_GUIDE.md) | Plugin을 Daemon과 따로 빌드하고 Daemon이 시작할 때 불러와 Plugin Collection에 등록하는 방식(패키지 구성, 빌드한 Plugin, 불러오기, 등록, 고르기 절차, Plugin 추가하기), Session Log를 파일로 수집하는 경우의 지침, Plugin 구현에 관한 결정되지 않은 사항 | Plugin 코드를 작성하거나 Daemon에 추가할 때 |
-| [Plugin Interface](docs/implementation/PLUGIN_INTERFACE.md) | Plugin이 구현하는 TypeScript 인터페이스(`PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginTransportUnit`), Plugin API 버전, 시작과 종료, Transport Unit 넘기기와 로그, Session Log Event 타입 | Plugin이나 Daemon 코드에서 둘 사이의 인터페이스를 구현하거나 바꿀 때 |
-| [Claude Code Plugin](docs/implementation/plugin/CLAUDE_CODE.md) | Claude Code Plugin 구현 방안. Main Agent와 Subagent의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법 | Claude Code Plugin을 구현하거나 바꿀 때 |
-| [Codex Plugin](docs/implementation/plugin/CODEX.md) | Codex Plugin 구현 방안. thread_id로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | Codex Plugin을 구현하거나 바꿀 때 |
-| [OpenCode Plugin](docs/implementation/plugin/OPENCODE.md) | OpenCode Plugin 구현 방안. session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | OpenCode Plugin을 구현하거나 바꿀 때 |
-| [Message Convention](docs/implementation/MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Transport Unit, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
-| [Data Storage](docs/implementation/DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정과 라이브러리(`bun:sqlite`), Transport Unit 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
-| [Table Definition](docs/implementation/TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
-| [Transport](docs/implementation/TRANSPORT.md) | Transport(프로세스 내 호출, 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
+| [System Architecture](docs/model/000.SYSTEM_ARCHITECTURE.md) | 시스템 구성(Client Adapter Daemon, Main Server), 데이터 흐름, 전달 보장, 원칙(Observe-only, Fail-open, Masking) | 프로세스 간 역할 분담이나 데이터 흐름을 확인할 때 |
+| [Glossary](docs/model/001.GLOSSARY.md) | 도메인 용어(Session, Main Agent, Subagent, Turn, Loop, LLM Call, Tool Call 등), Session ID와 Agent ID 같은 식별자, 시스템 구성, 수집, 전송, 데이터(원본 데이터, 파생 데이터, 수신 기록) 관련 용어의 정의 | 도메인 모델이나 Session Log Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
+| [Domain Model](docs/model/002.DOMAIN_MODEL.md) | Session Log Event, Token Usage와 Core가 구성하는 Session, Agent(Main Agent, Subagent), Turn, Loop, LLM Call, Tool Call, Compaction의 필드, Agent와 Turn 구성 규칙 | Session Log Event를 만들거나 바꿀 때, Core의 엔티티나 저장 구조를 설계할 때 |
+| [Agent Logging Protocol](docs/model/003.AGENT_LOGGING_PROTOCOL.md) | Transport Unit, Ack의 형식, 버전 규칙, Transport가 지켜야 하는 규칙 | Daemon과 Main Server 사이의 통신을 설계하거나 구현할 때 |
+| [Plugin Specification](docs/model/004.PLUGIN_SPEC.md) | Plugin이 정의하는 Trigger, 수집 방식과 지켜야 하는 규칙, Session ID와 Agent ID 규칙, Turn 단위, 레코드 하나마다 넘기는 Transport Unit의 규칙, 에이전트 id, event id 규칙, 에이전트별 문서에 적을 내용 | 새 에이전트를 지원하거나 Plugin을 구현할 때, 에이전트별 Plugin 문서를 쓸 때 |
+| [Client Adapter Daemon](docs/model/005.CLIENT_ADAPTER_DAEMON.md) | Daemon의 구성 요소, Transport Unit 전송, Ack 처리, 설정 | Daemon을 구현하거나 바꿀 때 |
+| [Application Architecture](docs/model/006.APPLICATION_ARCHITECTURE.md) | Main Server의 모듈 구성(Core, Input Adapter, Persistence, Visualization)과 모듈 간 의존 관계 | Main Server의 모듈을 추가하거나 바꿀 때, 모듈 간 의존 관계를 확인할 때 |
+| [Data Architecture](docs/model/007.DATA_ARCHITECTURE.md) | 데이터가 있는 곳과 소유자, Main Server가 저장하는 Entity(원본 데이터: Session, Agent, Session Log Event, 수신 기록 / 파생 데이터: Turn, LLM Call, Tool Call, Compaction)의 목록과 필드, 관계, 원자적 쓰기, 질의, Session 단위 삭제, 형식 변경 처리 | Persistence나 Ingest API, Query API를 설계하거나 구현할 때, 무엇을 저장하고 무엇을 계산할지 정할 때 |
+| [Tech Stack](docs/implementation/008.TECH_STACK.md) | 구현 언어(모두 TypeScript), 런타임(Bun), 프레임워크(Hono), Daemon과 Main Server를 한 프로세스로 구동하는 실행 구성, 저장소(SQLite), 그 이유 | 코드를 작성하기 전에 구현 언어와 런타임, 실행 구성을 확인할 때 |
+| [Message Convention](docs/implementation/009.MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Transport Unit, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
+| [Transport](docs/implementation/010.TRANSPORT.md) | Transport(프로세스 내 호출, 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
+| [Plugin Guide](docs/implementation/011.PLUGIN_GUIDE.md) | Plugin을 Daemon과 따로 빌드하고 Daemon이 시작할 때 불러와 Plugin Collection에 등록하는 방식(패키지 구성, 빌드한 Plugin, 불러오기, 등록, 고르기 절차, Plugin 추가하기), Session Log를 파일로 수집하는 경우의 지침, Plugin 구현에 관한 결정되지 않은 사항 | Plugin 코드를 작성하거나 Daemon에 추가할 때 |
+| [Plugin Interface](docs/implementation/012.PLUGIN_INTERFACE.md) | Plugin이 구현하는 TypeScript 인터페이스(`PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginTransportUnit`), Plugin API 버전, 시작과 종료, Transport Unit 넘기기와 로그, Session Log Event 타입 | Plugin이나 Daemon 코드에서 둘 사이의 인터페이스를 구현하거나 바꿀 때 |
+| [Claude Code Plugin](docs/implementation/plugin/013.CLAUDE_CODE.md) | Claude Code Plugin 구현 방안. Main Agent와 Subagent의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법 | Claude Code Plugin을 구현하거나 바꿀 때 |
+| [Codex Plugin](docs/implementation/plugin/014.CODEX.md) | Codex Plugin 구현 방안. thread_id로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | Codex Plugin을 구현하거나 바꿀 때 |
+| [OpenCode Plugin](docs/implementation/plugin/015.OPENCODE.md) | OpenCode Plugin 구현 방안. session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | OpenCode Plugin을 구현하거나 바꿀 때 |
+| [Client Adapter Daemon 구현](docs/implementation/016.CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상태 디렉터리 등 구현 설정 | Daemon 코드를 작성, 빌드, 배포할 때 |
+| [Data Storage](docs/implementation/017.DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정과 라이브러리(`bun:sqlite`), Transport Unit 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
+| [Table Definition](docs/implementation/018.TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
 ### 문서 작성 규칙
 - `docs/`에 문서를 추가, 삭제하거나 이름을 바꾸면 같은 커밋에서 이 섹션의 표도 갱신합니다.
-- 파일 이름 규칙: ...
+- 파일 이름 규칙: `docs/`의 문서 이름은 읽기 순서를 나타내는 세 자리 번호로 시작합니다(예: `000.SYSTEM_ARCHITECTURE.md`). 번호는 디렉터리와 상관없이 `docs/` 전체에서 이어지고, 이 섹션의 표도 번호 순서로 둡니다. 문서를 중간에 끼워 넣으면 뒤 문서의 번호를 밀고 그 문서를 가리키는 링크도 함께 고칩니다. 문서의 제목(H1)은 파일 이름과 같게 둡니다. `AGENTS.md`와 `CLAUDE.md`에는 번호를 붙이지 않습니다.
 - 링크는 상대 경로로 작성합니다. 이 파일에서는 저장소 루트 기준(`docs/...`), `docs/` 안의 문서끼리는 서로의 위치 기준입니다.

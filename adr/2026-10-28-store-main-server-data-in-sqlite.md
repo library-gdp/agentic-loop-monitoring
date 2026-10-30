@@ -12,7 +12,7 @@ decision-makers: pgd
 
 ## Decision Drivers
 
-- **실행 위치가 정해지지 않았습니다.** Main Server는 Daemon과 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. 표준입출력 Transport에서는 Daemon이 Main Server를 자식 프로세스로 띄웁니다([Transport](../docs/implementation/TRANSPORT.md#표준입출력)). 따로 띄워야 하는 데이터베이스 서버가 있으면 이 방식을 쓸 수 없습니다.
+- **실행 위치가 정해지지 않았습니다.** Main Server는 Daemon과 같은 머신에서 실행될 수도 있고 원격에서 실행될 수도 있습니다. 표준입출력 Transport에서는 Daemon이 Main Server를 자식 프로세스로 띄웁니다([Transport](../docs/implementation/010.TRANSPORT.md#표준입출력)). 따로 띄워야 하는 데이터베이스 서버가 있으면 이 방식을 쓸 수 없습니다.
 - **사용 범위는 작성자 본인에서 시작합니다**([Intent](../intent/INTENT-1.0.md#사용자)). 설치하고 운영할 것이 적어야 합니다. 팀 단계에서는 여러 Daemon이 Main Server 하나에 보냅니다.
 - **Transport Unit 하나를 원자적으로 저장해야 합니다.** 여러 레코드를 한 트랜잭션으로 쓰고, 고유 키로 중복을 걸러야 합니다.
 - **여러 프로세스가 같은 데이터를 읽을 수 있어야 합니다.** 표준입출력으로 띄운 Main Server와 Visualization을 제공하는 Main Server가 다른 프로세스일 수 있습니다.
@@ -29,7 +29,7 @@ decision-makers: pgd
 
 Chosen option: "SQLite", because 따로 띄울 서버 없이 파일 하나로 동작해 모든 실행 위치와 Transport에서 쓸 수 있고, 트랜잭션과 고유 키로 원자적 저장과 중복 제거를 그대로 지원하며, WAL 모드에서 여러 프로세스가 같은 파일을 읽을 수 있기 때문입니다.
 
-설정과 쓰기, 읽기 절차는 [Data Storage](../docs/implementation/DATA_STORAGE.md)가, 테이블은 [Table Definition](../docs/implementation/TABLE_DEFINITION.md)이 정합니다.
+설정과 쓰기, 읽기 절차는 [Data Storage](../docs/implementation/017.DATA_STORAGE.md)가, 테이블은 [Table Definition](../docs/implementation/018.TABLE_DEFINITION.md)이 정합니다.
 
 **범위 밖**
 
@@ -48,9 +48,9 @@ Chosen option: "SQLite", because 따로 띄울 서버 없이 파일 하나로 �
 ## Implementation Plan
 
 - **Affected paths**: 아직 코드가 없습니다. 설계 문서는 다음과 같습니다.
-  - [`docs/implementation/DATA_STORAGE.md`](../docs/implementation/DATA_STORAGE.md): 새 문서
-  - [`docs/implementation/TABLE_DEFINITION.md`](../docs/implementation/TABLE_DEFINITION.md): 새 문서
-  - [`docs/implementation/TECH_STACK.md`](../docs/implementation/TECH_STACK.md): 저장소 추가
+  - [`docs/implementation/017.DATA_STORAGE.md`](../docs/implementation/017.DATA_STORAGE.md): 새 문서
+  - [`docs/implementation/018.TABLE_DEFINITION.md`](../docs/implementation/018.TABLE_DEFINITION.md): 새 문서
+  - [`docs/implementation/008.TECH_STACK.md`](../docs/implementation/008.TECH_STACK.md): 저장소 추가
 - **Dependencies**: SQLite 드라이버. 라이브러리는 후속 결정으로 정합니다.
 - **Patterns to follow**:
   - SQLite에 접근하는 코드는 Persistence 모듈 안에만 둡니다.
