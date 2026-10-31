@@ -1,0 +1,13 @@
+{
+  "name": "@alm/plugin-opencode",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@alm/plugin-api": "workspace:*",
+    "valibot": "1.5.0"
+  }
+}
