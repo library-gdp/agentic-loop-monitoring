@@ -1,0 +1,15 @@
+{
+  "name": "@alm/input-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@alm/core": "workspace:*",
+    "@alm/protocol": "workspace:*",
+    "hono": "4.13.14",
+    "valibot": "1.5.0"
+  }
+}

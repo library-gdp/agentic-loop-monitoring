@@ -1,0 +1,16 @@
+{
+  "name": "@alm/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@alm/core": "workspace:*",
+    "@alm/daemon": "workspace:*",
+    "@alm/input-adapter": "workspace:*",
+    "@alm/persistence": "workspace:*",
+    "@alm/visualization": "workspace:*"
+  }
+}
