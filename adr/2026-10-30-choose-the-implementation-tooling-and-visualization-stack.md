@@ -96,13 +96,13 @@ decision-makers: pgd
 
 - [ ] `bun install`이 저장소 루트에서 모든 workspace를 설치하고, Daemon과 Plugin 패키지의 의존 목록에 Main Server 패키지가 없습니다.
 - [ ] CI가 `bun test`, Biome 검사, `tsc --noEmit`을 실행하고, 하나라도 실패하면 실패합니다.
-- [ ] `.env`를 둔 디렉터리에서 실행 파일을 실행해도 그 값이 `process.env`에 없습니다.
+- [x] `.env`를 둔 디렉터리에서 실행 파일을 실행해도 그 값이 `process.env`에 없습니다.
 - [ ] 의존 목록에 ORM, 쿼리 빌더, chokidar가 없습니다.
 - [ ] 같은 머신의 두 계정이 Daemon을 동시에 실행해도 포트가 충돌하지 않습니다.
-- [ ] 접속 정보 파일의 권한이 `0600`이고, 토큰 없는 요청과 `Host`가 맞지 않는 요청을 거절합니다.
+- [x] 접속 정보 파일의 권한이 `0600`이고, 토큰 없는 요청과 `Host`가 맞지 않는 요청을 거절합니다.
 - [ ] LLM Call 목록 응답에 `event.body`가 없고, `event.body`를 읽는 코드에 `.all()`이 없습니다.
 - [ ] macOS arm64에서 재귀 파일 감시와 외부 Plugin 불러오기가 동작합니다.
-- [ ] 전체 구현에서 대기 상태의 RSS를 측정해 이 ADR에 기록합니다.
+- [x] 전체 구현에서 대기 상태의 RSS를 측정해 이 ADR에 기록합니다.
 
 ## Alternatives Considered
 
@@ -138,6 +138,7 @@ decision-makers: pgd
 - 489 MB 데이터베이스를 읽을 때 `mmap_size`가 기본값 `0`이면 RSS가 40 MB, 256 MB로 켜면 296 MB였습니다(파일 캐시 페이지 포함).
 - 로컬 Session Log 13 MB의 zstd 압축률은 레코드별 2.67배, 파일 전체 4.99배였습니다.
 - macOS, 교차 컴파일, 실제 Plugin 부하, 장시간 실행은 측정하지 않았습니다.
+- 전체 구현(OpenCode Plugin 포함, Linux x64, 수집한 Session 2개)의 RSS는 대기 상태에서 약 33 MB, Visualization으로 조회한 뒤 약 38 MB였습니다.
 
 - 관련 ADR: [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md), [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md), [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md)
 - 다시 검토할 조건: Preact로 필요한 라이브러리를 쓸 수 없을 때, 질의가 수집을 막는 것이 측정될 때, Windows 사용자가 필요할 때
