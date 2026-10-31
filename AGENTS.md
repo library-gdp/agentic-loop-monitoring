@@ -39,7 +39,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Plugin Interface](docs/002.implementation/005.PLUGIN_INTERFACE.md) | Plugin이 구현하는 TypeScript 인터페이스(`PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginTransportUnit`), Plugin API 버전, 시작과 종료, Transport Unit 넘기기와 로그, Session Log Event 타입 | Plugin이나 Daemon 코드에서 둘 사이의 인터페이스를 구현하거나 바꿀 때 |
 | [Claude Code Plugin](docs/002.implementation/006.plugin/001.CLAUDE_CODE.md) | Claude Code Plugin 구현 방안. Main Agent와 Subagent의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법 | Claude Code Plugin을 구현하거나 바꿀 때 |
 | [Codex Plugin](docs/002.implementation/006.plugin/002.CODEX.md) | Codex Plugin 구현 방안. thread_id로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | Codex Plugin을 구현하거나 바꿀 때 |
-| [OpenCode Plugin](docs/002.implementation/006.plugin/003.OPENCODE.md) | OpenCode Plugin 구현 방안. session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | OpenCode Plugin을 구현하거나 바꿀 때 |
+| [OpenCode Plugin](docs/002.implementation/006.plugin/003.OPENCODE.md) | OpenCode Plugin 구현 방안. 대상 버전(1.19.x), session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법, Trigger(WAL 변경 감시), `event` 테이블 수집 방식 | OpenCode Plugin을 구현하거나 바꿀 때 |
 | [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상주 방식, 배포, 상태 디렉터리 등 구현 설정 | Daemon 코드를 작성, 빌드, 배포할 때 |
 | [Data Storage](docs/002.implementation/008.DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정과 라이브러리(`bun:sqlite`), Transport Unit 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
 | [Table Definition](docs/002.implementation/009.TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
