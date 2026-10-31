@@ -31,3 +31,4 @@ An Architecture Decision Record (ADR) captures an important architecture decisio
 - [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md) (proposed, 2026-10-29)
 - [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md) (accepted, 2026-10-29)
 - [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md) (accepted, 2026-10-29)
+- [Choose the implementation tooling and Visualization stack](2026-10-30-choose-the-implementation-tooling-and-visualization-stack.md) (accepted, 2026-10-30)

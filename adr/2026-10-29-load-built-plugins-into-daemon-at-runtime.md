@@ -81,4 +81,5 @@ Plugin을 Daemon과 따로 빌드합니다. Daemon은 시작할 때 빌드한 Pl
 - 대체하는 ADR: [Bundle Plugins into the Client Adapter Daemon executable](2026-10-22-bundle-plugins-into-daemon-executable.md)
 - 고친 ADR: [Implement the Client Adapter Daemon and Plugins in TypeScript](2026-10-22-implement-daemon-and-plugins-in-typescript.md)의 정적 `import` 등록 목록
 - 2026-10-29: 범위 밖으로 남긴 런타임과 실행 파일 빌드 방법은 [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md)에서 Bun과 `bun build --compile`로 정했습니다. Plugin은 그 실행 파일에 들어가지 않고 Plugin 디렉터리에서 불러옵니다. Plugin이 Daemon에 넘기는 단위는 [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)을 따릅니다.
+- 2026-10-30: Bun 1.4.4에서 `--compile`의 기본 옵션으로 만든 실행 파일이 실행 파일 밖의 ES 모듈을 동적 `import()`로 불러오는 것을 Linux에서 확인했습니다. 범위 밖으로 남긴 패키지 관리 도구와 번들 도구, 저장소 구성은 [Choose the implementation tooling and Visualization stack](2026-10-30-choose-the-implementation-tooling-and-visualization-stack.md)에서 정했습니다.
 - 다시 검토할 조건: Plugin의 오류가 Daemon을 멈추는 일이 잦은 경우, 또는 믿을 수 없는 출처의 Plugin을 받아야 하는 경우

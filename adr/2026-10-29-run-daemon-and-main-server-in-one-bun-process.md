@@ -82,4 +82,5 @@ Daemon과 Main Server의 모듈 경계는 그대로 둡니다. Daemon은 Main Se
 
 - 관련 ADR: [Implement the Client Adapter Daemon and Plugins in TypeScript](2026-10-22-implement-daemon-and-plugins-in-typescript.md), [Split the system into a Client Adapter Daemon and a Main Server](2026-10-19-split-system-into-client-adapter-daemon-and-main-server.md), [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md), [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)
 - 다시 검토할 조건: Main Server를 원격에 두어 여러 머신의 Daemon이 데이터를 모아야 할 때, 또는 Bun에서 메모리 사용량이 기대보다 클 때
+- 2026-10-30: Bun 1.4.4 시제품의 대기 RSS는 약 20 MB, 요청을 처리한 뒤에는 약 28 MB로, 위 추정치 50–80 MB보다 작았습니다. Plugin과 실제 데이터를 뺀 값이므로 전체 구현의 측정을 대신하지 않습니다. 측정 결과는 [Choose the implementation tooling and Visualization stack](2026-10-30-choose-the-implementation-tooling-and-visualization-stack.md)에 있습니다.
 - 용어: [Glossary](../docs/001.model/002.GLOSSARY.md)
