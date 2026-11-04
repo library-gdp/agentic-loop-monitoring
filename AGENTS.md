@@ -10,6 +10,13 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 |---|---|
 | [INTENT-1.0.md](intent/INTENT-1.0.md) | 사람이 실패라고 판단한 에이전트 작업을 사후에 역추적해, 각 LLM Call의 모든 input과 output을 보고 잘못된 판단 지점과 토큰 낭비를 찾아 워크플로우와 하네스를 개선하게 합니다. |
 
+## Manual
+사용자가 이 도구를 설치하고 쓰는 방법은 `manual/`에 에이전트별로 둡니다. 사용자에게 보이는 동작(명령, 설정, 화면, 보이는 것과 보이지 않는 것)을 바꾸면 해당 매뉴얼도 함께 고칩니다.
+
+| 문서 | 요약 |
+|---|---|
+| [OPENCODE.md](manual/OPENCODE.md) | OpenCode 1.19.x의 작업을 수집하고 보는 방법: 설치, 설정(OpenCode DB 위치), 실행과 상주, 접속과 화면, 실패한 작업 되짚기, OpenCode 작업이 보이는 방식, 볼 수 없는 것, 문제 해결, 근거와 확정 여부 |
+
 ## Documentation
 설계 문서는 `docs/`에 있으며, 구현에 의존하지 않는 `docs/001.model/`과 구체적인 구현 방안을 다루는 `docs/002.implementation/`으로 나뉩니다. 두 디렉터리의 구분은 [docs/AGENTS.md](docs/AGENTS.md)를 참고하세요. 작업을 시작하기 전에 아래 표에서 작업과 관련된 문서를 찾아 읽으세요. 모든 문서를 미리 읽을 필요는 없습니다.
 
