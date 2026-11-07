@@ -1,0 +1,13 @@
+{
+  "name": "@alm/daemon",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@alm/plugin-api": "workspace:*",
+    "@alm/protocol": "workspace:*"
+  }
+}

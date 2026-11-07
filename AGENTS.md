@@ -18,7 +18,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [System Architecture](docs/001.model/001.SYSTEM_ARCHITECTURE.md) | 시스템 구성(Client Adapter Daemon, Main Server), 데이터 흐름, 전달 보장, 원칙(Observe-only, Fail-open, Masking) | 프로세스 간 역할 분담이나 데이터 흐름을 확인할 때 |
 | [Glossary](docs/001.model/002.GLOSSARY.md) | 도메인 용어(Session, Main Agent, Subagent, Turn, Loop, LLM Call, Tool Call 등), Session ID와 Agent ID 같은 식별자, 시스템 구성, 수집, 전송, 데이터(원본 데이터, 파생 데이터, 수신 기록) 관련 용어의 정의 | 도메인 모델이나 Session Log Event를 설계할 때, 문서나 코드에서 용어의 의미를 확인할 때 |
 | [Domain Model Overview](docs/001.model/003.domain_model/001.OVERVIEW.md) | 도메인 모델의 전체 구성(Session Log Event와 Activity Model의 구분, 모델 간 관계를 나타낸 Mermaid 그림), Activity Model의 id와 계산 값 규칙 | 도메인 모델의 전체 구조를 파악할 때, Session Log Event와 Activity Model의 관계를 확인할 때 |
-| [Session Log Event](docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md) | Session Log Event의 공통 필드와 종류별(`user_message`, `assistant_message`, `tool_result`, `turn_interrupted`, `compaction`, `compaction_summary`) 필드 | Session Log Event를 만들거나 바꿀 때, Plugin의 변환 규칙을 정할 때 |
+| [Session Log Event](docs/001.model/003.domain_model/002.SESSION_LOG_EVENT.md) | Session Log Event의 공통 필드와 종류별(`user_message`, `context_message`, `assistant_message`, `tool_result`, `turn_interrupted`, `compaction`, `compaction_summary`) 필드 | Session Log Event를 만들거나 바꿀 때, Plugin의 변환 규칙을 정할 때 |
 | [Token Usage](docs/001.model/003.domain_model/003.TOKEN_USAGE.md) | Token Usage의 필드 | 토큰 사용량을 기록하거나 합산할 때 |
 | [Session](docs/001.model/003.domain_model/004.SESSION.md) | Activity Model Session의 필드 | Core의 Session을 구성하거나 저장 구조를 설계할 때 |
 | [Agent](docs/001.model/003.domain_model/005.AGENT.md) | Activity Model Agent(Main Agent, Subagent)의 필드와 구성 규칙 | Core의 Agent를 구성하거나 부모 Agent와의 관계를 다룰 때 |
@@ -32,19 +32,32 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Client Adapter Daemon](docs/001.model/006.CLIENT_ADAPTER_DAEMON.md) | Daemon의 구성 요소, Transport Unit 전송, Ack 처리, 설정 | Daemon을 구현하거나 바꿀 때 |
 | [Application Architecture](docs/001.model/007.APPLICATION_ARCHITECTURE.md) | Main Server의 모듈 구성(Core, Input Adapter, Persistence, Visualization)과 모듈 간 의존 관계 | Main Server의 모듈을 추가하거나 바꿀 때, 모듈 간 의존 관계를 확인할 때 |
 | [Data Architecture](docs/001.model/008.DATA_ARCHITECTURE.md) | 데이터가 있는 곳과 소유자, Main Server가 저장하는 Entity(원본 데이터: Session, Agent, Session Log Event, 수신 기록 / 파생 데이터: Turn, LLM Call, Tool Call, Compaction)의 목록과 필드, 관계, 원자적 쓰기, 질의, Session 단위 삭제, 형식 변경 처리 | Persistence나 Ingest API, Query API를 설계하거나 구현할 때, 무엇을 저장하고 무엇을 계산할지 정할 때 |
-| [Tech Stack](docs/002.implementation/001.TECH_STACK.md) | 구현 언어(모두 TypeScript), 런타임(Bun), 프레임워크(Hono), Daemon과 Main Server를 한 프로세스로 구동하는 실행 구성, 저장소(SQLite), 코드 저장소와 빌드(Bun workspaces), 라이브러리(Valibot, `bun:sqlite`), Visualization(Preact), 품질 도구(`bun test`, Biome, `tsc`), 지원 플랫폼과 배포, 그 이유 | 코드를 작성하기 전에 구현 언어와 런타임, 라이브러리, 도구, 실행 구성을 확인할 때 |
+| [Tech Stack](docs/002.implementation/001.TECH_STACK.md) | 구현 언어(모두 TypeScript), 런타임(Bun), 프레임워크(Hono), Daemon과 Main Server를 한 프로세스로 구동하는 실행 구성, 저장소(SQLite), 코드 저장소와 빌드(Bun workspaces, 패키지 구성), 라이브러리(Valibot, `bun:sqlite`), Visualization(Preact), 품질 도구(`bun test`, Biome, `tsc`), 지원 플랫폼과 배포, 그 이유 | 코드를 작성하기 전에 구현 언어와 런타임, 라이브러리, 도구, 실행 구성을 확인할 때 |
 | [Message Convention](docs/002.implementation/002.MESSAGE_CONVENTION.md) | Agent Logging Protocol 메시지 규약(UTF-8 JSON, 시각 형식)과 Transport Unit, Ack 예시 | 메시지를 직렬화하거나 해석할 때 |
 | [Transport](docs/002.implementation/003.TRANSPORT.md) | Transport(프로세스 내 호출, 표준입출력, Unix Socket, REST API, Streamable HTTP, WebSocket)별 바인딩 | Transport를 고르거나 구현할 때, Daemon의 Transport Client나 Main Server의 Input Adapter를 구현할 때 |
 | [Plugin Guide](docs/002.implementation/004.PLUGIN_GUIDE.md) | Plugin을 Daemon과 따로 빌드하고 Daemon이 시작할 때 불러와 Plugin Collection에 등록하는 방식(패키지 구성, 빌드한 Plugin, 불러오기, 등록, 고르기 절차, Plugin 추가하기), Session Log를 파일로 수집하는 경우의 지침, Plugin 구현에 관한 결정되지 않은 사항 | Plugin 코드를 작성하거나 Daemon에 추가할 때 |
 | [Plugin Interface](docs/002.implementation/005.PLUGIN_INTERFACE.md) | Plugin이 구현하는 TypeScript 인터페이스(`PluginModule`, `PluginRegistry`, `Plugin`, `PluginContext`, `PluginTransportUnit`), Plugin API 버전, 시작과 종료, Transport Unit 넘기기와 로그, Session Log Event 타입 | Plugin이나 Daemon 코드에서 둘 사이의 인터페이스를 구현하거나 바꿀 때 |
 | [Claude Code Plugin](docs/002.implementation/006.plugin/001.CLAUDE_CODE.md) | Claude Code Plugin 구현 방안. Main Agent와 Subagent의 Session ID, Agent ID, 부모 Agent ID를 Session Log에서 알아내는 방법 | Claude Code Plugin을 구현하거나 바꿀 때 |
 | [Codex Plugin](docs/002.implementation/006.plugin/002.CODEX.md) | Codex Plugin 구현 방안. thread_id로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법 | Codex Plugin을 구현하거나 바꿀 때 |
-| [OpenCode Plugin](docs/002.implementation/006.plugin/003.OPENCODE.md) | OpenCode Plugin 구현 방안. 대상 버전(1.19.x), session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법, Trigger(WAL 변경 감시), `event` 테이블 수집 방식 | OpenCode Plugin을 구현하거나 바꿀 때 |
-| [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상주 방식, 배포, 상태 디렉터리 등 구현 설정 | Daemon 코드를 작성, 빌드, 배포할 때 |
+| [OpenCode Plugin](docs/002.implementation/006.plugin/003.OPENCODE.md) | OpenCode Plugin 구현 방안. 대상 버전(1.19.x), session id와 `parentID`로 Session ID, Agent ID, 부모 Agent ID를 알아내는 방법, Trigger(WAL 변경 감시), `event` 테이블 수집 방식, message를 Session Log Event로 옮기는 변환, input 기록 범위 | OpenCode Plugin을 구현하거나 바꿀 때 |
+| [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md) | Daemon의 실행 방식, 상주 방식, 배포, 설정 항목과 기본값, 구현한 Transport, 종료 절차 | Daemon 코드를 작성, 빌드, 배포할 때 |
 | [Data Storage](docs/002.implementation/008.DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정과 라이브러리(`bun:sqlite`), Transport Unit 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
 | [Table Definition](docs/002.implementation/009.TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
-| [Visualization](docs/002.implementation/010.VISUALIZATION.md) | Visualization의 구현 방안: Preact SPA와 Hono 라우트의 구성, 접속(바인딩, 포트, 접근 토큰), 큰 데이터 조회 | Visualization을 구현하거나 접속 방식, 큰 본문 조회를 바꿀 때 |
+| [Visualization](docs/002.implementation/010.VISUALIZATION.md) | Visualization의 구현 방안: Preact SPA와 Hono 라우트의 구성, 접속(바인딩, 포트, 접근 토큰), 큰 데이터 조회, 화면 | Visualization을 구현하거나 접속 방식, 큰 본문 조회를 바꿀 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
 `docs/`의 문서를 추가, 삭제, 수정할 때는 [docs/AGENTS.md](docs/AGENTS.md)의 작성 규칙과 넘버링 규칙을 따릅니다.
+
+## Development
+
+코드는 `packages/`에 있고 Bun 1.4.4 이상이 필요합니다. 패키지 구성은 [Tech Stack](docs/002.implementation/001.TECH_STACK.md#패키지)을 참고하세요.
+
+| 명령 | 내용 |
+|---|---|
+| `bun install` | 의존성 설치 |
+| `bun test` | 테스트 |
+| `bun run typecheck` | 타입 검사 |
+| `bun run lint` | Biome 검사. `bun run format`은 자동 수정입니다. `packages/`, `scripts/`, 루트의 JSON만 다루며 Markdown 문서는 건드리지 않습니다. |
+| `bun run build` | `dist/alm`과 `dist/plugins/opencode.js`를 빌드 |
+| `bun run dev` | 소스로 실행. 설치한 Daemon과 섞이지 않도록 임시 디렉터리를 씁니다. |
