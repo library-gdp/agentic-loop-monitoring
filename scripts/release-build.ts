@@ -34,7 +34,7 @@ for (const target of TARGETS) {
     `--target=bun-${target}`,
     "--no-compile-autoload-dotenv",
     "--no-compile-autoload-bunfig",
-    `--outfile=${join(release, `alm-${target}`)}`,
+    `--outfile=${join(release, `agentoscope-${target}`)}`,
   ]);
 }
 

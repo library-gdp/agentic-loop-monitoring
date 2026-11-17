@@ -1,10 +1,10 @@
-# Agentic Loop Monitoring
+# Agentoscope
 
 AI 에이전트의 에이전틱 루프를 추적해 작업 과정과 토큰 사용량, 작업 시간 등의 metric을 시각화하는 모니터링 도구
 
 ## Overview
 
-Agentic Loop Monitoring은 Codex, Claude Code, Open Code 같은 AI 에이전트가 작업을 어떻게 수행했는지 확인하기 위한 모니터링 도구입니다. AI 에이전트는 LLM API 호출과 Tool Request를 반복하는 에이전트 루프로 작업을 처리합니다. 하지만 이 과정은 사용자에게 드러나지 않아서 에이전트가 각 단계에서 무엇을 했고 자원을 얼마나 썼는지 알기 어렵습니다.
+Agentoscope는 Codex, Claude Code, Open Code 같은 AI 에이전트가 작업을 어떻게 수행했는지 확인하기 위한 모니터링 도구입니다. AI 에이전트는 LLM API 호출과 Tool Request를 반복하는 에이전트 루프로 작업을 처리합니다. 하지만 이 과정은 사용자에게 드러나지 않아서 에이전트가 각 단계에서 무엇을 했고 자원을 얼마나 썼는지 알기 어렵습니다.
 
 이 프로젝트는 에이전트 루프 안에서 일어나는 LLM API 호출과 Tool Request를 추적합니다. 이 과정에서 토큰 사용량과 작업 시간 같은 metric을 수집하고, 수집한 데이터를 루프 단위로 시각화합니다. 이를 통해 AI 에이전트를 사용하는 개발자는 에이전트의 동작 과정과 자원 사용량을 구체적으로 확인할 수 있습니다.
 
