@@ -11,7 +11,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [INTENT-1.0.md](intent/INTENT-1.0.md) | 사람이 실패라고 판단한 에이전트 작업을 사후에 역추적해, 각 LLM Call의 모든 input과 output을 보고 잘못된 판단 지점과 토큰 낭비를 찾아 워크플로우와 하네스를 개선하게 합니다. |
 
 ## Documentation
-설계 문서는 `docs/`에 있으며, 구현에 의존하지 않는 `docs/001.model/`과 구체적인 구현 방안을 다루는 `docs/002.implementation/`으로 나뉩니다. 두 디렉터리의 구분은 [docs/AGENTS.md](docs/AGENTS.md)를 참고하세요. 작업을 시작하기 전에 아래 표에서 작업과 관련된 문서를 찾아 읽으세요. 모든 문서를 미리 읽을 필요는 없습니다.
+설계 문서는 `docs/`에 있으며, 구현에 의존하지 않는 `docs/001.model/`과 구체적인 구현 방안을 다루는 `docs/002.implementation/`, 외부 도구와 기술의 동작을 정리한 참고자료 `docs/003.reference/`로 나뉩니다. 세 디렉터리의 구분은 [docs/AGENTS.md](docs/AGENTS.md)를 참고하세요. 작업을 시작하기 전에 아래 표에서 작업과 관련된 문서를 찾아 읽으세요. 모든 문서를 미리 읽을 필요는 없습니다.
 
 | 문서 | 내용 | 이럴 때 읽기 |
 |---|---|---|
@@ -44,6 +44,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Data Storage](docs/002.implementation/008.DATA_STORAGE.md) | Main Server 데이터의 SQLite 설정과 라이브러리(`bun:sqlite`), Transport Unit 트랜잭션, LLM Call input 질의, 스키마 버전, Session 삭제 | Persistence를 구현할 때, 저장소 설정이나 쓰기, 읽기 절차를 바꿀 때 |
 | [Table Definition](docs/002.implementation/009.TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
 | [Visualization](docs/002.implementation/010.VISUALIZATION.md) | Visualization의 구현 방안: Preact SPA와 Hono 라우트의 구성, 접속(바인딩, 포트, 접근 토큰), 큰 데이터 조회 | Visualization을 구현하거나 접속 방식, 큰 본문 조회를 바꿀 때 |
+| [OpenCode WAL과 SHM](docs/003.reference/001.OPENCODE_WAL_AND_SHM.md) | OpenCode SQLite DB 옆의 `-wal`, `-shm` 파일: OpenCode의 SQLite 설정(WAL, `synchronous` 등), WAL의 쓰기, 읽기, checkpoint, 생성과 삭제, wal-index(SHM)의 내용과 성질, 다른 프로세스에서 읽을 때의 동작 | OpenCode Plugin의 Trigger나 DB 읽기 방식을 바꾸거나, `-wal`, `-shm` 파일의 동작을 확인할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
