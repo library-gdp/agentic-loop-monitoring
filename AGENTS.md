@@ -45,6 +45,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Table Definition](docs/002.implementation/009.TABLE_DEFINITION.md) | Main Server SQLite 테이블 정의서: 테이블 목록, 관계와 외래 키, 테이블별 열(타입, NULL, 키, Entity 필드 대응), 제약 조건, 인덱스, DDL | 테이블을 만들거나 바꿀 때, 질의를 작성할 때 |
 | [Visualization](docs/002.implementation/010.VISUALIZATION.md) | Visualization의 구현 방안: Preact SPA와 Hono 라우트의 구성, 접속(바인딩, 포트, 접근 토큰), 큰 데이터 조회 | Visualization을 구현하거나 접속 방식, 큰 본문 조회를 바꿀 때 |
 | [OpenCode WAL과 SHM](docs/003.reference/001.OPENCODE_WAL_AND_SHM.md) | OpenCode SQLite DB 옆의 `-wal`, `-shm` 파일: OpenCode의 SQLite 설정(WAL, `synchronous` 등), WAL의 쓰기, 읽기, checkpoint, 생성과 삭제, wal-index(SHM)의 내용과 성질, 다른 프로세스에서 읽을 때의 동작 | OpenCode Plugin의 Trigger나 DB 읽기 방식을 바꾸거나, `-wal`, `-shm` 파일의 동작을 확인할 때 |
+| [OpenCode 데이터 아키텍처](docs/003.reference/002.OPENCODE_DATA_ARCHITECTURE.md) | OpenCode 1.19.5 SQLite DB의 ERD: 테이블 분류(이벤트 로그, Session Log v1/v2, Project, 계정 등), 외래 키와 값으로만 이어지는 관계, 식별자 형식, 테이블별 열, `event`, `message`, `part`의 JSON 내용 | OpenCode DB에서 무엇을 어디서 읽을지 정하거나, OpenCode 테이블 사이의 관계를 확인할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
