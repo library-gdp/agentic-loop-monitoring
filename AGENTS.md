@@ -47,6 +47,7 @@ AI 코딩 에이전트(Claude Code, Codex, OpenCode 등)의 작업을 수집, �
 | [Visualization](docs/002.implementation/010.VISUALIZATION.md) | Visualization의 구현 방안: Preact SPA와 Hono 라우트의 구성, 접속(바인딩, 포트, 접근 토큰), 큰 데이터 조회 | Visualization을 구현하거나 접속 방식, 큰 본문 조회를 바꿀 때 |
 | [OpenCode v1 WAL과 SHM](docs/003.reference/001.OPENCODE_WAL_AND_SHM.md) | OpenCode v1 SQLite DB 옆의 `-wal`, `-shm` 파일: OpenCode의 SQLite 설정(WAL, `synchronous` 등), WAL의 쓰기, 읽기, checkpoint, 생성과 삭제, wal-index(SHM)의 내용과 성질, 다른 프로세스에서 읽을 때의 동작 | OpenCode Plugin의 Trigger나 DB 읽기 방식을 바꾸거나, `-wal`, `-shm` 파일의 동작을 확인할 때 |
 | [OpenCode v1 데이터 아키텍처](docs/003.reference/002.OPENCODE_DATA_ARCHITECTURE.md) | OpenCode 1.19.5 SQLite DB의 ERD: 테이블 분류(이벤트 로그, Session Log v1/v2, Project, 계정 등), 외래 키와 값으로만 이어지는 관계, 식별자 형식, 테이블별 열, `event`, `message`, `part`의 JSON 내용 | OpenCode DB에서 무엇을 어디서 읽을지 정하거나, OpenCode 테이블 사이의 관계를 확인할 때 |
+| [OpenCode v1 Session Log](docs/003.reference/003.OPENCODE_SESSION_LOG.md) | OpenCode 1.19.5 Session Log의 구성: session, message, part, step, 이벤트의 개념, 개념과 테이블의 대응, 이벤트를 테이블에 반영하는 방식, 사용자 입력, 에이전트 루프, tool 실행, 중단, Subagent, compaction, 되돌리기의 기록 순서, 실제 DB의 행과 이벤트 예시, DB에 기록되지 않는 정보(system prompt, 스트리밍 중의 내용 등) | OpenCode의 message, part, event가 무엇이고 어떤 순서로 기록되는지 확인할 때, OpenCode의 기록을 해석하거나 변환하는 규칙을 정할 때 |
 
 아키텍처 문서와 명세 문서(모듈별 API 명세, Domain Model, Agent Logging Protocol 등)는 모두 이 표에 행으로 추가합니다.
 
