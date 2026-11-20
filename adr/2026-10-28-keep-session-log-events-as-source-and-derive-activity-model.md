@@ -77,4 +77,5 @@ Main Server의 데이터를 원본 데이터와 파생 데이터로 나눕니다
 ## More Information
 
 - 관련 결정: [Merge Wire Event and Canonical Event into Session Log Event](2026-10-24-merge-wire-event-and-canonical-event-into-session-log-event.md), [Send Session Log Events one record per Transport Unit](2026-10-29-send-session-log-events-one-record-per-transport-unit.md)
+- 2026-11-20: 범위 밖으로 남긴 Agent 안 Turn의 순서 기준은 [Turn](../docs/001.model/003.domain_model/006.TURN.md#구성-규칙)에서 정했습니다. `started_at` 순이며, 같으면 Turn을 시작한 `user_message`를 먼저 받은 Turn이 앞입니다.
 - 다시 볼 조건: 시스템 프롬프트, 도구 정의처럼 LLM Call마다 되풀이되는 input의 형식이 정해질 때. 같은 내용을 한 번만 저장하는 방법이 필요해집니다.
