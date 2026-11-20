@@ -10,12 +10,21 @@
         "typescript": "7.0.2",
       },
     },
+    "packages/core": {
+      "name": "@agentoscope/core",
+      "version": "0.0.0",
+      "dependencies": {
+        "@agentoscope/plugin-api": "workspace:*",
+      },
+    },
     "packages/plugin-api": {
       "name": "@agentoscope/plugin-api",
       "version": "0.0.0",
     },
   },
   "packages": {
+    "@agentoscope/core": ["@agentoscope/core@workspace:packages/core"],
+
     "@agentoscope/plugin-api": ["@agentoscope/plugin-api@workspace:packages/plugin-api"],
 
     "@biomejs/biome": ["@biomejs/biome@2.6.4", "", { "optionalDependencies": { "@biomejs/cli-android-arm64": "2.6.4", "@biomejs/cli-android-x64": "2.6.4", "@biomejs/cli-darwin-arm64": "2.6.4", "@biomejs/cli-darwin-x64": "2.6.4", "@biomejs/cli-linux-arm64": "2.6.4", "@biomejs/cli-linux-arm64-musl": "2.6.4", "@biomejs/cli-linux-x64": "2.6.4", "@biomejs/cli-linux-x64-musl": "2.6.4", "@biomejs/cli-win32-arm64": "2.6.4", "@biomejs/cli-win32-x64": "2.6.4" }, "bin": { "biome": "bin/biome" } }, "sha512-8sKKwaNW4ot22awZ3lBjwWLHnUFXgXnrBPYS2gNlBAXRbDC++7kqjK2H7dR/FgCDtPvO1xfKpgEhJkGxAKYkxA=="],
