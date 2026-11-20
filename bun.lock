@@ -17,6 +17,13 @@
         "@agentoscope/plugin-api": "workspace:*",
       },
     },
+    "packages/persistence": {
+      "name": "@agentoscope/persistence",
+      "version": "0.0.0",
+      "dependencies": {
+        "@agentoscope/core": "workspace:*",
+      },
+    },
     "packages/plugin-api": {
       "name": "@agentoscope/plugin-api",
       "version": "0.0.0",
@@ -24,6 +31,8 @@
   },
   "packages": {
     "@agentoscope/core": ["@agentoscope/core@workspace:packages/core"],
+
+    "@agentoscope/persistence": ["@agentoscope/persistence@workspace:packages/persistence"],
 
     "@agentoscope/plugin-api": ["@agentoscope/plugin-api@workspace:packages/plugin-api"],
 

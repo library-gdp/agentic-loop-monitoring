@@ -1,3 +1,4 @@
+export type { JsonObject, StopReason } from "@agentoscope/plugin-api";
 export {
     DERIVATION_VERSION,
     type DerivedCompaction,
