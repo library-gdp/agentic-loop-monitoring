@@ -10,6 +10,16 @@
         "typescript": "7.0.2",
       },
     },
+    "packages/app": {
+      "name": "@agentoscope/app",
+      "version": "0.0.0",
+      "dependencies": {
+        "@agentoscope/core": "workspace:*",
+        "@agentoscope/input-adapter": "workspace:*",
+        "@agentoscope/persistence": "workspace:*",
+        "@agentoscope/plugin-api": "workspace:*",
+      },
+    },
     "packages/core": {
       "name": "@agentoscope/core",
       "version": "0.0.0",
@@ -39,6 +49,8 @@
     },
   },
   "packages": {
+    "@agentoscope/app": ["@agentoscope/app@workspace:packages/app"],
+
     "@agentoscope/core": ["@agentoscope/core@workspace:packages/core"],
 
     "@agentoscope/input-adapter": ["@agentoscope/input-adapter@workspace:packages/input-adapter"],
