@@ -27,6 +27,7 @@ describe("loadConfig", () => {
                 retryCount: 5,
                 retryIntervalMs: 1000,
             },
+            visualization: { port: 0 },
         });
     });
 
@@ -98,6 +99,12 @@ describe("loadConfig", () => {
         });
     });
 
+    test("reads the visualization port", async () => {
+        const directory = temporaryDirectory();
+        const path = writeConfig(directory, "[visualization]\nport = 8765\n");
+        expect((await loadConfig({ path })).visualization).toEqual({ port: 8765 });
+    });
+
     test("needs the file given with --config", async () => {
         const path = join(temporaryDirectory(), "missing.toml");
         await expect(loadConfig({ path })).rejects.toThrow(ConfigError);
@@ -118,6 +125,9 @@ describe("loadConfig", () => {
             "[daemon]\nretry_count = -1\n",
             '[daemon]\nstate_directory = ""\n',
             "[daemon]\nunknown = 1\n",
+            "[visualization]\nport = -1\n",
+            "[visualization]\nport = 65536\n",
+            '[visualization]\nhost = "0.0.0.0"\n',
             "daemon = 1\n",
             "main_server = 3\n",
             "[main_server\n",

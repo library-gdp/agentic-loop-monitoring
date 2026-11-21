@@ -14,11 +14,18 @@ import rootPackage from "../../../package.json" with { type: "json" };
 import { type Config, ConfigError, loadConfig } from "./config";
 import { createJsonLinesLogger } from "./logger";
 import { type MainServer, openMainServer } from "./main-server";
+import {
+    loginUrl,
+    readConnection,
+    startVisualizationServer,
+    type VisualizationServer,
+} from "./visualization-server";
 
 const USAGE = `Usage: agentoscope <command> [--config <path>]
 
 Commands:
   run       Run the Main Server and the Client Adapter Daemon until SIGINT or SIGTERM
+  url       Print the URL that opens the Visualization of the running Main Server
   version   Print the version
   help      Print this help
 
@@ -77,6 +84,8 @@ export async function main(args: readonly string[], io: CommandIo = processIo): 
     switch (command) {
         case "run":
             return run(parsed.values.config, io);
+        case "url":
+            return printUrl(parsed.values.config, io);
         case "version":
             io.stdout(`${rootPackage.version}\n`);
             return 0;
@@ -96,6 +105,24 @@ function parseCommandLine(args: readonly string[]) {
         allowPositionals: true,
         strict: true,
     });
+}
+
+/** 실행 중인 Main Server의 접속 정보 파일을 읽어 Visualization의 접속 URL을 출력합니다. */
+async function printUrl(configPath: string | undefined, io: CommandIo): Promise<number> {
+    let config: Config;
+    try {
+        config = await loadConfig(configPath === undefined ? {} : { path: configPath });
+    } catch (error) {
+        io.stderr(`${error instanceof Error ? error.message : String(error)}\n`);
+        return 1;
+    }
+    const connection = readConnection(config.daemon.stateDirectory);
+    if (connection === undefined) {
+        io.stderr("the Visualization is not running. Start it with: agentoscope run\n");
+        return 1;
+    }
+    io.stdout(`${loginUrl(connection)}\n`);
+    return 0;
 }
 
 async function run(configPath: string | undefined, io: CommandIo): Promise<number> {
@@ -121,6 +148,7 @@ async function run(configPath: string | undefined, io: CommandIo): Promise<numbe
     }
 
     let daemon: Daemon | undefined;
+    let visualization: VisualizationServer | undefined;
     try {
         const prepared = server.prepare().then(
             () => ({ ready: true }) as const,
@@ -169,10 +197,31 @@ async function run(configPath: string | undefined, io: CommandIo): Promise<numbe
             pluginDirectory: settings.pluginDirectory,
             plugins: [...daemon.started],
         });
+
+        // 접속 정보 파일은 상태 디렉터리에 두므로, Daemon이 상태 디렉터리의 잠금을 얻은 뒤에 시작합니다.
+        // Visualization을 띄우지 못해도 수집은 계속합니다.
+        try {
+            visualization = startVisualizationServer({
+                query: server.query,
+                port: config.visualization.port,
+                stateDirectory: config.daemon.stateDirectory,
+                logger,
+            });
+            logger.info("visualization started", {
+                url: visualization.url,
+                hint: "run `agentoscope url` to get the URL with the access token",
+            });
+        } catch (error) {
+            logger.error("cannot start the visualization", {
+                message: error instanceof Error ? error.message : String(error),
+                port: config.visualization.port,
+            });
+        }
         logger.info("main server is stopping", { signal: await signal });
         return 0;
     } finally {
         // Daemon이 남은 Transport Unit을 보낸 뒤에 Main Server를 닫습니다.
+        await visualization?.stop();
         await daemon?.stop();
         server.close();
     }
