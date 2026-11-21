@@ -15,6 +15,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@agentoscope/core": "workspace:*",
+        "@agentoscope/daemon": "workspace:*",
         "@agentoscope/input-adapter": "workspace:*",
         "@agentoscope/persistence": "workspace:*",
         "@agentoscope/plugin-api": "workspace:*",
@@ -22,6 +23,13 @@
     },
     "packages/core": {
       "name": "@agentoscope/core",
+      "version": "0.0.0",
+      "dependencies": {
+        "@agentoscope/plugin-api": "workspace:*",
+      },
+    },
+    "packages/daemon": {
+      "name": "@agentoscope/daemon",
       "version": "0.0.0",
       "dependencies": {
         "@agentoscope/plugin-api": "workspace:*",
@@ -47,17 +55,29 @@
       "name": "@agentoscope/plugin-api",
       "version": "0.0.0",
     },
+    "packages/plugin-opencode": {
+      "name": "@agentoscope/plugin-opencode",
+      "version": "1.0.0-SNAPSHOT",
+      "dependencies": {
+        "@agentoscope/plugin-api": "workspace:*",
+        "valibot": "1.5.0",
+      },
+    },
   },
   "packages": {
     "@agentoscope/app": ["@agentoscope/app@workspace:packages/app"],
 
     "@agentoscope/core": ["@agentoscope/core@workspace:packages/core"],
 
+    "@agentoscope/daemon": ["@agentoscope/daemon@workspace:packages/daemon"],
+
     "@agentoscope/input-adapter": ["@agentoscope/input-adapter@workspace:packages/input-adapter"],
 
     "@agentoscope/persistence": ["@agentoscope/persistence@workspace:packages/persistence"],
 
     "@agentoscope/plugin-api": ["@agentoscope/plugin-api@workspace:packages/plugin-api"],
+
+    "@agentoscope/plugin-opencode": ["@agentoscope/plugin-opencode@workspace:packages/plugin-opencode"],
 
     "@biomejs/biome": ["@biomejs/biome@2.6.4", "", { "optionalDependencies": { "@biomejs/cli-android-arm64": "2.6.4", "@biomejs/cli-android-x64": "2.6.4", "@biomejs/cli-darwin-arm64": "2.6.4", "@biomejs/cli-darwin-x64": "2.6.4", "@biomejs/cli-linux-arm64": "2.6.4", "@biomejs/cli-linux-arm64-musl": "2.6.4", "@biomejs/cli-linux-x64": "2.6.4", "@biomejs/cli-linux-x64-musl": "2.6.4", "@biomejs/cli-win32-arm64": "2.6.4", "@biomejs/cli-win32-x64": "2.6.4" }, "bin": { "biome": "bin/biome" } }, "sha512-8sKKwaNW4ot22awZ3lBjwWLHnUFXgXnrBPYS2gNlBAXRbDC++7kqjK2H7dR/FgCDtPvO1xfKpgEhJkGxAKYkxA=="],
 
