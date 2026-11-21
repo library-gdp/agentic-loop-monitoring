@@ -21,6 +21,7 @@ Agentoscope는 Codex, Claude Code, Open Code 같은 AI 에이전트가 작업을
 ```bash
 bun install
 bun run build
+bun run install-plugins
 bun run start
 ```
 
@@ -30,4 +31,4 @@ bun run start
 bun run start -- --config ./config.toml
 ```
 
-Daemon은 설정의 Plugin 디렉터리(기본값 `~/.local/share/agentoscope/plugins`)에서 Plugin을 불러옵니다. 빌드한 `dist/plugins/`의 Plugin을 이 디렉터리에 복사하거나, 설정 파일의 `[daemon]` 표에서 `plugin_directory`를 `dist/plugins`로 지정하세요. Plugin이 없으면 아무것도 수집하지 않습니다. 설정 항목은 [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md#설정)과 [Data Storage](docs/002.implementation/008.DATA_STORAGE.md#설정)를 참고하세요.
+Daemon은 설정의 Plugin 디렉터리(기본값 `~/.local/share/agentoscope/plugins`)에서 Plugin을 불러오며, Plugin이 없으면 아무것도 수집하지 않습니다. `bun run install-plugins`는 빌드한 `dist/plugins/`의 Plugin을 이 디렉터리에 설치합니다. 에이전트 id를 넘기면 그 Plugin만 설치하고(`bun run install-plugins -- opencode`), 설정 파일을 쓰면 `--config`로 같은 파일을 넘겨 그 파일의 `plugin_directory`에 설치합니다. Plugin을 다시 빌드했으면 다시 설치하고 agentoscope를 다시 시작하세요. 설정 항목은 [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md#설정)과 [Data Storage](docs/002.implementation/008.DATA_STORAGE.md#설정)를 참고하세요.
