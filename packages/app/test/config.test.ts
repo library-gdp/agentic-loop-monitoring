@@ -16,10 +16,16 @@ function writeConfig(directory: string, text: string, name = "config.toml"): str
 describe("loadConfig", () => {
     test("uses the defaults when the default config file does not exist", async () => {
         const home = temporaryDirectory();
+        const data = join(home, ".local", "share", "agentoscope");
         expect(await loadConfig({ env: { HOME: home } })).toEqual({
-            mainServer: {
-                dataFile: join(home, ".local", "share", "agentoscope", "agentoscope.db"),
-                busyTimeoutMs: 5000,
+            mainServer: { dataFile: join(data, "agentoscope.db"), busyTimeoutMs: 5000 },
+            daemon: {
+                stateDirectory: join(data, "daemon"),
+                pluginDirectory: join(data, "plugins"),
+                transport: "in-process",
+                ackTimeoutMs: 30_000,
+                retryCount: 5,
+                retryIntervalMs: 1000,
             },
         });
     });
@@ -39,11 +45,15 @@ describe("loadConfig", () => {
                     AGENTOSCOPE_HOME: join(home, "data"),
                 },
             }),
-        ).toEqual({
+        ).toMatchObject({
             path,
             mainServer: {
                 dataFile: join(home, "data", "agentoscope", "agentoscope.db"),
                 busyTimeoutMs: 2500,
+            },
+            daemon: {
+                stateDirectory: join(home, "data", "agentoscope", "daemon"),
+                pluginDirectory: join(home, "data", "agentoscope", "plugins"),
             },
         });
         const relative = await loadConfig({
@@ -62,6 +72,32 @@ describe("loadConfig", () => {
         );
     });
 
+    test("reads the daemon settings", async () => {
+        const directory = temporaryDirectory();
+        const path = writeConfig(
+            directory,
+            [
+                "[daemon]",
+                'state_directory = "state"',
+                'plugin_directory = "/opt/agentoscope/plugins"',
+                'plugins = ["opencode", "claude-code"]',
+                'transport = "in-process"',
+                "ack_timeout_ms = 10000",
+                "retry_count = 0",
+                "retry_interval_ms = 250",
+            ].join("\n"),
+        );
+        expect((await loadConfig({ path })).daemon).toEqual({
+            stateDirectory: join(directory, "state"),
+            pluginDirectory: "/opt/agentoscope/plugins",
+            plugins: ["opencode", "claude-code"],
+            transport: "in-process",
+            ackTimeoutMs: 10_000,
+            retryCount: 0,
+            retryIntervalMs: 250,
+        });
+    });
+
     test("needs the file given with --config", async () => {
         const path = join(temporaryDirectory(), "missing.toml");
         await expect(loadConfig({ path })).rejects.toThrow(ConfigError);
@@ -75,7 +111,14 @@ describe("loadConfig", () => {
             '[main_server]\nbusy_timeout_ms = "5000"\n',
             '[main_server]\ndata_file = ""\n',
             "[main_server]\ndata_fil = 1\n",
-            "[daemon]\nplugins = []\n",
+            "[daemon]\nplugins = [1]\n",
+            '[daemon]\nplugins = ["Open_Code"]\n',
+            '[daemon]\ntransport = "rest"\n',
+            "[daemon]\nack_timeout_ms = 5000\n",
+            "[daemon]\nretry_count = -1\n",
+            '[daemon]\nstate_directory = ""\n',
+            "[daemon]\nunknown = 1\n",
+            "daemon = 1\n",
             "main_server = 3\n",
             "[main_server\n",
         ];

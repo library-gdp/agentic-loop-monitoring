@@ -1,6 +1,7 @@
 /**
- * 모듈 경계를 확인합니다(docs/001.model/007.APPLICATION_ARCHITECTURE.md).
- * 모든 모듈은 Core에 의존하고 Core는 다른 모듈에 의존하지 않으며, SQLite는 Persistence만 다룹니다.
+ * 모듈 경계를 확인합니다(docs/001.model/007.APPLICATION_ARCHITECTURE.md, docs/002.implementation/001.TECH_STACK.md).
+ * Main Server의 모든 모듈은 Core에 의존하고 Core는 다른 모듈에 의존하지 않으며, Main Server에서는 Persistence만
+ * SQLite를 다룹니다. Daemon과 Plugin은 Plugin API에만 의존합니다.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -15,8 +16,11 @@ const ALLOWED: Record<string, readonly string[]> = {
     core: ["@agentoscope/plugin-api"],
     persistence: ["@agentoscope/core"],
     "input-adapter": ["@agentoscope/core", "@agentoscope/plugin-api"],
+    daemon: ["@agentoscope/plugin-api"],
+    "plugin-opencode": ["@agentoscope/plugin-api"],
     app: [
         "@agentoscope/core",
+        "@agentoscope/daemon",
         "@agentoscope/input-adapter",
         "@agentoscope/persistence",
         "@agentoscope/plugin-api",
@@ -74,13 +78,16 @@ describe("module boundaries", () => {
         }
     });
 
-    test("only Persistence refers to SQLite", () => {
+    /** Main Server의 Persistence와, OpenCode의 SQLite DB를 읽는 OpenCode Plugin만 SQLite를 다룹니다. */
+    const SQLITE_USERS = ["persistence", "plugin-opencode"];
+
+    test("only Persistence and the OpenCode Plugin refer to SQLite", () => {
         for (const name of packageNames()) {
             for (const file of sourceFiles(name)) {
                 const usesSqlite = readFileSync(file, "utf8").includes("bun:sqlite");
                 expect({ file, usesSqlite }).toEqual({
                     file,
-                    usesSqlite: name === "persistence" && usesSqlite,
+                    usesSqlite: SQLITE_USERS.includes(name) && usesSqlite,
                 });
             }
         }
