@@ -12,6 +12,7 @@
         "install-plugin:opencode": "bun scripts/install-plugins.ts opencode",
         "dev": "bun scripts/dev.ts",
         "start": "./dist/agentoscope run",
+        "url": "./dist/agentoscope url",
         "test": "bun test",
         "lint": "biome check .",
         "format": "biome check --write .",
