@@ -15,6 +15,7 @@ interface Captured {
     readonly out: string[];
     readonly err: string[];
     readonly logs: Log[];
+    readonly daemonLogs: Log[];
 }
 
 /** 표준 출력, 표준 오류, 로그를 모읍니다. 종료 신호는 Main Server가 준비되면 보냅니다. */
@@ -27,6 +28,7 @@ function capture(): Captured {
         signal = resolve;
     });
     const logger = recordingLogger(logs);
+    const daemonLogs: Log[] = [];
     return {
         io: {
             stdout: (text) => out.push(text),
@@ -35,14 +37,16 @@ function capture(): Captured {
                 ...logger,
                 info(message, details) {
                     logger.info(message, details);
-                    if (message === "main server is ready") signal("SIGTERM");
+                    if (message === "daemon started") signal("SIGTERM");
                 },
             },
+            daemonLogger: () => recordingLogger(daemonLogs),
             waitForSignal: () => waiting,
         },
         out,
         err,
         logs,
+        daemonLogs,
     };
 }
 
@@ -67,10 +71,14 @@ describe("main", () => {
         }
     });
 
-    test("runs the Main Server until it receives a signal", async () => {
+    test("runs the Main Server and the Daemon until it receives a signal", async () => {
         const directory = temporaryDirectory();
         const config = join(directory, "config.toml");
-        writeFileSync(config, '[main_server]\ndata_file = "data/agentoscope.db"\n');
+        writeFileSync(
+            config,
+            '[main_server]\ndata_file = "data/agentoscope.db"\n' +
+                '[daemon]\nstate_directory = "state"\nplugin_directory = "plugins"\n',
+        );
         const captured = capture();
 
         expect(await main(["run", "--config", config], captured.io)).toBe(0);
@@ -79,7 +87,17 @@ describe("main", () => {
             "rebuilding derived data",
             "rebuilt derived data",
             "main server is ready",
+            "daemon started",
             "main server is stopping",
+        ]);
+        expect(captured.logs[4]?.details).toEqual({
+            stateDirectory: join(directory, "state"),
+            pluginDirectory: join(directory, "plugins"),
+            plugins: [],
+        });
+        expect(captured.daemonLogs.map((log) => log.message)).toEqual([
+            "cannot read the plugin directory",
+            "daemon stopped",
         ]);
         const db = new Database(join(directory, "data", "agentoscope.db"), { readonly: true });
         expect(db.query("PRAGMA user_version").get()).toEqual({ user_version: 1 });
@@ -106,6 +124,20 @@ describe("main", () => {
         expect(unusable.logs.map((log) => [log.level, log.message])).toEqual([
             ["error", "cannot start"],
         ]);
+    });
+
+    test("does not start while another daemon uses the state directory", async () => {
+        const directory = temporaryDirectory();
+        const config = join(directory, "config.toml");
+        writeFileSync(
+            config,
+            '[daemon]\nstate_directory = "state"\n[main_server]\ndata_file = "a.db"\n',
+        );
+        mkdirSync(join(directory, "state"));
+        writeFileSync(join(directory, "state", "daemon.lock"), `${process.pid}\n`);
+        const captured = capture();
+        expect(await main(["run", "--config", config], captured.io)).toBe(1);
+        expect(captured.logs.at(-1)?.message).toBe("another daemon is running");
     });
 
     test("is the entry point of the executable", () => {
