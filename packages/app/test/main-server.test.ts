@@ -630,6 +630,110 @@ describe("Query API", () => {
     });
 });
 
+describe("turn nodes", () => {
+    test("lists the nodes of a turn in turn position order with previews", async () => {
+        const { server } = await start();
+        const longPath = "p".repeat(300);
+        await sendTurn(server, "u1", [
+            user("u1", 0, "Fix it"),
+            {
+                ...request("a1", 2, ["t1", "t2"], {
+                    usage: { input_tokens: 20, output_tokens: 10 },
+                }),
+                content: [
+                    { type: "text", text: "let me look" },
+                    { type: "tool_use", tool_use_id: "t1", name: "read", input: { path: "/a" } },
+                    {
+                        type: "tool_use",
+                        tool_use_id: "t2",
+                        name: "read",
+                        input: { path: longPath },
+                    },
+                ],
+            },
+            result("r1", 3, "t1", { output: "héllo" }),
+            result("r2", 3.5, "t2", { output: { lines: ["x"] }, is_error: true }),
+            compaction("c1", 4, "auto"),
+            summary("cs1", 5),
+            request("a2", 6, ["t3"]),
+            interrupted("i1", 7),
+        ]);
+
+        const nodes = server.query.getTurnNodes({ ...MAIN, turnId: "u1" });
+        expect(nodes?.status).toBe("interrupted");
+        expect(nodes?.promptPreview).toBe("Fix it");
+        expect(nodes?.nodes.map((node) => [node.kind, node.position])).toEqual([
+            ["prompt", 0],
+            ["llm_call", 1],
+            ["compaction", 4],
+            ["llm_call", 6],
+            ["interrupt", 7],
+        ]);
+        const [prompt, first, compacted, second, interrupt] = nodes?.nodes ?? [];
+        expect(prompt).toEqual({ kind: "prompt", position: 0, timestampUs: us(0) });
+        if (first?.kind !== "llm_call") throw new Error("expected an LLM Call node");
+        expect(first.llmCall.id).toBe("a1");
+        expect(first.llmCall.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
+        const [t1, t2] = first.toolCalls;
+        expect(t1).toMatchObject({
+            ordinal: 0,
+            toolUseId: "t1",
+            inputPreview: '{"path":"/a"}',
+            inputLength: 13,
+            resultLength: 5,
+        });
+        const t2Input = JSON.stringify({ path: longPath });
+        expect(t2).toMatchObject({
+            ordinal: 1,
+            toolUseId: "t2",
+            isError: true,
+            inputPreview: t2Input.slice(0, 200),
+            inputLength: t2Input.length,
+            resultLength: JSON.stringify({ lines: ["x"] }).length,
+        });
+        if (compacted?.kind !== "compaction") throw new Error("expected a Compaction node");
+        expect(compacted.compaction).toMatchObject({ id: "c1", summaryEventId: "cs1" });
+        if (second?.kind !== "llm_call") throw new Error("expected an LLM Call node");
+        expect(second.toolCalls).toHaveLength(1);
+        expect(second.toolCalls[0]?.resultLength).toBeUndefined();
+        expect(interrupt).toEqual({
+            kind: "interrupt",
+            position: 7,
+            eventId: "i1",
+            timestampUs: us(7),
+        });
+    });
+
+    test("marks each run of missing turn positions with one gap node", async () => {
+        const { server } = await start();
+        await sendTurn(server, "u1", [user("u1", 0)]);
+        await sendTurn(server, "u1", [request("a1", 3, ["t1"])], { from: 3 });
+        await sendTurn(server, "u1", [result("r1", 4, "t1"), final("a2", 6)], { from: 4 });
+        await sendTurn(server, "u1", [final("a3", 9)], { from: 8 });
+
+        const nodes = server.query.getTurnNodes({ ...MAIN, turnId: "u1" })?.nodes;
+        expect(nodes?.map((node) => node.kind)).toEqual([
+            "prompt",
+            "gap",
+            "llm_call",
+            "llm_call",
+            "gap",
+            "llm_call",
+        ]);
+        expect(nodes?.filter((node) => node.kind === "gap")).toEqual([
+            { kind: "gap", position: 1, count: 2 },
+            { kind: "gap", position: 6, count: 2 },
+        ]);
+    });
+
+    test("returns undefined when the turn does not exist", async () => {
+        const { server } = await start();
+        await sendTurn(server, "u1", [user("u1", 0)]);
+        expect(server.query.getTurnNodes({ ...MAIN, turnId: "nope" })).toBeUndefined();
+        expect(server.query.getTurnNodes({ ...MAIN, agentId: "x", turnId: "u1" })).toBeUndefined();
+    });
+});
+
 test("the Query API reads event bodies one row at a time", async () => {
     const { server } = await start();
     await sendTurn(server, "u1", [
@@ -668,6 +772,7 @@ test("the Query API reads event bodies one row at a time", async () => {
         server.query.getSession(SESSION);
         server.query.listTurns(MAIN);
         server.query.getTurn({ ...MAIN, turnId: "u1" });
+        server.query.getTurnNodes({ ...MAIN, turnId: "u1" });
         server.query.listLlmCalls(SESSION);
         server.query.getToolCall({ ...MAIN, llmCallId: "a1", ordinal: 0 });
         [...(server.query.iterateLlmCallInput({ ...MAIN, llmCallId: "a2" }) ?? [])];
@@ -678,7 +783,10 @@ test("the Query API reads event bodies one row at a time", async () => {
     }
     expect(queries.length).toBeGreaterThan(0);
     for (const sql of queries) {
-        // body를 그대로 읽는 열은 없어야 합니다. JSON 함수로 작은 값만 꺼내는 것(body ->)은 괜찮습니다.
-        expect(sql).not.toMatch(/(^|[\s,.(])body(?!\s*->)\b/);
+        // body를 그대로 읽는 열은 없어야 합니다. JSON 함수로 작은 값만 꺼내는 것(body ->, json_each(body),
+        // json_type(body))은 괜찮습니다.
+        expect(sql.replace(/json_(each|type)\((\w+\.)?body\b/g, "")).not.toMatch(
+            /(^|[\s,.(])body(?!\s*->)\b/,
+        );
     }
 });

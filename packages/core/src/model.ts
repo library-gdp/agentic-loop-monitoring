@@ -256,3 +256,62 @@ export interface InputEvent {
     /** Session Log Event의 JSON 원문입니다. */
     readonly body: string;
 }
+
+// ── Turn의 Node 메타데이터 ────────────────────────────────────────────
+
+/** Turn 하나의 Node입니다. TurnSummary의 promptPreview와 promptLength가 Prompt Node의 앞부분과 길이입니다. */
+export interface TurnNodes extends TurnSummary {
+    /** Turn 안 위치 순입니다. Tool Call은 요청한 LLM Call Node의 toolCalls에 있습니다. */
+    readonly nodes: readonly TurnNode[];
+}
+
+export type TurnNode = PromptNode | LlmCallNode | CompactionNode | InterruptNode | GapNode;
+
+/** Turn을 시작한 user_message입니다. 언제나 nodes의 첫 Node입니다. */
+export interface PromptNode {
+    readonly kind: "prompt";
+    readonly position: 0;
+    readonly timestampUs: number;
+}
+
+export interface LlmCallNode {
+    readonly kind: "llm_call";
+    /** assistant_message의 Turn 안 위치입니다. */
+    readonly position: number;
+    readonly llmCall: LlmCall;
+    /** 이 LLM Call이 요청한 Tool Call입니다. ordinal 순입니다. */
+    readonly toolCalls: readonly ToolCallNode[];
+}
+
+export interface ToolCallNode extends ToolCall {
+    /** tool_use 블록의 input을 JSON 텍스트로 쓴 것의 앞부분입니다. */
+    readonly inputPreview: string;
+    /** inputPreview를 자르기 전 JSON 텍스트의 길이(문자 수)입니다. */
+    readonly inputLength: number;
+    /** tool_result의 output의 길이(문자 수)입니다. 결과가 기록되지 않았으면 비웁니다. */
+    readonly resultLength?: number;
+}
+
+export interface CompactionNode {
+    readonly kind: "compaction";
+    /** compaction의 Turn 안 위치입니다. */
+    readonly position: number;
+    readonly compaction: Compaction;
+}
+
+/** turn_interrupted입니다. 중단된 Turn의 마지막 Node입니다. */
+export interface InterruptNode {
+    readonly kind: "interrupt";
+    readonly position: number;
+    readonly eventId: string;
+    readonly timestampUs: number;
+}
+
+/** 저장된 Session Log Event가 없는 Turn 안 위치가 이어진 자리입니다. */
+export interface GapNode {
+    readonly kind: "gap";
+    /** 비어 있는 첫 Turn 안 위치입니다. */
+    readonly position: number;
+    /** 비어 있는 위치의 수입니다. */
+    readonly count: number;
+}

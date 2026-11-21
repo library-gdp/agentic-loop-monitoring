@@ -18,8 +18,11 @@ import type {
     SessionSummary,
     ToolCall,
     ToolCallDetail,
+    ToolCallNode,
     ToolCallRef,
     TurnDetail,
+    TurnNode,
+    TurnNodes,
     TurnRef,
     TurnSummary,
 } from "./model";
@@ -54,6 +57,8 @@ export interface QueryApi {
     listTurns(ref: AgentRef): readonly TurnSummary[] | undefined;
     /** Turn의 Loop, LLM Call, Tool Call, Compaction입니다. 큰 본문은 담지 않습니다. */
     getTurn(ref: TurnRef): TurnDetail | undefined;
+    /** Turn의 Node 메타데이터입니다. Turn 안 위치 순이며, 원문은 앞부분만 담습니다. */
+    getTurnNodes(ref: TurnRef): TurnNodes | undefined;
     /** Session의 LLM Call입니다. 오류로 끝난 LLM Call, Stop Reason, Agent로 거를 수 있습니다. */
     listLlmCalls(ref: SessionRef, filter?: LlmCallFilter): readonly LlmCallListItem[] | undefined;
     /** Tool Call과 그 인자, 결과입니다. */
@@ -146,6 +151,93 @@ class DefaultQueryApi implements QueryApi {
             loops,
             compactions: this.#repository.listCompactions(key),
         };
+    }
+
+    getTurnNodes(ref: TurnRef): TurnNodes | undefined {
+        const resolved = this.#resolve(ref);
+        if (resolved === undefined) return undefined;
+        const key = { agentPk: resolved.agent.pk, turnId: ref.turnId };
+        const turn = this.#repository.findTurn(key, PROMPT_PREVIEW_LENGTH);
+        if (turn === undefined) return undefined;
+
+        const toolKey = (llmCallId: string, ordinal: number) => `${ordinal}:${llmCallId}`;
+        const previews = new Map(
+            this.#repository
+                .listToolCallInputPreviews(key, PROMPT_PREVIEW_LENGTH)
+                .map((preview) => [toolKey(preview.llmCallId, preview.ordinal), preview]),
+        );
+        const resultLengths = new Map(
+            this.#repository
+                .listToolCallResultLengths(resolved.session.pk, key)
+                .map((result) => [toolKey(result.llmCallId, result.ordinal), result.resultLength]),
+        );
+        const toolCallsByLlmCall = new Map<string, ToolCallNode[]>();
+        for (const call of this.#repository.listToolCalls(key)) {
+            const id = toolKey(call.llmCallId, call.ordinal);
+            const preview = previews.get(id);
+            const resultLength = resultLengths.get(id);
+            const node: ToolCallNode = {
+                ...call,
+                inputPreview: preview?.inputPreview ?? "",
+                inputLength: preview?.inputLength ?? 0,
+                ...(resultLength === undefined ? {} : { resultLength }),
+            };
+            const calls = toolCallsByLlmCall.get(call.llmCallId);
+            if (calls === undefined) toolCallsByLlmCall.set(call.llmCallId, [node]);
+            else calls.push(node);
+        }
+        const llmCalls = new Map(
+            this.#repository.listLlmCalls(key).map((stored) => [stored.id, toLlmCall(stored)]),
+        );
+        const compactions = new Map(
+            this.#repository.listCompactions(key).map((compaction) => [compaction.id, compaction]),
+        );
+
+        const nodes: TurnNode[] = [];
+        // 다음에 나올 것으로 기대하는 Turn 안 위치입니다. 이보다 큰 위치가 나오면 그 사이가 비어 있습니다.
+        let next = 0;
+        for (const slot of this.#repository.listTurnEventSlots(key)) {
+            if (slot.position > next) {
+                nodes.push({ kind: "gap", position: next, count: slot.position - next });
+            }
+            next = Math.max(next, slot.position + 1);
+            if (
+                slot.position === 0 &&
+                slot.type === "user_message" &&
+                slot.eventId === ref.turnId
+            ) {
+                nodes.push({ kind: "prompt", position: 0, timestampUs: slot.timestampUs });
+                continue;
+            }
+            switch (slot.type) {
+                case "assistant_message": {
+                    const llmCall = llmCalls.get(slot.eventId);
+                    if (llmCall === undefined) break;
+                    nodes.push({
+                        kind: "llm_call",
+                        position: slot.position,
+                        llmCall,
+                        toolCalls: toolCallsByLlmCall.get(llmCall.id) ?? [],
+                    });
+                    break;
+                }
+                case "compaction": {
+                    const compaction = compactions.get(slot.eventId);
+                    if (compaction === undefined) break;
+                    nodes.push({ kind: "compaction", position: slot.position, compaction });
+                    break;
+                }
+                case "turn_interrupted":
+                    nodes.push({
+                        kind: "interrupt",
+                        position: slot.position,
+                        eventId: slot.eventId,
+                        timestampUs: slot.timestampUs,
+                    });
+                    break;
+            }
+        }
+        return { ...toTurnSummary(turn), nodes };
     }
 
     listLlmCalls(
