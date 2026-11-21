@@ -9,6 +9,7 @@ import { ConfigError, loadConfig } from "../packages/app/src/config";
  *
  *   bun run install-plugins                       # dist/plugins의 Plugin을 모두 설치
  *   bun run install-plugins -- opencode           # 에이전트 id를 골라 설치
+ *   bun run install-plugin:opencode               # Plugin별 스크립트(package.json)로 설치
  *   bun run install-plugins -- --config ./config.toml
  */
 

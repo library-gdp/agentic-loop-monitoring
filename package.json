@@ -9,6 +9,7 @@
     "scripts": {
         "build": "bun scripts/build.ts",
         "install-plugins": "bun scripts/install-plugins.ts",
+        "install-plugin:opencode": "bun scripts/install-plugins.ts opencode",
         "dev": "bun scripts/dev.ts",
         "start": "./dist/agentoscope run",
         "test": "bun test",
