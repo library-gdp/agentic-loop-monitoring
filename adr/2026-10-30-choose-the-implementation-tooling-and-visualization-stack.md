@@ -39,7 +39,7 @@ decision-makers: pgd
 
 - Preact 기반 SPA로 만들고, Bun으로 번들해 실행 파일에 내장합니다. 서버 렌더링은 하지 않습니다.
 - 스타일은 일반 CSS로 쓰고, 토큰 차트는 SVG로 직접 그립니다.
-- Visualization은 `127.0.0.1`에만 바인딩하고, 포트를 설정할 수 있게 하며, 권한 `0600` 파일의 접근 토큰을 요구합니다. 자세한 내용은 [Visualization](../docs/002.implementation/010.VISUALIZATION.md)을 따릅니다.
+- Visualization은 `127.0.0.1`에만 바인딩하고, 포트를 설정할 수 있게 하며, 권한 `0600` 파일의 접근 토큰을 요구합니다. 자세한 내용은 [Visualization](../docs/002.implementation/011.VISUALIZATION.md)을 따릅니다.
 - LLM Call 목록은 메타데이터만 돌려줍니다. 본문은 펼칠 때 `.iterate()`와 스트리밍 응답으로 보냅니다.
 
 **품질 도구**
@@ -80,7 +80,7 @@ decision-makers: pgd
   - [`docs/002.implementation/004.PLUGIN_GUIDE.md`](../docs/002.implementation/004.PLUGIN_GUIDE.md): 저장소 구성, Plugin 번들, 파일 감시, 배포
   - [`docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md`](../docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md): 실행 파일 빌드, 설정 파일, 상주 방식, 배포
   - [`docs/002.implementation/008.DATA_STORAGE.md`](../docs/002.implementation/008.DATA_STORAGE.md): `mmap_size`, 큰 본문 읽기
-  - [`docs/002.implementation/010.VISUALIZATION.md`](../docs/002.implementation/010.VISUALIZATION.md): SPA 구성, 접속, 큰 데이터 조회
+  - [`docs/002.implementation/011.VISUALIZATION.md`](../docs/002.implementation/011.VISUALIZATION.md): SPA 구성, 접속, 큰 데이터 조회
 - **Dependencies**: Bun 1.4.4 이상, `hono`, `valibot` 1.5 이상, `preact` 11.1 이상. 개발 의존성은 Biome 2, `typescript`입니다.
 - **Patterns to follow**:
   - 패키지 의존 관계로 모듈 경계를 강제합니다. Daemon과 Plugin 패키지는 Main Server 패키지에 의존하지 않습니다.
