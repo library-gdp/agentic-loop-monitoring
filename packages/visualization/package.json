@@ -1,0 +1,14 @@
+{
+    "name": "@agentoscope/visualization",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "dependencies": {
+        "@agentoscope/core": "workspace:*",
+        "hono": "^4.13.19",
+        "preact": "^11.2.0"
+    }
+}

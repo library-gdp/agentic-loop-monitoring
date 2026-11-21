@@ -31,4 +31,13 @@ bun run start
 bun run start -- --config ./config.toml
 ```
 
-Daemon은 설정의 Plugin 디렉터리(기본값 `~/.local/share/agentoscope/plugins`)에서 Plugin을 불러오며, Plugin이 없으면 아무것도 수집하지 않습니다. `bun run install-plugins`는 빌드한 `dist/plugins/`의 Plugin을 이 디렉터리에 설치합니다. Plugin 하나만 설치하려면 Plugin별 스크립트 `bun run install-plugin:<에이전트 id>`(예: `bun run install-plugin:opencode`)를 쓰거나 에이전트 id를 넘기고(`bun run install-plugins -- opencode`), 설정 파일을 쓰면 `--config`로 같은 파일을 넘겨 그 파일의 `plugin_directory`에 설치합니다. Plugin을 다시 빌드했으면 다시 설치하고 agentoscope를 다시 시작하세요. 설정 항목은 [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md#설정)과 [Data Storage](docs/002.implementation/008.DATA_STORAGE.md#설정)를 참고하세요.
+실행 중에 Visualization을 열려면 다른 터미널에서 접속 URL을 출력해 브라우저로 엽니다. URL에는 실행할 때마다 새로 만드는 접근 토큰이 들어 있습니다. 설정 파일을 지정했으면 `--` 뒤에 같은 `--config`를 넘깁니다.
+
+```bash
+bun run url
+bun run url -- --config ./config.toml
+```
+
+`bun run url`은 빌드한 `dist/agentoscope`를 `url` 명령으로 실행합니다.
+
+Daemon은 설정의 Plugin 디렉터리(기본값 `~/.local/share/agentoscope/plugins`)에서 Plugin을 불러오며, Plugin이 없으면 아무것도 수집하지 않습니다. `bun run install-plugins`는 빌드한 `dist/plugins/`의 Plugin을 이 디렉터리에 설치합니다. Plugin 하나만 설치하려면 Plugin별 스크립트 `bun run install-plugin:<에이전트 id>`(예: `bun run install-plugin:opencode`)를 쓰거나 에이전트 id를 넘기고(`bun run install-plugins -- opencode`), 설정 파일을 쓰면 `--config`로 같은 파일을 넘겨 그 파일의 `plugin_directory`에 설치합니다. Plugin을 다시 빌드했으면 다시 설치하고 agentoscope를 다시 시작하세요. 설정 항목은 [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md#설정), [Data Storage](docs/002.implementation/008.DATA_STORAGE.md#설정), [Visualization 구현](docs/002.implementation/011.VISUALIZATION.md#접속)을 참고하세요.

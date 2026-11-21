@@ -142,6 +142,29 @@ export interface EventSegment {
     readonly toPosition?: number;
 }
 
+/** Turn에 저장된 Session Log Event 하나의 자리입니다. 원문은 담지 않습니다. */
+export interface StoredEventSlot {
+    readonly position: number;
+    readonly type: string;
+    readonly eventId: string;
+    readonly timestampUs: number;
+}
+
+/** Tool Call 인자의 앞부분입니다. */
+export interface StoredToolCallInputPreview {
+    readonly llmCallId: string;
+    readonly ordinal: number;
+    readonly inputPreview: string;
+    readonly inputLength: number;
+}
+
+/** Tool Call 결과의 길이입니다. */
+export interface StoredToolCallResultLength {
+    readonly llmCallId: string;
+    readonly ordinal: number;
+    readonly resultLength: number;
+}
+
 export interface Repository {
     /**
      * work를 쓰기 트랜잭션 하나로 실행합니다. 쓰기 잠금을 기다리다 시간이 지나거나 work가 예외를 던지면
@@ -170,6 +193,18 @@ export interface Repository {
     listToolCalls(key: TurnKey): readonly ToolCall[];
     /** Turn의 Compaction을 Turn 안 위치 순으로 돌려줍니다. */
     listCompactions(key: TurnKey): readonly Compaction[];
+    /** Turn에 저장된 Session Log Event의 자리를 Turn 안 위치 순으로 돌려줍니다. 원문은 읽지 않습니다. */
+    listTurnEventSlots(key: TurnKey): readonly StoredEventSlot[];
+    /** Turn의 assistant_message에 든 tool_use 블록 input의 앞부분과 길이입니다. 순서는 정하지 않습니다. */
+    listToolCallInputPreviews(
+        key: TurnKey,
+        previewLength: number,
+    ): readonly StoredToolCallInputPreview[];
+    /** Turn의 Tool Call 가운데 결과가 기록된 것의 결과 길이입니다. 순서는 정하지 않습니다. */
+    listToolCallResultLengths(
+        sessionPk: number,
+        key: TurnKey,
+    ): readonly StoredToolCallResultLength[];
     /** Session의 LLM Call을 끝난 시각 순으로 돌려줍니다. */
     listSessionLlmCalls(sessionPk: number, filter: StoredLlmCallFilter): readonly StoredLlmCall[];
     findLlmCall(

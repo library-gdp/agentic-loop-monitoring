@@ -18,12 +18,14 @@ const ALLOWED: Record<string, readonly string[]> = {
     "input-adapter": ["@agentoscope/core", "@agentoscope/plugin-api"],
     daemon: ["@agentoscope/plugin-api"],
     "plugin-opencode": ["@agentoscope/plugin-api"],
+    visualization: ["@agentoscope/core"],
     app: [
         "@agentoscope/core",
         "@agentoscope/daemon",
         "@agentoscope/input-adapter",
         "@agentoscope/persistence",
         "@agentoscope/plugin-api",
+        "@agentoscope/visualization",
     ],
 };
 

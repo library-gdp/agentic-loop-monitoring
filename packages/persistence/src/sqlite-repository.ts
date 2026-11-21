@@ -20,9 +20,12 @@ import type {
     SessionRef,
     StopReason,
     StoredAgent,
+    StoredEventSlot,
     StoredLlmCall,
     StoredLlmCallFilter,
     StoredSession,
+    StoredToolCallInputPreview,
+    StoredToolCallResultLength,
     StoredTurn,
     StoredTurnTime,
     TokenUsage,
@@ -237,6 +240,36 @@ const READ_SQL = {
         JOIN agent a ON a.pk = l.agent_pk
         WHERE l.agent_pk = $agent_pk AND l.turn_id = $turn_id
         ORDER BY l.position, c.ordinal`,
+    // Turn의 Node 메타데이터(docs/002.implementation/008.DATA_STORAGE.md). 모두 event_by_turn으로 그 Turn만 읽습니다.
+    listTurnEventSlots: `SELECT position, type, event_id, timestamp_us FROM event
+        WHERE agent_pk = $agent_pk AND turn_id = $turn_id
+        ORDER BY position, pk`,
+    // tool_use 블록의 순서가 ordinal입니다. Core의 toolUseBlocks처럼 tool_use_id와 name이 문자열인 블록만 셉니다.
+    // 객체가 아닌 블록에 JSON 함수를 쓰지 않도록 CASE로 막습니다.
+    listToolCallInputPreviews: `SELECT llm_call_id, ordinal,
+            substr(input, 1, $preview_length) AS input_preview, length(input) AS input_length
+        FROM (SELECT e.event_id AS llm_call_id,
+                row_number() OVER (PARTITION BY e.pk ORDER BY b.key) - 1 AS ordinal,
+                b.value -> '$.input' AS input
+            FROM event AS e, json_each(e.body, '$.content') AS b
+            WHERE e.agent_pk = $agent_pk AND e.turn_id = $turn_id
+              AND e.type = 'assistant_message'
+              AND json_type(e.body, '$.content') = 'array'
+              AND CASE WHEN b.type = 'object' THEN
+                    b.value ->> '$.type' = 'tool_use'
+                    AND json_type(b.value, '$.tool_use_id') = 'text'
+                    AND json_type(b.value, '$.name') = 'text'
+                  ELSE 0 END)`,
+    // output이 문자열이면 그 문자 수, 그 밖이면 JSON 텍스트의 문자 수입니다.
+    listToolCallResultLengths: `SELECT t.llm_call_id AS llm_call_id, t.ordinal AS ordinal,
+            CASE json_type(r.body, '$.output')
+              WHEN 'text' THEN length(r.body ->> '$.output')
+              ELSE length(r.body -> '$.output')
+            END AS result_length
+        FROM llm_call AS l
+        CROSS JOIN tool_call AS t ON t.agent_pk = l.agent_pk AND t.llm_call_id = l.llm_call_id
+        JOIN event AS r ON r.session_pk = $session_pk AND r.event_id = t.result_event_id
+        WHERE l.agent_pk = $agent_pk AND l.turn_id = $turn_id`,
     findToolCall: `SELECT ${TOOL_CALL_COLUMNS}
         FROM tool_call c JOIN agent a ON a.pk = c.agent_pk
         WHERE c.agent_pk = $agent_pk AND c.llm_call_id = $llm_call_id AND c.ordinal = $ordinal`,
@@ -625,6 +658,67 @@ export class SqliteRepository implements Repository {
             .query<CompactionRow, Record<string, string | number>>(SQL.listCompactions)
             .all({ agent_pk: key.agentPk, turn_id: key.turnId })
             .map(toCompaction);
+    }
+
+    listTurnEventSlots(key: TurnKey): readonly StoredEventSlot[] {
+        return this.#db
+            .query<
+                { position: number; type: string; event_id: string; timestamp_us: number },
+                Record<string, string | number>
+            >(READ_SQL.listTurnEventSlots)
+            .all({ agent_pk: key.agentPk, turn_id: key.turnId })
+            .map((row) => ({
+                position: row.position,
+                type: row.type,
+                eventId: row.event_id,
+                timestampUs: row.timestamp_us,
+            }));
+    }
+
+    listToolCallInputPreviews(
+        key: TurnKey,
+        previewLength: number,
+    ): readonly StoredToolCallInputPreview[] {
+        return this.#db
+            .query<
+                {
+                    llm_call_id: string;
+                    ordinal: number;
+                    input_preview: string | null;
+                    input_length: number | null;
+                },
+                Record<string, string | number>
+            >(READ_SQL.listToolCallInputPreviews)
+            .all({ agent_pk: key.agentPk, turn_id: key.turnId, preview_length: previewLength })
+            .map((row) => ({
+                llmCallId: row.llm_call_id,
+                ordinal: row.ordinal,
+                inputPreview: row.input_preview ?? "",
+                inputLength: row.input_length ?? 0,
+            }));
+    }
+
+    listToolCallResultLengths(
+        sessionPk: number,
+        key: TurnKey,
+    ): readonly StoredToolCallResultLength[] {
+        return this.#db
+            .query<
+                { llm_call_id: string; ordinal: number; result_length: number | null },
+                Record<string, string | number>
+            >(READ_SQL.listToolCallResultLengths)
+            .all({ session_pk: sessionPk, agent_pk: key.agentPk, turn_id: key.turnId })
+            .flatMap((row) =>
+                row.result_length === null
+                    ? []
+                    : [
+                          {
+                              llmCallId: row.llm_call_id,
+                              ordinal: row.ordinal,
+                              resultLength: row.result_length,
+                          },
+                      ],
+            );
     }
 
     listSessionLlmCalls(sessionPk: number, filter: StoredLlmCallFilter): readonly StoredLlmCall[] {

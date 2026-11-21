@@ -88,8 +88,14 @@ describe("main", () => {
             "rebuilt derived data",
             "main server is ready",
             "daemon started",
+            "visualization started",
             "main server is stopping",
         ]);
+        expect(captured.logs[5]?.details?.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
+        // 멈출 때 접속 정보 파일을 지웁니다.
+        const url = capture();
+        expect(await main(["url", "--config", config], url.io)).toBe(1);
+        expect(url.err.join("")).toContain("not running");
         expect(captured.logs[4]?.details).toEqual({
             stateDirectory: join(directory, "state"),
             pluginDirectory: join(directory, "plugins"),
@@ -138,6 +144,20 @@ describe("main", () => {
         const captured = capture();
         expect(await main(["run", "--config", config], captured.io)).toBe(1);
         expect(captured.logs.at(-1)?.message).toBe("another daemon is running");
+    });
+
+    test("prints the URL with the access token of the running Visualization", async () => {
+        const directory = temporaryDirectory();
+        const config = join(directory, "config.toml");
+        writeFileSync(config, '[daemon]\nstate_directory = "state"\n');
+        mkdirSync(join(directory, "state"));
+        writeFileSync(
+            join(directory, "state", "visualization.json"),
+            JSON.stringify({ url: "http://127.0.0.1:4321/", token: "a+b/c", pid: 1 }),
+        );
+        const captured = capture();
+        expect(await main(["url", "--config", config], captured.io)).toBe(0);
+        expect(captured.out).toEqual(["http://127.0.0.1:4321/login?token=a%2Bb%2Fc\n"]);
     });
 
     test("is the entry point of the executable", () => {

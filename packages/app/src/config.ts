@@ -31,11 +31,18 @@ export interface DaemonConfig {
     readonly retryIntervalMs: number;
 }
 
+/** Visualization의 설정입니다(docs/002.implementation/011.VISUALIZATION.md의 접속). */
+export interface VisualizationConfig {
+    /** 127.0.0.1에 바인딩할 포트입니다. 0이면 운영체제가 빈 포트를 고릅니다. */
+    readonly port: number;
+}
+
 export interface Config {
     /** 읽은 설정 파일의 경로입니다. 기본 위치에 파일이 없어 기본값만 쓰면 비웁니다. */
     readonly path?: string;
     readonly mainServer: MainServerConfig;
     readonly daemon: DaemonConfig;
+    readonly visualization: VisualizationConfig;
 }
 
 /** 설정 파일을 읽을 수 없거나 값이 잘못되었을 때 던집니다. */
@@ -47,6 +54,7 @@ export const DEFAULT_BUSY_TIMEOUT_MS = 5000;
 export const DEFAULT_ACK_TIMEOUT_MS = 30_000;
 export const DEFAULT_RETRY_COUNT = 5;
 export const DEFAULT_RETRY_INTERVAL_MS = 1000;
+export const DEFAULT_VISUALIZATION_PORT = 0;
 
 export interface LoadConfigOptions {
     /** --config로 받은 설정 파일의 경로입니다. 주면 파일이 꼭 있어야 합니다. */
@@ -86,7 +94,7 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Confi
     }
 
     const where = (key: string) => `${key} in ${path}`;
-    checkKeys(document, ["main_server", "daemon"], where("the top level"));
+    checkKeys(document, ["main_server", "daemon", "visualization"], where("the top level"));
     const mainServer = table(document, "main_server", where);
     checkKeys(mainServer, ["data_file", "busy_timeout_ms"], where("[main_server]"));
     const daemon = table(document, "daemon", where);
@@ -103,6 +111,18 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Confi
         ],
         where("[daemon]"),
     );
+
+    const visualization = table(document, "visualization", where);
+    checkKeys(visualization, ["port"], where("[visualization]"));
+    const port = integer(
+        visualization,
+        "port",
+        DEFAULT_VISUALIZATION_PORT,
+        0,
+        where("visualization.port"),
+    );
+    if (port > 65_535)
+        throw new ConfigError(`${where("visualization.port")} must be at most 65535`);
 
     const dataFile = optionalPath(mainServer, "data_file", where("main_server.data_file"));
     const busyTimeoutMs = integer(
@@ -180,6 +200,7 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Confi
                 where("daemon.retry_interval_ms"),
             ),
         },
+        visualization: { port },
     };
 }
 

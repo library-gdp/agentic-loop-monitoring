@@ -3,7 +3,7 @@
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "bundler",
-        "lib": ["ESNext"],
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
         "types": ["bun"],
         "strict": true,
         "noUncheckedIndexedAccess": true,
@@ -13,7 +13,9 @@
         "verbatimModuleSyntax": true,
         "resolveJsonModule": true,
         "skipLibCheck": true,
-        "noEmit": true
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "jsxImportSource": "preact"
     },
     "include": ["packages/*/src", "packages/*/test", "scripts"]
 }

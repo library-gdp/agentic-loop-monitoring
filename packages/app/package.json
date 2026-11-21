@@ -11,6 +11,7 @@
         "@agentoscope/daemon": "workspace:*",
         "@agentoscope/input-adapter": "workspace:*",
         "@agentoscope/persistence": "workspace:*",
-        "@agentoscope/plugin-api": "workspace:*"
+        "@agentoscope/plugin-api": "workspace:*",
+        "@agentoscope/visualization": "workspace:*"
     }
 }
