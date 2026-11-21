@@ -16,14 +16,15 @@ Agentoscope는 Codex, Claude Code, Open Code 같은 AI 에이전트가 작업을
 
 ## Usage
 
-[Bun](https://bun.sh)이 필요합니다. 의존성을 설치한 뒤 빌드하고 실행합니다.
+[Bun](https://bun.sh)이 필요합니다. 의존성을 설치하고 빌드한 뒤 실행합니다.
 
 ```bash
 bun install
+bun run build
 bun run start
 ```
 
-`bun run start`는 `bun run build`로 지금 플랫폼의 실행 파일 `dist/agentoscope`와 Plugin `dist/plugins/<에이전트 id>.js`를 만든 뒤, `dist/agentoscope run`으로 Main Server와 Client Adapter Daemon을 실행합니다. `SIGINT`(Ctrl+C)나 `SIGTERM`을 받으면 종료합니다. 설정 파일을 지정하려면 `--` 뒤에 넘깁니다.
+`bun run build`는 지금 플랫폼의 실행 파일 `dist/agentoscope`와 Plugin `dist/plugins/<에이전트 id>.js`를 만듭니다. `bun run start`는 빌드한 `dist/agentoscope`를 `run` 명령으로 실행해 Main Server와 Client Adapter Daemon을 구동합니다. `SIGINT`(Ctrl+C)나 `SIGTERM`을 받으면 종료합니다. 설정 파일을 지정하려면 `--` 뒤에 넘깁니다.
 
 ```bash
 bun run start -- --config ./config.toml
