@@ -139,6 +139,7 @@ decision-makers: pgd
 - 로컬 Session Log 13 MB의 zstd 압축률은 레코드별 2.67배, 파일 전체 4.99배였습니다.
 - macOS, 교차 컴파일, 실제 Plugin 부하, 장시간 실행은 측정하지 않았습니다.
 
+- 2026-11-20: 범위 밖으로 남긴 패키지 이름과 디렉터리 구성은 [Tech Stack](../docs/002.implementation/001.TECH_STACK.md#패키지-구성)에서 정했습니다. Main Server의 모듈마다 패키지를 하나 둡니다.
 - 관련 ADR: [Run the Client Adapter Daemon and the Main Server in one Bun process](2026-10-29-run-daemon-and-main-server-in-one-bun-process.md), [Load built Plugins into the Daemon at runtime](2026-10-29-load-built-plugins-into-daemon-at-runtime.md), [Store Main Server data in SQLite](2026-10-28-store-main-server-data-in-sqlite.md)
 - 다시 검토할 조건: Preact로 필요한 라이브러리를 쓸 수 없을 때, 질의가 수집을 막는 것이 측정될 때, Windows 사용자가 필요할 때
 - 용어: [Glossary](../docs/001.model/002.GLOSSARY.md)
