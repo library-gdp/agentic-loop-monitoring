@@ -1,0 +1,15 @@
+{
+    "name": "@agentoscope/app",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "dependencies": {
+        "@agentoscope/core": "workspace:*",
+        "@agentoscope/input-adapter": "workspace:*",
+        "@agentoscope/persistence": "workspace:*",
+        "@agentoscope/plugin-api": "workspace:*"
+    }
+}
