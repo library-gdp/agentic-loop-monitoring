@@ -36,6 +36,11 @@ export interface PluginContext {
     submit(unit: PluginTransportUnit): void;
     /** Daemon의 로그 파일에 기록합니다. */
     readonly logger: PluginLogger;
+    /**
+     * 이 Plugin만 쓰는 상태 디렉터리의 절대 경로입니다. 수집한 위치 같은 Plugin 자신의 상태를 둡니다.
+     * Daemon이 start를 부르기 전에 권한 0700으로 만들어 둡니다.
+     */
+    readonly stateDirectory: string;
 }
 
 export interface PluginLogger {
