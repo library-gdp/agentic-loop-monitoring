@@ -24,7 +24,7 @@ describe("loadConfig", () => {
         });
     });
 
-    test("follows XDG_CONFIG_HOME and XDG_DATA_HOME when they are absolute", async () => {
+    test("follows XDG_CONFIG_HOME and AGENTOSCOPE_HOME when they are absolute", async () => {
         const home = temporaryDirectory();
         const configHome = join(home, "config");
         const path = writeConfig(
@@ -33,7 +33,11 @@ describe("loadConfig", () => {
         );
         expect(
             await loadConfig({
-                env: { HOME: home, XDG_CONFIG_HOME: configHome, XDG_DATA_HOME: join(home, "data") },
+                env: {
+                    HOME: home,
+                    XDG_CONFIG_HOME: configHome,
+                    AGENTOSCOPE_HOME: join(home, "data"),
+                },
             }),
         ).toEqual({
             path,
@@ -43,7 +47,7 @@ describe("loadConfig", () => {
             },
         });
         const relative = await loadConfig({
-            env: { HOME: home, XDG_CONFIG_HOME: "relative", XDG_DATA_HOME: "" },
+            env: { HOME: home, XDG_CONFIG_HOME: "relative", AGENTOSCOPE_HOME: "" },
         });
         expect(relative.mainServer.dataFile).toBe(
             join(home, ".local", "share", "agentoscope", "agentoscope.db"),

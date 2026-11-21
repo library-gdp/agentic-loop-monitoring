@@ -33,10 +33,10 @@ export interface LoadConfigOptions {
     readonly env?: Readonly<Record<string, string | undefined>>;
 }
 
-/** XDG Base Directory의 디렉터리입니다. 환경 변수가 없거나 비어 있으면 기본 위치를 씁니다. */
-function xdgDirectory(
+/** 환경 변수가 가리키는 디렉터리입니다. 환경 변수가 없거나 절대 경로가 아니면 홈 디렉터리 아래의 기본 위치를 씁니다. */
+function envDirectory(
     env: Readonly<Record<string, string | undefined>>,
-    name: "XDG_CONFIG_HOME" | "XDG_DATA_HOME",
+    name: "XDG_CONFIG_HOME" | "AGENTOSCOPE_HOME",
     fallback: string,
 ): string {
     const value = env[name];
@@ -48,7 +48,7 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Confi
     const env = options.env ?? process.env;
     const path = resolve(
         options.path ??
-            join(xdgDirectory(env, "XDG_CONFIG_HOME", ".config"), "agentoscope", "config.toml"),
+            join(envDirectory(env, "XDG_CONFIG_HOME", ".config"), "agentoscope", "config.toml"),
     );
     const file = Bun.file(path);
     let document: Record<string, unknown> = {};
@@ -92,7 +92,7 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Confi
             dataFile:
                 dataFile === undefined
                     ? join(
-                          xdgDirectory(env, "XDG_DATA_HOME", join(".local", "share")),
+                          envDirectory(env, "AGENTOSCOPE_HOME", join(".local", "share")),
                           "agentoscope",
                           "agentoscope.db",
                       )
