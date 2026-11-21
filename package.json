@@ -9,6 +9,7 @@
     "scripts": {
         "build": "bun scripts/build.ts",
         "dev": "bun scripts/dev.ts",
+        "start": "bun run build && ./dist/agentoscope run",
         "test": "bun test",
         "lint": "biome check .",
         "format": "biome check --write .",

@@ -13,3 +13,20 @@ Agentoscope는 Codex, Claude Code, Open Code 같은 AI 에이전트가 작업을
 - **에이전틱 루프 모니터링**: AI 에이전트가 작업 중에 반복하는 LLM API 호출과 Tool Request를 추적해 에이전트 루프가 실제로 어떻게 진행되는지 보여줍니다.
 - **Metric 수집**: 에이전트 작업 중에 발생하는 토큰 사용량, 작업 시간 등의 metric을 수집합니다.
 - **루프별 시각화**: 각 루프에서 수행한 작업 내용과 토큰 소모량 등을 시각화해 루프 단위로 에이전트의 동작과 자원 사용을 비교할 수 있게 합니다.
+
+## Usage
+
+[Bun](https://bun.sh)이 필요합니다. 의존성을 설치한 뒤 빌드하고 실행합니다.
+
+```bash
+bun install
+bun run start
+```
+
+`bun run start`는 `bun run build`로 지금 플랫폼의 실행 파일 `dist/agentoscope`와 Plugin `dist/plugins/<에이전트 id>.js`를 만든 뒤, `dist/agentoscope run`으로 Main Server와 Client Adapter Daemon을 실행합니다. `SIGINT`(Ctrl+C)나 `SIGTERM`을 받으면 종료합니다. 설정 파일을 지정하려면 `--` 뒤에 넘깁니다.
+
+```bash
+bun run start -- --config ./config.toml
+```
+
+Daemon은 설정의 Plugin 디렉터리(기본값 `~/.local/share/agentoscope/plugins`)에서 Plugin을 불러옵니다. 빌드한 `dist/plugins/`의 Plugin을 이 디렉터리에 복사하거나, 설정 파일의 `[daemon]` 표에서 `plugin_directory`를 `dist/plugins`로 지정하세요. Plugin이 없으면 아무것도 수집하지 않습니다. 설정 항목은 [Client Adapter Daemon 구현](docs/002.implementation/007.CLIENT_ADAPTER_DAEMON.md#설정)과 [Data Storage](docs/002.implementation/008.DATA_STORAGE.md#설정)를 참고하세요.
